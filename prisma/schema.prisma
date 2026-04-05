@@ -1,0 +1,637 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum SiteMode {
+  STORE
+  PC_BUILD
+}
+
+model User {
+  id            String         @id @default(cuid())
+  login         String         @unique
+  name          String
+  email         String         @unique
+  phone         String?
+  passwordHash  String?
+  image         String?
+  role          String         @default("CUSTOMER")
+  /// When true, MANAGER may use admin price updates (preview/apply/rollback). ADMIN always has access.
+  canAccessPriceUpdates Boolean @default(false)
+  locale        String         @default("uk")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  reviews       Review[]
+  wishlistItems WishlistItem[]
+  compareItems  CompareItem[]
+  cart          Cart?
+  orders        Order[]
+  pcBuilds      PcBuild[]
+  buildRequests PcBuildRequest[]
+  acknowledgedImportAlerts ImportAlert[]
+  priceUpdateRunsCreated       PriceUpdateRun[]     @relation("PriceUpdateRunCreator")
+  priceUpdateRunsApplied       PriceUpdateRun[]     @relation("PriceUpdateRunApplier")
+  priceChangeHistoriesApplied  PriceChangeHistory[] @relation("PriceChangeApplier")
+  priceChangeHistoriesRolledBack PriceChangeHistory[] @relation("PriceChangeRollbacker")
+}
+
+model Account {
+  id                String @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Brand {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  logo         String?
+  website      String?
+  sortOrder    Int                @default(0)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  translations BrandTranslation[]
+  products     Product[]
+}
+
+model BrandTranslation {
+  id      String @id @default(cuid())
+  brandId String
+  locale  String
+  name    String
+  summary String?
+  brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, locale])
+}
+
+model Category {
+  id           String                @id @default(cuid())
+  slug         String                @unique
+  parentId     String?
+  image        String?
+  sortOrder    Int                   @default(0)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  parent       Category?             @relation("CategoryTree", fields: [parentId], references: [id])
+  children     Category[]            @relation("CategoryTree")
+  translations CategoryTranslation[]
+  products     Product[]
+}
+
+model CategoryTranslation {
+  id          String   @id @default(cuid())
+  categoryId  String
+  locale      String
+  name        String
+  description String?
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, locale])
+}
+
+model Product {
+  id               String                 @id @default(cuid())
+  slug             String                 @unique
+  sku              String                 @unique
+  externalId       String?
+  importSourceKey  String?
+  categoryId       String
+  brandId          String
+  status           String                 @default("PUBLISHED")
+  price            Int
+  purchasePrice    Int?
+  oldPrice         Int?
+  currency         String                 @default("USD")
+  inventoryStatus  String                 @default("IN_STOCK")
+  stock            Int                    @default(0)
+  heroImage        String
+  gallery          String
+  specs            String
+  metadata         String
+  wattage          Int?
+  tdp              Int?
+  lengthMm         Int?
+  maxGpuLengthMm   Int?
+  coolerHeightMm   Int?
+  maxCoolerMm      Int?
+  memoryType       String?
+  socket           String?
+  formFactor       String?
+  supportedSockets String?
+  memorySlots      Int?
+  memoryCapacityGb Int?
+  memorySpeedMhz   Int?
+  psuFormFactor    String?
+  storageInterface String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  category         Category               @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  brand            Brand                  @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  translations     ProductTranslation[]
+  reviews          Review[]
+  attributes       ProductAttributeValue[]
+  buildItems       PcBuildItem[]
+  cartItems        CartItem[]
+  wishlistItems    WishlistItem[]
+  compareItems     CompareItem[]
+  orderItems       OrderItem[]
+  priceUpdateLines PriceUpdateLine[]
+  priceChangeHistories PriceChangeHistory[]
+
+  @@unique([importSourceKey, externalId])
+}
+
+/// Admin-only staged price preview / apply (MVP). Does not touch images or copy.
+model PriceUpdateRun {
+  id              String   @id @default(cuid())
+  /// PREVIEW_READY | APPLIED | CANCELLED
+  status          String   @default("PREVIEW_READY")
+  createdByUserId String?
+  appliedByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  appliedAt       DateTime?
+  creator         User?    @relation("PriceUpdateRunCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  applier         User?    @relation("PriceUpdateRunApplier", fields: [appliedByUserId], references: [id], onDelete: SetNull)
+  lines           PriceUpdateLine[]
+  priceHistories  PriceChangeHistory[]
+}
+
+model PriceUpdateLine {
+  id                String    @id @default(cuid())
+  runId             String
+  productId         String
+  skuSnapshot       String
+  nameSnapshot      String
+  currencySnapshot  String
+  priceBeforeStored Int
+  rozetkaPriceUah   Int?
+  telemartPriceUah  Int?
+  /// ROZETKA | TELEMART
+  baseSource        String?
+  basePriceUah      Int?
+  newPriceStored    Int?
+  rozetkaUrl        String?
+  telemartUrl       String?
+  matchNote         String    @default("")
+  /// LOW | MEDIUM | HIGH | NONE
+  confidence        String    @default("NONE")
+  /// APPROVED_CANDIDATE | MANUAL_REVIEW | REJECTED
+  lineStatus        String    @default("MANUAL_REVIEW")
+  userApproved      Boolean   @default(false)
+  appliedAt         DateTime?
+  /// in_stock | out_of_stock | unknown — per retailer page parse
+  rozetkaAvailability   String @default("unknown")
+  telemartAvailability  String @default("unknown")
+  /// in_stock | out_of_stock | unknown — merged candidate for apply
+  candidateAvailability String @default("unknown")
+  availabilityRationale String @default("")
+  /// Product.inventoryStatus at preview time (stale guard for apply)
+  inventoryStatusSnapshot String @default("IN_STOCK")
+  run               PriceUpdateRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  product           Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  history           PriceChangeHistory?
+
+  @@index([runId])
+  @@index([productId])
+}
+
+model PriceChangeHistory {
+  id                  String    @id @default(cuid())
+  runId               String?
+  lineId              String?   @unique
+  productId           String
+  previousPriceStored Int
+  newPriceStored      Int
+  /// Set when apply changed Product.inventoryStatus (rollback restores when present)
+  previousInventoryStatus String?
+  newInventoryStatus      String?
+  appliedAt           DateTime  @default(now())
+  appliedByUserId     String?
+  rolledBackAt        DateTime?
+  rolledBackByUserId  String?
+  run                 PriceUpdateRun? @relation(fields: [runId], references: [id], onDelete: SetNull)
+  line                PriceUpdateLine? @relation(fields: [lineId], references: [id], onDelete: SetNull)
+  product             Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  applier             User?           @relation("PriceChangeApplier", fields: [appliedByUserId], references: [id], onDelete: SetNull)
+  rollbacker          User?           @relation("PriceChangeRollbacker", fields: [rolledBackByUserId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([runId])
+}
+
+model ProductTranslation {
+  id               String  @id @default(cuid())
+  productId        String
+  locale           String
+  name             String
+  shortDescription String
+  description      String
+  seoTitle         String?
+  seoDescription   String?
+  product          Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, locale])
+}
+
+model ProductAttribute {
+  id          String                  @id @default(cuid())
+  code        String                  @unique
+  label       String
+  unit        String?
+  values      ProductAttributeValue[]
+  sourceRules CompatibilityRule[]     @relation("SourceAttribute")
+  targetRules CompatibilityRule[]     @relation("TargetAttribute")
+}
+
+model ProductAttributeValue {
+  id          String           @id @default(cuid())
+  attributeId String
+  productId   String
+  value       String
+  attribute   ProductAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  product     Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([attributeId, productId])
+}
+
+model Review {
+  id        String       @id @default(cuid())
+  productId String
+  userId    String?
+  author    String
+  rating    Int
+  title     String
+  body      String
+  status    String       @default("APPROVED")
+  createdAt DateTime     @default(now())
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String?
+  sessionId String?
+  productId String
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@unique([sessionId, productId])
+}
+
+model CompareItem {
+  id        String   @id @default(cuid())
+  userId    String?
+  sessionId String?
+  productId String
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@unique([sessionId, productId])
+}
+
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String?    @unique
+  sessionId String?    @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+}
+
+model CartItem {
+  id            String  @id @default(cuid())
+  cartId        String
+  productId     String
+  quantity      Int     @default(1)
+  configuration String?
+  configurationKey String @default("")
+  cart          Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId, configurationKey])
+  @@index([cartId, productId])
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  userId         String?
+  customerName   String
+  phone          String
+  email          String?
+  comment        String?
+  managerNote    String?
+  deliveryCity   String?
+  deliveryMethod String?
+  deliveryAddress String?
+  deliveryBranch String?
+  status         String      @default("NEW")
+  totalPrice     Int         @default(0)
+  totalCost      Int?
+  grossProfit    Int?
+  currency       String      @default("USD")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items          OrderItem[]
+}
+
+model OrderItem {
+  id            String  @id @default(cuid())
+  orderId       String
+  productId     String?
+  quantity      Int     @default(1)
+  unitPrice     Int
+  unitCost      Int?
+  currency      String  @default("USD")
+  productName   String
+  productSlug   String?
+  heroImage     String?
+  brandName     String?
+  configuration String?
+  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+}
+
+model PcBuild {
+  id         String       @id @default(cuid())
+  name       String
+  slug       String       @unique
+  userId     String?
+  sessionId  String?
+  locale     String       @default("uk")
+  totalPrice Int          @default(0)
+  notes      String?
+  shareToken String       @unique
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  user       User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items      PcBuildItem[]
+  requests   PcBuildRequest[]
+}
+
+model PcBuildItem {
+  id        String    @id @default(cuid())
+  buildId   String
+  productId String
+  slot      String
+  quantity  Int       @default(1)
+  build     PcBuild   @relation(fields: [buildId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([buildId, slot])
+}
+
+model PcBuildRequest {
+  id           String             @id @default(cuid())
+  buildId      String
+  userId       String?
+  locale       String             @default("uk")
+  customerName String
+  contact      String
+  phone        String?
+  email        String?
+  budget       Int?
+  useCase      String?
+  preferences  String?
+  needsMonitor Boolean            @default(false)
+  needsPeripherals Boolean        @default(false)
+  needsUpgrade Boolean            @default(false)
+  comment      String?
+  managerNote  String?
+  deliveryCity String?
+  deliveryMethod String?
+  status       String             @default("NEW")
+  totalPrice   Int                @default(0)
+  currency     String             @default("USD")
+  itemsSnapshot String            @default("[]")
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  build        PcBuild            @relation(fields: [buildId], references: [id], onDelete: Cascade)
+  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([updatedAt])
+}
+
+model CompatibilityRule {
+  id                String                  @id @default(cuid())
+  code              String                  @unique
+  name              String
+  description       String
+  severity          String
+  sourceSlot        String
+  targetSlot        String
+  sourceType        String                  @default("ATTRIBUTE")
+  targetType        String                  @default("ATTRIBUTE")
+  sourceAttributeId String?
+  sourceValue       String?
+  targetAttributeId String?
+  targetValue       String?
+  comparator        String
+  messageKey        String
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  sourceAttribute   ProductAttribute?       @relation("SourceAttribute", fields: [sourceAttributeId], references: [id], onDelete: SetNull)
+  targetAttribute   ProductAttribute?       @relation("TargetAttribute", fields: [targetAttributeId], references: [id], onDelete: SetNull)
+}
+
+model SiteSettings {
+  id              String   @id @default(cuid())
+  siteMode        SiteMode @default(STORE)
+  brandName       String
+  shortBrandName  String?
+  logoText        String
+  logoPath        String?
+  supportEmail    String
+  supportPhone    String
+  address         String
+  facebookUrl     String?
+  instagramUrl    String?
+  telegramUrl     String?
+  youtubeUrl      String?
+  metaTitle       String
+  metaDescription String
+  faviconPath     String?
+  defaultCurrency String   @default("USD")
+  defaultLocale   String   @default("uk")
+  watermarkText   String   @default("Lumina")
+  heroTitle       String
+  heroSubtitle    String
+  heroCtaLabel    String
+  heroCtaHref     String
+  featuredCategorySlugs String @default("[]")
+  featuredProductIds    String @default("[]")
+  updatedAt       DateTime @updatedAt
+}
+
+model ImportSourceConfig {
+  id                 String      @id @default(cuid())
+  key                String      @unique
+  name               String
+  sourceType         String
+  endpointUrl        String?
+  authType           String      @default("NONE")
+  authToken          String?
+  authHeaders        String      @default("{}")
+  timeoutMs          Int         @default(15000)
+  retryCount         Int         @default(1)
+  maxRows            Int         @default(500)
+  maxPayloadBytes    Int         @default(5242880)
+  defaultImportMode  String      @default("UPSERT")
+  skuFallbackEnabled Boolean     @default(true)
+  slugFallbackEnabled Boolean    @default(false)
+  isActive           Boolean     @default(true)
+  isSyncing          Boolean     @default(false)
+  syncLockedAt       DateTime?
+  frequency          String?
+  nextSyncAt         DateTime?
+  lastSyncAt         DateTime?
+  lastSyncStatus     String?
+  lastSyncError      String?
+  lastJobId          String?
+  consecutiveFailures Int        @default(0)
+  createdByUserId    String?
+  updatedByUserId    String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  jobs               ImportJob[]
+  alerts             ImportAlert[]
+
+  @@index([isActive, nextSyncAt, isSyncing])
+}
+
+model ImportJob {
+  id                String           @id @default(cuid())
+  sourceConfigId    String?
+  startedByUserId   String?
+  triggerType       String           @default("MANUAL")
+  sourceKey         String?
+  sourceType        String
+  sourceUrl         String?
+  sourceFileName    String?
+  importMode        String
+  status            String
+  dryRun            Boolean          @default(false)
+  totalRows         Int              @default(0)
+  createdCount      Int              @default(0)
+  updatedCount      Int              @default(0)
+  skippedCount      Int              @default(0)
+  failedCount       Int              @default(0)
+  warningCount      Int              @default(0)
+  errorCount        Int              @default(0)
+  payloadSizeBytes  Int?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  report            String           @default("{}")
+  sourceMeta        String           @default("{}")
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  sourceConfig      ImportSourceConfig? @relation(fields: [sourceConfigId], references: [id], onDelete: SetNull)
+  issues            ImportJobIssue[]
+  alerts            ImportAlert[]
+
+  @@index([sourceConfigId, status, createdAt])
+}
+
+model ImportJobIssue {
+  id            String    @id @default(cuid())
+  jobId         String
+  rowIndex      Int?
+  severity      String
+  code          String
+  message       String
+  rawIdentifier String?
+  details       String    @default("{}")
+  createdAt     DateTime  @default(now())
+  job           ImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+model ImportAlert {
+  id                 String             @id @default(cuid())
+  sourceConfigId     String
+  jobId              String?
+  type               String
+  severity           String
+  status             String             @default("ACTIVE")
+  title              String
+  message            String
+  details            String             @default("{}")
+  occurrenceCount    Int                @default(1)
+  firstDetectedAt    DateTime           @default(now())
+  lastDetectedAt     DateTime           @default(now())
+  resolvedAt         DateTime?
+  acknowledgedAt     DateTime?
+  acknowledgedByUserId String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  sourceConfig       ImportSourceConfig @relation(fields: [sourceConfigId], references: [id], onDelete: Cascade)
+  job                ImportJob?         @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  acknowledgedByUser User?              @relation(fields: [acknowledgedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([sourceConfigId, status, type])
+  @@index([status, severity, lastDetectedAt])
+}
+
+model Banner {
+  id           String              @id @default(cuid())
+  key          String              @unique
+  type         String
+  isActive     Boolean             @default(true)
+  image        String?
+  href         String?
+  sortOrder    Int                 @default(0)
+  translations BannerTranslation[]
+}
+
+model BannerTranslation {
+  id       String @id @default(cuid())
+  bannerId String
+  locale   String
+  title    String
+  subtitle String?
+  ctaLabel String?
+  banner   Banner @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+
+  @@unique([bannerId, locale])
+}

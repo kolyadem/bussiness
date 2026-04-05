@@ -1,0 +1,74 @@
+[
+  {
+    "externalId": "phase1-samsung-990-pro-1tb",
+    "slug": "samsung-990-pro-1tb-nvme",
+    "sku": "P1-SSD-SAM-990P1T",
+    "brandSlug": "samsung",
+    "categorySlug": "storage",
+    "price": 5299,
+    "stock": 20,
+    "specs": { "capacity": "1 TB", "interface": "PCIe 4.0 NVMe", "formFactor": "M.2 2280" },
+    "technicalAttributes": { "storage.interface": "PCIe 4.0 NVMe", "storage.form_factor": "M.2 2280" },
+    "specPrimaryUrl": "https://www.samsung.com/us/computing/memory-storage/solid-state-drives/990-pro-pcie--4-0-nvme--ssd-1tb-mz-v9p1t0b-am.html",
+    "specSecondaryUrls": "https://semiconductor.samsung.com/consumer-storage/internal-ssd/990-pro/",
+    "imagePrimaryUrl": "https://images.samsung.com/is/image/samsung/p6pim/ca_fr/mz-v9p1t0b-am/gallery/ca-fr-990pro-nvme-m2-ssd-mz-v9p1t0b-am-534208557?$1300_1038_PNG$",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://www.samsung.com/us/computing/memory-storage/solid-state-drives/990-pro-pcie--4-0-nvme--ssd-1tb-mz-v9p1t0b-am.html",
+    "importBatch": "phase1-mini-2026-04",
+    "priceMatch": {
+      "primaryMpn": "MZ-V9P1T0BW"
+    },
+    "name": "Samsung 990 PRO 1TB NVMe M.2",
+    "shortUk": "1 ТБ, PCIe 4.0 NVMe, M.2 2280 (офіційні специфікації Samsung).",
+    "shortRu": "1 ТБ, PCIe 4.0 NVMe, M.2 2280 (официальные спецификации Samsung).",
+    "shortEn": "1 TB, PCIe 4.0 NVMe, M.2 2280 (Samsung official specifications)."
+  },
+  {
+    "externalId": "phase1-wd-black-sn770-1tb",
+    "slug": "wd-black-sn770-1tb",
+    "sku": "P1-SSD-WD-SN7701T",
+    "brandSlug": "western-digital",
+    "categorySlug": "storage",
+    "price": 3299,
+    "stock": 24,
+    "specs": { "capacity": "1 TB", "interface": "PCIe 4.0 NVMe", "formFactor": "M.2 2280" },
+    "technicalAttributes": { "storage.interface": "PCIe 4.0 NVMe", "storage.form_factor": "M.2 2280" },
+    "specPrimaryUrl": "https://www.westerndigital.com/products/internal-drives/wd-black-sn770-nvme-ssd",
+    "specSecondaryUrls": "",
+    "imagePrimaryUrl": "https://www.westerndigital.com/content/dam/store/en-us/assets/products/internal-storage/wd-black-sn770-nvme-ssd/featured/wd-black-sn770-nvme-ssd-feature1.jpg",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://www.westerndigital.com/products/internal-drives/wd-black-sn770-nvme-ssd",
+    "importBatch": "phase1-mini-2026-04",
+    "priceMatch": {
+      "primaryMpn": "WDS100T3X0E"
+    },
+    "name": "WD_BLACK SN770 1TB NVMe SSD",
+    "shortUk": "1 ТБ, PCIe 4.0 NVMe, M.2 2280 (WD).",
+    "shortRu": "1 ТБ, PCIe 4.0 NVMe, M.2 2280 (WD).",
+    "shortEn": "1 TB, PCIe 4.0 NVMe, M.2 2280 (WD)."
+  },
+  {
+    "externalId": "phase1-crucial-mx500-1tb",
+    "slug": "crucial-mx500-1tb-sata",
+    "sku": "P1-SSD-CRU-MX5001T",
+    "brandSlug": "crucial",
+    "categorySlug": "storage",
+    "price": 2899,
+    "stock": 18,
+    "specs": { "capacity": "1 TB", "interface": "SATA 6 Gb/s", "formFactor": "2.5\"" },
+    "technicalAttributes": { "storage.interface": "SATA 6 Gb/s", "storage.form_factor": "2.5 inch" },
+    "specPrimaryUrl": "https://www.crucial.com/support/ssd-support/mx500-support",
+    "specSecondaryUrls": "https://www.crucial.com/ssd/mx500/ct1000mx500ssd1",
+    "imagePrimaryUrl": "https://assets.micron.com/adobe/assets/urn:aaid:aem:975c73b6-20af-4da7-bcbe-3217d0b7856a/renditions/original/as/crucial-mx500-install-with-confidence-image.png",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://www.crucial.com/support/ssd-support/mx500-support",
+    "importBatch": "phase1-mini-2026-04",
+    "priceMatch": {
+      "primaryMpn": "CT1000MX500SSD1"
+    },
+    "name": "Crucial MX500 1TB SATA 2.5\"",
+    "shortUk": "1 ТБ, SATA 6 Гбіт/с, 2.5\" (Crucial).",
+    "shortRu": "1 ТБ, SATA 6 Гбит/с, 2.5\" (Crucial).",
+    "shortEn": "1 TB, SATA 6 Gb/s, 2.5\" (Crucial)."
+  }
+]

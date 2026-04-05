@@ -1,0 +1,74 @@
+[
+  {
+    "externalId": "phase1-asus-tuf-lc-ii-360-argb",
+    "slug": "asus-tuf-gaming-lc-ii-360-argb",
+    "sku": "P1-COL-ASUS-LC360",
+    "brandSlug": "asus",
+    "categorySlug": "cooling",
+    "price": 6299,
+    "stock": 8,
+    "specs": { "type": "AIO 360mm", "radiator": "360 mm", "sockets": "Intel LGA 1700/1200/115x, AMD AM4/AM5" },
+    "technicalAttributes": {
+      "cooler.supported_sockets": "LGA1700, LGA1200, LGA1151, AM4, AM5",
+      "cooler.height_mm": "55"
+    },
+    "specPrimaryUrl": "https://www.asus.com/motherboards-components/cooling/tuf-gaming-lc-ii-360-argb/techspec/",
+    "specSecondaryUrls": "",
+    "imagePrimaryUrl": "https://dlcdnimgs.asus.com/websites/global/Sno/79183.jpg",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://www.asus.com/motherboards-components/cooling/tuf-gaming-lc-ii-360-argb/",
+    "importBatch": "phase1-mini-2026-04",
+    "name": "ASUS TUF Gaming LC II 360 ARGB",
+    "shortUk": "СЖО 360 мм, підтримка сучасних сокетів Intel/AMD.",
+    "shortRu": "СЖО 360 мм, поддержка современных сокетов Intel/AMD.",
+    "shortEn": "360 mm AIO, broad Intel/AMD socket support."
+  },
+  {
+    "externalId": "phase1-noctua-nh-d15",
+    "slug": "noctua-nh-d15",
+    "sku": "P1-COL-NOC-NHD15",
+    "brandSlug": "noctua",
+    "categorySlug": "cooling",
+    "price": 7299,
+    "stock": 5,
+    "specs": { "type": "Dual-tower air", "height": "165 mm", "sockets": "See Noctua specifications" },
+    "technicalAttributes": {
+      "cooler.supported_sockets": "AM4, AM5, LGA1700, LGA1200, LGA1151, LGA1150, LGA1155, LGA1156, LGA2011",
+      "cooler.height_mm": "165"
+    },
+    "specPrimaryUrl": "https://noctua.at/en/nh-d15",
+    "specSecondaryUrls": "",
+    "imagePrimaryUrl": "/products/cooler.svg",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://noctua.at/en/nh-d15",
+    "importBatch": "phase1-mini-2026-04",
+    "name": "Noctua NH-D15",
+    "shortUk": "Преміальний повітряний кулер, висота 165 мм (офіційні специфікації Noctua).",
+    "shortRu": "Премиальный воздушный кулер, высота 165 мм (официальные спецификации Noctua).",
+    "shortEn": "Premium dual-tower air cooler, 165 mm height (per Noctua specifications)."
+  },
+  {
+    "externalId": "phase1-deepcool-ak620",
+    "slug": "deepcool-ak620-zero-dark",
+    "sku": "P1-COL-DPC-AK620",
+    "brandSlug": "deepcool",
+    "categorySlug": "cooling",
+    "price": 2899,
+    "stock": 14,
+    "specs": { "type": "Dual-tower air", "height": "160 mm", "sockets": "AM4, AM5, LGA1700, LGA1200, LGA1151" },
+    "technicalAttributes": {
+      "cooler.supported_sockets": "AM4, AM5, LGA1700, LGA1200, LGA1151",
+      "cooler.height_mm": "160"
+    },
+    "specPrimaryUrl": "https://www.deepcool.com/products/Cooling/cpuaircoolers/AK620-ZERO-DARK-High-Performance-CPU-Cooler-1700-AM5/2022/16040.shtml",
+    "specSecondaryUrls": "",
+    "imagePrimaryUrl": "/products/cooler.svg",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://www.deepcool.com/",
+    "importBatch": "phase1-mini-2026-04",
+    "name": "DeepCool AK620 ZERO DARK",
+    "shortUk": "Двобаштовий повітряний кулер, 160 мм, широка підтримка сокетів.",
+    "shortRu": "Двухбашенный воздушный кулер, 160 мм, широкая поддержка сокетов.",
+    "shortEn": "Dual-tower air cooler, 160 mm, wide socket support."
+  }
+]

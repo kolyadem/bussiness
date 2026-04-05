@@ -1,0 +1,789 @@
+import { getAuthenticatedUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { defaultLocale, inventoryLabels, type AppLocale } from "@/lib/constants";
+import { getSiteSettingsRecord } from "@/lib/site-config";
+import {
+  displayPriceToStoredMinorUnits,
+  parseJson,
+  storedMinorUnitsToDisplayPrice,
+} from "@/lib/utils";
+import { getSessionId } from "@/lib/session";
+import { getRecentlyViewedProductIds } from "@/lib/session";
+import { getNormalizedTechnicalAttributeMap } from "@/lib/configurator/technical-attributes";
+import {
+  getOwnedCart,
+  getOwnedListItems,
+  resolveStorefrontOwner,
+} from "@/lib/storefront/persistence";
+import { parseBuildRequestItemsSnapshot } from "@/lib/storefront/build-requests";
+import { getOrderKindFromItems, normalizeOrderStatus } from "@/lib/storefront/orders";
+import type {
+  CartItemRecord,
+  CategoryTreeRecord,
+  CompareItemRecord,
+  ProductRecord,
+  WishlistItemRecord,
+} from "@/lib/storefront/types";
+
+export const productInclude = {
+  translations: true,
+  attributes: {
+    include: {
+      attribute: true,
+    },
+  },
+  brand: {
+    include: {
+      translations: true,
+    },
+  },
+  category: {
+    include: {
+      translations: true,
+    },
+  },
+  reviews: {
+    where: {
+      status: "APPROVED",
+    },
+    orderBy: {
+      createdAt: "desc" as const,
+    },
+  },
+} as const;
+
+const catalogPageSize = 9;
+const catalogSortOptions = ["newest", "price-asc", "price-desc", "rating"] as const;
+const catalogAvailabilityOptions = ["IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK", "PREORDER"] as const;
+
+export type CatalogSortOption = (typeof catalogSortOptions)[number];
+export type CatalogAvailabilityOption = (typeof catalogAvailabilityOptions)[number];
+
+export type CatalogSearchParams = {
+  q: string;
+  category: string | null;
+  subcategory: string | null;
+  brands: string[];
+  availability: CatalogAvailabilityOption[];
+  minPrice: number | null;
+  maxPrice: number | null;
+  onSaleOnly: boolean;
+  sort: CatalogSortOption;
+  page: number;
+};
+
+type CatalogSearchParamsInput = Record<string, string | string[] | undefined>;
+
+function getFirstSearchParamValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function getSearchParamList(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  return value ? [value] : [];
+}
+
+function normalizePositiveNumber(value: string) {
+  if (value.trim().length === 0) {
+    return null;
+  }
+
+  const numeric = Number(value);
+
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return null;
+  }
+
+  return numeric;
+}
+
+export function parseCatalogSearchParams(rawParams: CatalogSearchParamsInput): CatalogSearchParams {
+  const q = getFirstSearchParamValue(rawParams.q).trim();
+  const category = getFirstSearchParamValue(rawParams.category).trim() || null;
+  const subcategory = getFirstSearchParamValue(rawParams.subcategory).trim() || null;
+  const brands = Array.from(
+    new Set(
+      getSearchParamList(rawParams.brand)
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  );
+  const availability = Array.from(
+    new Set(
+      getSearchParamList(rawParams.availability).filter((value): value is CatalogAvailabilityOption =>
+        catalogAvailabilityOptions.includes(value as CatalogAvailabilityOption),
+      ),
+    ),
+  );
+  const minPrice = normalizePositiveNumber(getFirstSearchParamValue(rawParams.minPrice));
+  const maxPrice = normalizePositiveNumber(getFirstSearchParamValue(rawParams.maxPrice));
+  const sortValue = getFirstSearchParamValue(rawParams.sort);
+  const pageValue = Number.parseInt(getFirstSearchParamValue(rawParams.page), 10);
+
+  return {
+    q,
+    category,
+    subcategory,
+    brands,
+    availability,
+    minPrice,
+    maxPrice,
+    onSaleOnly: getFirstSearchParamValue(rawParams.sale) === "1",
+    sort: catalogSortOptions.includes(sortValue as CatalogSortOption)
+      ? (sortValue as CatalogSortOption)
+      : "newest",
+    page: Number.isFinite(pageValue) && pageValue > 0 ? pageValue : 1,
+  };
+}
+
+function collectDescendantCategoryIds(categories: CategoryTreeRecord[], rootId: string): string[] {
+  const categoryById = new Map(
+    categories.map((category) => [category.id, category] satisfies [string, CategoryTreeRecord]),
+  );
+  const collected = new Set<string>([rootId]);
+  const queue = [rootId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    const current = categoryById.get(currentId);
+
+    if (!current) {
+      continue;
+    }
+
+    for (const child of current.children) {
+      if (!collected.has(child.id)) {
+        collected.add(child.id);
+        queue.push(child.id);
+      }
+    }
+  }
+
+  return Array.from(collected);
+}
+
+function buildCatalogOrderBy(sort: CatalogSortOption) {
+  switch (sort) {
+    case "price-asc":
+      return [{ price: "asc" as const }, { createdAt: "desc" as const }];
+    case "price-desc":
+      return [{ price: "desc" as const }, { createdAt: "desc" as const }];
+    case "newest":
+    default:
+      return [{ createdAt: "desc" as const }, { stock: "desc" as const }];
+  }
+}
+
+function getAverageRating(product: ProductRecord) {
+  if (product.reviews.length === 0) {
+    return 0;
+  }
+
+  return product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length;
+}
+
+export const getSiteSettings = getSiteSettingsRecord;
+
+export async function getHomepageData(locale: AppLocale) {
+  const [settings, banners, categories, featuredProducts] = await Promise.all([
+    getSiteSettings(),
+    db.banner.findMany({
+      where: {
+        isActive: true,
+      },
+      include: {
+        translations: true,
+      },
+      orderBy: {
+        sortOrder: "asc",
+      },
+    }),
+    db.category.findMany({
+      include: {
+        translations: true,
+      },
+      orderBy: {
+        sortOrder: "asc",
+      },
+      take: 12,
+    }),
+    db.product.findMany({
+      where: {
+        status: "PUBLISHED",
+      },
+      include: productInclude,
+      take: 8,
+      orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
+    }),
+  ]);
+
+  const featuredCategorySlugs = settings
+    ? parseJson<string[]>(settings.featuredCategorySlugs, [])
+    : [];
+  const featuredProductIds = settings
+    ? parseJson<string[]>(settings.featuredProductIds, [])
+    : [];
+  const heroBanners = banners.filter((banner) => banner.type === "HERO");
+  const promoBanners = banners.filter((banner) => banner.type === "PROMO");
+  const selectedCategories =
+    featuredCategorySlugs.length > 0
+      ? categories.filter((category) => featuredCategorySlugs.includes(category.slug))
+      : categories.slice(0, 3);
+  const selectedProducts =
+    featuredProductIds.length > 0
+      ? (
+          await db.product.findMany({
+            where: {
+              status: "PUBLISHED",
+              id: {
+                in: featuredProductIds,
+              },
+            },
+            include: productInclude,
+          })
+        ).sort(
+          (left, right) =>
+            featuredProductIds.indexOf(left.id) - featuredProductIds.indexOf(right.id),
+        )
+      : featuredProducts;
+
+  return {
+    settings,
+    banners,
+    heroBanners,
+    promoBanners,
+    categories,
+    featuredCategories: selectedCategories,
+    featuredProducts: selectedProducts,
+    locale,
+  };
+}
+
+export async function getCatalogData({
+  locale,
+  params,
+}: {
+  locale: AppLocale;
+  params: CatalogSearchParams;
+}) {
+  const [categories, brands, publishedPrices] = await Promise.all([
+    db.category.findMany({
+      include: {
+        translations: true,
+        children: {
+          include: {
+            translations: true,
+          },
+          orderBy: {
+            sortOrder: "asc",
+          },
+        },
+      },
+      orderBy: {
+        sortOrder: "asc",
+      },
+    }) as Promise<CategoryTreeRecord[]>,
+    db.brand.findMany({
+      where: {
+        products: {
+          some: {
+            status: "PUBLISHED",
+          },
+        },
+      },
+      include: {
+        translations: true,
+      },
+      orderBy: {
+        sortOrder: "asc",
+      },
+    }),
+    db.product.findMany({
+      where: {
+        status: "PUBLISHED",
+      },
+      select: {
+        price: true,
+        currency: true,
+      },
+    }),
+  ]);
+
+  const selectedCategory = params.category
+    ? categories.find((category) => category.slug === params.category) ?? null
+    : null;
+  const selectedSubcategory = params.subcategory
+    ? categories.find((category) => category.slug === params.subcategory) ?? null
+    : null;
+  const localizedQuery = params.q.trim();
+  const allowedCategoryIds = selectedSubcategory
+    ? [selectedSubcategory.id]
+    : selectedCategory
+      ? collectDescendantCategoryIds(categories, selectedCategory.id)
+      : null;
+  const minPriceStored =
+    typeof params.minPrice === "number" ? displayPriceToStoredMinorUnits(params.minPrice) : null;
+  const maxPriceStored =
+    typeof params.maxPrice === "number" ? displayPriceToStoredMinorUnits(params.maxPrice) : null;
+  const priceFilter =
+    minPriceStored !== null || maxPriceStored !== null
+      ? {
+          ...(minPriceStored !== null ? { gte: minPriceStored } : {}),
+          ...(maxPriceStored !== null ? { lte: maxPriceStored } : {}),
+        }
+      : undefined;
+  const where = {
+    status: "PUBLISHED",
+    ...(allowedCategoryIds ? { categoryId: { in: allowedCategoryIds } } : {}),
+    ...(params.brands.length > 0 ? { brand: { slug: { in: params.brands } } } : {}),
+    ...(params.availability.length > 0 ? { inventoryStatus: { in: params.availability } } : {}),
+    ...(priceFilter ? { price: priceFilter } : {}),
+    ...(params.onSaleOnly ? { oldPrice: { not: null } } : {}),
+    ...(params.q
+      ? {
+          OR: [
+            { sku: { contains: localizedQuery } },
+            {
+              translations: {
+                some: {
+                  locale,
+                  name: {
+                    contains: localizedQuery,
+                  },
+                },
+              },
+            },
+            {
+              brand: {
+                translations: {
+                  some: {
+                    locale,
+                    name: {
+                      contains: localizedQuery,
+                    },
+                  },
+                },
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+
+  const publishedCategoryCounts = await db.product.groupBy({
+    by: ["categoryId"],
+    where: {
+      status: "PUBLISHED",
+    },
+    _count: {
+      categoryId: true,
+    },
+  });
+  const baseCategoryCounts = Object.fromEntries(
+    publishedCategoryCounts.map((item) => [item.categoryId, item._count.categoryId]),
+  ) as Record<string, number>;
+  const categoryCounts = Object.fromEntries(
+    categories.map((category) => [
+      category.slug,
+      collectDescendantCategoryIds(categories, category.id).reduce(
+        (sum, categoryId) => sum + (baseCategoryCounts[categoryId] ?? 0),
+        0,
+      ),
+    ]),
+  ) as Record<string, number>;
+
+  const totalItems = await db.product.count({ where });
+  const totalPages = Math.max(1, Math.ceil(totalItems / catalogPageSize));
+  const currentPage = Math.min(params.page, totalPages);
+  const products =
+    params.sort === "rating"
+      ? (
+          await db.product.findMany({
+            where,
+            include: productInclude,
+          })
+        )
+          .sort((left, right) => {
+            const ratingDiff = getAverageRating(right) - getAverageRating(left);
+
+            if (ratingDiff !== 0) {
+              return ratingDiff;
+            }
+
+            return right.createdAt.getTime() - left.createdAt.getTime();
+          })
+          .slice((currentPage - 1) * catalogPageSize, currentPage * catalogPageSize)
+      : await db.product.findMany({
+          where,
+          include: productInclude,
+          orderBy: buildCatalogOrderBy(params.sort),
+          skip: (currentPage - 1) * catalogPageSize,
+          take: catalogPageSize,
+        });
+  const displayPrices = publishedPrices.map((product) =>
+    storedMinorUnitsToDisplayPrice(product.price, product.currency),
+  );
+
+  return {
+    locale,
+    categories,
+    categoryCounts,
+    brands,
+    products,
+    selectedCategory,
+    selectedSubcategory,
+    filters: {
+      ...params,
+      page: currentPage,
+    },
+    pagination: {
+      currentPage,
+      totalPages,
+      totalItems,
+      pageSize: catalogPageSize,
+      hasPreviousPage: currentPage > 1,
+      hasNextPage: currentPage < totalPages,
+    },
+    priceRange: {
+      min: displayPrices.length > 0 ? Math.floor(Math.min(...displayPrices)) : 0,
+      max: displayPrices.length > 0 ? Math.ceil(Math.max(...displayPrices)) : 0,
+    },
+  };
+}
+
+export async function getProductBySlug(slug: string) {
+  return db.product.findFirst({
+    where: {
+      slug,
+      status: "PUBLISHED",
+    },
+    include: productInclude,
+  });
+}
+
+export async function getRelatedProducts(product: ProductRecord) {
+  return db.product.findMany({
+    where: {
+      status: "PUBLISHED",
+      categoryId: product.categoryId,
+      id: {
+        not: product.id,
+      },
+    },
+    include: productInclude,
+    take: 4,
+  });
+}
+
+export async function getRecentlyViewedProducts(currentProductId: string) {
+  const ids = (await getRecentlyViewedProductIds()).filter((id) => id !== currentProductId);
+
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const products = await db.product.findMany({
+    where: {
+      status: "PUBLISHED",
+      id: {
+        in: ids,
+      },
+    },
+    include: productInclude,
+  });
+
+  const order = new Map(ids.map((id, index) => [id, index] satisfies [string, number]));
+
+  return products.sort((left, right) => (order.get(left.id) ?? 999) - (order.get(right.id) ?? 999)).slice(0, 4);
+}
+
+export async function getWishlistItems() {
+  const owner = await resolveStorefrontOwner();
+
+  return getOwnedListItems({
+    model: "wishlistItem",
+    owner,
+    orderBy: {
+      createdAt: "desc",
+    },
+  }) as Promise<WishlistItemRecord[]>;
+}
+
+export async function getCompareItems() {
+  const owner = await resolveStorefrontOwner();
+
+  return getOwnedListItems({
+    model: "compareItem",
+    owner,
+    orderBy: {
+      createdAt: "asc",
+    },
+  }) as Promise<CompareItemRecord[]>;
+}
+
+export async function getCart() {
+  const owner = await resolveStorefrontOwner();
+
+  return getOwnedCart(owner, {
+    include: {
+      items: {
+        include: {
+          product: {
+            include: productInclude,
+          },
+        },
+        orderBy: {
+          id: "desc",
+        },
+      },
+    },
+  }) as Promise<{
+    id: string;
+    items: CartItemRecord[];
+  } | null>;
+}
+
+export async function getAccountSurfaceData(locale: AppLocale) {
+  const sessionId = await getSessionId();
+  const viewer = await getAuthenticatedUser();
+  const ownerClauses = [
+    ...(viewer?.id ? [{ userId: viewer.id }] : []),
+    ...(sessionId ? [{ sessionId }] : []),
+  ];
+
+  const [wishlist, compare, cart, builds, requests, orders] = await Promise.all([
+    getWishlistItems(),
+    getCompareItems(),
+    getCart(),
+    ownerClauses.length > 0
+      ? db.pcBuild.findMany({
+          where: {
+            OR: ownerClauses,
+          },
+          include: {
+            items: {
+              include: {
+                product: {
+                  include: productInclude,
+                },
+              },
+            },
+          },
+          orderBy: {
+            updatedAt: "desc",
+          },
+          take: 4,
+        })
+      : Promise.resolve([]),
+    ownerClauses.length > 0
+      ? db.pcBuildRequest.findMany({
+          where: {
+            OR: [
+              ...(viewer?.id ? [{ userId: viewer.id }] : []),
+              ...(sessionId
+                ? [
+                    {
+                      build: {
+                        sessionId,
+                      },
+                    },
+                  ]
+                : []),
+            ],
+          },
+          include: {
+            build: {
+              include: {
+                items: {
+                  include: {
+                    product: {
+                      include: productInclude,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 6,
+        })
+      : Promise.resolve([]),
+    viewer?.id
+      ? db.order.findMany({
+          where: {
+            userId: viewer.id,
+          },
+          include: {
+            items: {
+              orderBy: {
+                id: "asc",
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 6,
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const buildSummaries = builds.map((build) => ({
+    id: build.id,
+    name: build.name,
+    slug: build.slug,
+    updatedAt: build.updatedAt,
+    totalPrice:
+      build.totalPrice > 0
+        ? build.totalPrice
+        : build.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+    items: build.items.map((item) => ({
+      id: item.id,
+      slot: item.slot,
+      quantity: item.quantity,
+      product: mapProduct(item.product, locale),
+    })),
+  }));
+
+  const buildRequestSummaries = requests.map((request) => {
+    const snapshotItems = parseBuildRequestItemsSnapshot(request.itemsSnapshot);
+    const items =
+      snapshotItems.length > 0
+        ? snapshotItems.map((item) => ({
+            id: `${request.id}:${item.productId}:${item.slot}`,
+            quantity: item.quantity,
+            product: {
+              id: item.productId,
+              slug: item.productSlug,
+              name: item.productName,
+              heroImage: item.heroImage,
+              price: item.price,
+              currency: item.currency,
+            },
+          }))
+        : request.build.items.map((item) => ({
+            id: item.id,
+            quantity: item.quantity,
+            product: mapProduct(item.product, locale),
+          }));
+
+    return {
+      id: request.id,
+      number: `LM-${request.id.slice(-6).toUpperCase()}`,
+      createdAt: request.createdAt,
+      status: request.status,
+      total:
+        request.totalPrice > 0
+          ? request.totalPrice
+          : items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+      items,
+    };
+  });
+
+  const storefrontOrders = orders.map((order) => ({
+    id: order.id,
+    number: `ORD-${order.id.slice(-6).toUpperCase()}`,
+    createdAt: order.createdAt,
+    status: normalizeOrderStatus(order.status),
+    orderKind: getOrderKindFromItems(order.items),
+    total: order.totalPrice,
+    deliveryCity: order.deliveryCity,
+    deliveryMethod: order.deliveryMethod,
+    deliveryAddress: order.deliveryAddress,
+    deliveryBranch: order.deliveryBranch,
+    items: order.items.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      configuration: item.configuration,
+      product: {
+        id: item.productId ?? item.id,
+        slug: item.productSlug ?? "",
+        name: item.productName,
+        heroImage: item.heroImage ?? "/products/product.svg",
+        price: item.unitPrice,
+        currency: item.currency,
+      },
+    })),
+  }));
+
+  return {
+    locale,
+    isAuthenticated: Boolean(viewer),
+    viewer,
+    wishlist: wishlist.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      product: mapProduct(item.product, locale),
+    })),
+    compareCount: compare.length,
+    cartItemsCount: cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0,
+    cartSubtotal:
+      cart?.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) ?? 0,
+    builds: buildSummaries,
+    orders: storefrontOrders,
+    buildRequests: buildRequestSummaries,
+  };
+}
+
+export function pickByLocale<
+  T extends {
+    locale: string;
+  },
+>(items: T[], locale: string) {
+  return (
+    items.find((item) => item.locale === locale) ??
+    items.find((item) => item.locale === defaultLocale) ??
+    items[0]
+  );
+}
+
+export function mapProduct(product: ProductRecord, locale: AppLocale) {
+  const translation = pickByLocale(product.translations, locale);
+  const brandTranslation = pickByLocale(product.brand.translations, locale);
+  const categoryTranslation = pickByLocale(product.category.translations, locale);
+  const rating =
+    product.reviews.length > 0
+      ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
+      : 0;
+
+  return {
+    id: product.id,
+    slug: product.slug,
+    sku: product.sku,
+    name: translation.name,
+    shortDescription: translation.shortDescription,
+    description: translation.description,
+    seoTitle: translation.seoTitle,
+    seoDescription: translation.seoDescription,
+    heroImage: product.heroImage,
+    gallery: parseJson<string[]>(product.gallery, [product.heroImage]),
+    price: product.price,
+    purchasePrice: product.purchasePrice,
+    oldPrice: product.oldPrice,
+    stock: product.stock,
+    currency: product.currency,
+    inventoryStatus: product.inventoryStatus,
+    inventoryLabel:
+      inventoryLabels[
+        product.inventoryStatus as keyof typeof inventoryLabels
+      ]?.[locale] ?? product.inventoryStatus,
+    brand: {
+      name: brandTranslation.name,
+      slug: product.brand.slug,
+    },
+    category: {
+      name: categoryTranslation.name,
+      slug: product.category.slug,
+    },
+    reviews: product.reviews,
+    rating,
+    specs: parseJson<Record<string, string | number | boolean>>(product.specs, {}),
+    metadata: parseJson<Record<string, string | number | boolean>>(product.metadata, {}),
+    technicalAttributes: getNormalizedTechnicalAttributeMap(product),
+  };
+}

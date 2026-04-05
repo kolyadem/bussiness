@@ -1,0 +1,21 @@
+<products>
+  <product>
+    <externalId>SUP-CPU-001</externalId>
+    <sku>CPU-AMD-7800X3D</sku>
+    <slug>amd-ryzen-7-7800x3d</slug>
+    <name>AMD Ryzen 7 7800X3D</name>
+    <shortDescription>Gaming CPU with AM5 socket</shortDescription>
+    <description>Fast 8-core gaming processor for AM5 builds.</description>
+    <price>18999</price>
+    <oldPrice>19999</oldPrice>
+    <currency>UAH</currency>
+    <stock>12</stock>
+    <inventoryStatus>IN_STOCK</inventoryStatus>
+    <status>PUBLISHED</status>
+    <brandSlug>amd</brandSlug>
+    <categorySlug>processors</categorySlug>
+    <heroImage>https://example.com/images/amd-7800x3d.png</heroImage>
+    <image>https://example.com/images/amd-7800x3d.png</image>
+    <image>https://example.com/images/amd-7800x3d-back.png</image>
+  </product>
+</products>

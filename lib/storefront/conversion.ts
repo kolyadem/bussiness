@@ -1,0 +1,357 @@
+import { db } from "@/lib/db";
+import type { AppLocale } from "@/lib/constants";
+import { calculateUnitFinancials } from "@/lib/commerce/finance";
+import { mapProduct, productInclude } from "@/lib/storefront/queries";
+import type { ProductRecord } from "@/lib/storefront/types";
+
+export type SmartBadge = "POPULAR" | "VALUE" | "BEST_CHOICE";
+
+type DecoratedProduct = ReturnType<typeof mapProduct> & {
+  conversionBadge: SmartBadge | null;
+  salesCount: number;
+};
+
+type RecommendationCollections = {
+  similar: DecoratedProduct[];
+  betterVariant: DecoratedProduct | null;
+  valueChoice: DecoratedProduct | null;
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getSharedAttributeScore(left: ProductRecord, right: ProductRecord) {
+  let score = 0;
+  const keys = ["socket", "memoryType", "formFactor", "storageInterface"];
+
+  for (const key of keys) {
+    const leftValue = String(left[key as keyof ProductRecord] ?? "").trim().toLowerCase();
+    const rightValue = String(right[key as keyof ProductRecord] ?? "").trim().toLowerCase();
+
+    if (leftValue && rightValue && leftValue === rightValue) {
+      score += 1;
+    }
+  }
+
+  const leftAttributes = new Map(
+    left.attributes.map((attribute) => [attribute.attribute.code, attribute.value]),
+  );
+
+  for (const attribute of right.attributes) {
+    if (leftAttributes.get(attribute.attribute.code) === attribute.value) {
+      score += 0.5;
+    }
+  }
+
+  return score;
+}
+
+async function getSalesMapForProducts(productIds: string[]) {
+  const items = await db.orderItem.findMany({
+    where: {
+      productId: {
+        in: productIds,
+      },
+    },
+    select: {
+      productId: true,
+    },
+  });
+
+  const counts = new Map<string, number>();
+
+  for (const item of items) {
+    if (!item.productId) {
+      continue;
+    }
+
+    counts.set(item.productId, (counts.get(item.productId) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+function resolveExplicitBadge(input: {
+  salesCount: number;
+  price: number;
+  oldPrice: number | null;
+  purchasePrice: number | null;
+  rating: number;
+}): SmartBadge | null {
+  const financials = calculateUnitFinancials({
+    price: input.price,
+    purchasePrice: input.purchasePrice,
+  });
+
+  if (input.salesCount >= 3 || input.rating >= 4.7) {
+    return "POPULAR";
+  }
+
+  if (
+    financials.marginPercent !== null &&
+    financials.marginPercent >= 30 &&
+    (input.oldPrice !== null || input.price <= 80000)
+  ) {
+    return "BEST_CHOICE";
+  }
+
+  if (input.oldPrice !== null || (financials.marginPercent !== null && financials.marginPercent >= 18)) {
+    return "VALUE";
+  }
+
+  return null;
+}
+
+function decorateProducts(
+  locale: AppLocale,
+  products: ProductRecord[],
+  salesMap: Map<string, number>,
+): DecoratedProduct[] {
+  return products.map((product) => {
+    const mapped = mapProduct(product, locale);
+    const salesCount = salesMap.get(product.id) ?? 0;
+
+    return {
+      ...mapped,
+      salesCount,
+      conversionBadge: resolveExplicitBadge({
+        salesCount,
+        price: mapped.price,
+        oldPrice: mapped.oldPrice,
+        purchasePrice: mapped.purchasePrice ?? null,
+        rating: mapped.rating,
+      }),
+    };
+  });
+}
+
+function getSimilarityScore(current: ProductRecord, candidate: ProductRecord) {
+  const priceGap = Math.abs(candidate.price - current.price) / Math.max(current.price, 1);
+  return (
+    (candidate.categoryId === current.categoryId ? 3 : 0) +
+    (candidate.brandId === current.brandId ? 1.5 : 0) +
+    getSharedAttributeScore(current, candidate) -
+    priceGap * 2
+  );
+}
+
+function getBetterVariantScore(current: ProductRecord, candidate: ProductRecord, salesCount: number) {
+  const priceRatio = candidate.price / Math.max(current.price, 1);
+  const financials = calculateUnitFinancials({
+    price: candidate.price,
+    purchasePrice: candidate.purchasePrice,
+  });
+
+  return (
+    getSimilarityScore(current, candidate) * 1.3 +
+    clamp(1.3 - Math.abs(priceRatio - 1.18), 0, 1.3) * 3 +
+    (financials.marginPercent ?? 0) / 10 +
+    salesCount * 0.25
+  );
+}
+
+function getValueChoiceScore(current: ProductRecord, candidate: ProductRecord, salesCount: number) {
+  const priceAdvantage = (current.price - candidate.price) / Math.max(current.price, 1);
+  const financials = calculateUnitFinancials({
+    price: candidate.price,
+    purchasePrice: candidate.purchasePrice,
+  });
+
+  return (
+    getSimilarityScore(current, candidate) +
+    clamp(priceAdvantage, -0.15, 0.35) * 4 +
+    (financials.marginPercent ?? 0) / 12 +
+    salesCount * 0.2 +
+    candidate.reviews.length * 0.05
+  );
+}
+
+export async function getProductRecommendationCollections(
+  product: ProductRecord,
+  locale: AppLocale,
+): Promise<RecommendationCollections> {
+  const candidates = await db.product.findMany({
+    where: {
+      status: "PUBLISHED",
+      id: {
+        not: product.id,
+      },
+      OR: [{ categoryId: product.categoryId }, { brandId: product.brandId }],
+    },
+    include: productInclude,
+    take: 18,
+    orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
+  });
+
+  if (candidates.length === 0) {
+    return {
+      similar: [],
+      betterVariant: null,
+      valueChoice: null,
+    };
+  }
+
+  const salesMap = await getSalesMapForProducts(candidates.map((candidate) => candidate.id));
+  const decorated = decorateProducts(locale, candidates, salesMap);
+  const decoratedMap = new Map(decorated.map((item) => [item.id, item] as const));
+
+  const betterVariantRecord =
+    [...candidates]
+      .filter(
+        (candidate) =>
+          candidate.categoryId === product.categoryId &&
+          candidate.price > product.price &&
+          candidate.price <= product.price * 1.45,
+      )
+      .sort(
+        (left, right) =>
+          getBetterVariantScore(product, right, salesMap.get(right.id) ?? 0) -
+          getBetterVariantScore(product, left, salesMap.get(left.id) ?? 0),
+      )[0] ?? null;
+
+  const valueChoiceRecord =
+    [...candidates]
+      .filter(
+        (candidate) =>
+          candidate.categoryId === product.categoryId &&
+          candidate.price <= product.price * 1.08 &&
+          candidate.price >= product.price * 0.72,
+      )
+      .sort(
+        (left, right) =>
+          getValueChoiceScore(product, right, salesMap.get(right.id) ?? 0) -
+          getValueChoiceScore(product, left, salesMap.get(left.id) ?? 0),
+      )[0] ?? null;
+
+  const excludedIds = new Set(
+    [betterVariantRecord?.id, valueChoiceRecord?.id].filter(Boolean) as string[],
+  );
+  const similar = [...candidates]
+    .filter((candidate) => !excludedIds.has(candidate.id))
+    .sort((left, right) => getSimilarityScore(product, right) - getSimilarityScore(product, left))
+    .slice(0, 4)
+    .map((candidate) => decoratedMap.get(candidate.id)!)
+    .filter(Boolean);
+
+  return {
+    similar,
+    betterVariant: betterVariantRecord ? decoratedMap.get(betterVariantRecord.id) ?? null : null,
+    valueChoice: valueChoiceRecord ? decoratedMap.get(valueChoiceRecord.id) ?? null : null,
+  };
+}
+
+const CATEGORY_COMPLEMENTS: Record<string, string[]> = {
+  processors: ["cooling", "motherboards", "memory"],
+  motherboards: ["memory", "storage", "cooling"],
+  memory: ["storage", "motherboards"],
+  "graphics-cards": ["power-supplies", "monitors", "cases"],
+  storage: ["memory", "motherboards"],
+  "power-supplies": ["cases", "graphics-cards"],
+  coolers: ["processors", "cases"],
+  cooling: ["processors", "cases"],
+  cases: ["power-supplies", "cooling"],
+  monitors: ["peripherals"],
+};
+
+function getCartUpsellScore(
+  candidate: ProductRecord,
+  context: {
+    averagePrice: number;
+    categoryIds: Set<string>;
+    brandIds: Set<string>;
+    complementSlugs: Set<string>;
+    salesCount: number;
+  },
+) {
+  const financials = calculateUnitFinancials({
+    price: candidate.price,
+    purchasePrice: candidate.purchasePrice,
+  });
+  const priceRatio = candidate.price / Math.max(context.averagePrice, 1);
+
+  return (
+    (context.categoryIds.has(candidate.categoryId) ? 2.5 : 0) +
+    (context.brandIds.has(candidate.brandId) ? 1 : 0) +
+    (context.complementSlugs.has(candidate.category.slug) ? 1.8 : 0) +
+    clamp(1.1 - Math.abs(priceRatio - 0.55), 0, 1.1) * 2 +
+    (financials.marginPercent ?? 0) / 12 +
+    context.salesCount * 0.2 +
+    (candidate.oldPrice ? 0.6 : 0)
+  );
+}
+
+export async function getCartUpsellProducts(
+  locale: AppLocale,
+  cart: {
+    items: Array<{
+      productId: string;
+      product: ProductRecord;
+    }>;
+  } | null,
+) {
+  if (!cart || cart.items.length === 0) {
+    return [];
+  }
+
+  const currentProducts = cart.items.map((item) => item.product);
+  const currentIds = new Set(currentProducts.map((product) => product.id));
+  const categoryIds = new Set(currentProducts.map((product) => product.categoryId));
+  const brandIds = new Set(currentProducts.map((product) => product.brandId));
+  const complementSlugs = new Set(
+    currentProducts.flatMap((product) => CATEGORY_COMPLEMENTS[product.category.slug] ?? []),
+  );
+  const averagePrice =
+    currentProducts.reduce((sum, product) => sum + product.price, 0) / currentProducts.length;
+  const candidateWhere = [
+    { categoryId: { in: Array.from(categoryIds) } },
+    { brandId: { in: Array.from(brandIds) } },
+    ...(complementSlugs.size > 0
+      ? [{ category: { slug: { in: Array.from(complementSlugs) } } }]
+      : []),
+  ];
+
+  const candidates = await db.product.findMany({
+    where: {
+      status: "PUBLISHED",
+      id: {
+        notIn: Array.from(currentIds),
+      },
+      OR: candidateWhere,
+    },
+    include: productInclude,
+    take: 24,
+    orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
+  });
+
+  if (candidates.length === 0) {
+    return [];
+  }
+
+  const salesMap = await getSalesMapForProducts(candidates.map((candidate) => candidate.id));
+  const candidateRecordMap = new Map(candidates.map((candidate) => [candidate.id, candidate] as const));
+
+  return decorateProducts(locale, candidates, salesMap)
+    .sort((left, right) => {
+      const leftRecord = candidateRecordMap.get(left.id)!;
+      const rightRecord = candidateRecordMap.get(right.id)!;
+
+      return (
+        getCartUpsellScore(rightRecord, {
+          averagePrice,
+          categoryIds,
+          brandIds,
+          complementSlugs,
+          salesCount: salesMap.get(right.id) ?? 0,
+        }) -
+        getCartUpsellScore(leftRecord, {
+          averagePrice,
+          categoryIds,
+          brandIds,
+          complementSlugs,
+          salesCount: salesMap.get(left.id) ?? 0,
+        })
+      );
+    })
+    .slice(0, 4);
+}

@@ -1,0 +1,80 @@
+[
+  {
+    "externalId": "phase1-asus-tuf-b760m-plus-wifi-d4",
+    "slug": "asus-tuf-gaming-b760m-plus-wifi-d4",
+    "sku": "P1-MB-ASUS-B760M",
+    "brandSlug": "asus",
+    "categorySlug": "motherboards",
+    "price": 5999,
+    "stock": 11,
+    "specs": { "chipset": "B760", "socket": "LGA1700", "memory": "DDR4", "formFactor": "Micro-ATX" },
+    "technicalAttributes": {
+      "motherboard.socket": "LGA1700",
+      "motherboard.chipset": "B760",
+      "motherboard.memory_type": "DDR4",
+      "motherboard.form_factor": "Micro-ATX"
+    },
+    "specPrimaryUrl": "https://www.asus.com/motherboards-components/motherboards/tuf-gaming/tuf-gaming-b760m-plus-wifi-d4/techspec/",
+    "specSecondaryUrls": "",
+    "imagePrimaryUrl": "https://dlcdnwebimgs.asus.com/gain/dd0c089c-f1c5-45e6-9bcb-b64899e44aff/",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://www.asus.com/motherboards-components/motherboards/tuf-gaming/tuf-gaming-b760m-plus-wifi-d4/",
+    "importBatch": "phase1-mini-2026-04",
+    "name": "ASUS TUF Gaming B760M-PLUS WIFI D4",
+    "shortUk": "B760, LGA1700, DDR4, micro-ATX, Wi‑Fi.",
+    "shortRu": "B760, LGA1700, DDR4, micro-ATX, Wi‑Fi.",
+    "shortEn": "B760, LGA1700, DDR4, micro-ATX, Wi‑Fi."
+  },
+  {
+    "externalId": "phase1-msi-pro-b650m-a-wifi",
+    "slug": "msi-pro-b650m-a-wifi",
+    "sku": "P1-MB-MSI-B650MA",
+    "brandSlug": "msi",
+    "categorySlug": "motherboards",
+    "price": 6299,
+    "stock": 9,
+    "specs": { "chipset": "B650", "socket": "AM5", "memory": "DDR5", "formFactor": "Micro-ATX" },
+    "technicalAttributes": {
+      "motherboard.socket": "AM5",
+      "motherboard.chipset": "B650",
+      "motherboard.memory_type": "DDR5",
+      "motherboard.form_factor": "Micro-ATX"
+    },
+    "specPrimaryUrl": "https://www.msi.com/Motherboard/PRO-B650M-A-WIFI",
+    "specSecondaryUrls": "",
+    "imagePrimaryUrl": "https://storage-asset.msi.com/global/picture/product/product_1664782100d10ef26fe3fc5c4c436cc139db200c1c.webp",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://www.msi.com/Motherboard/PRO-B650M-A-WIFI",
+    "importBatch": "phase1-mini-2026-04",
+    "name": "MSI PRO B650M-A WIFI",
+    "shortUk": "B650, AM5, DDR5, micro-ATX, Wi‑Fi.",
+    "shortRu": "B650, AM5, DDR5, micro-ATX, Wi‑Fi.",
+    "shortEn": "B650, AM5, DDR5, micro-ATX, Wi‑Fi."
+  },
+  {
+    "externalId": "phase1-gigabyte-b650-aorus-elite-ax",
+    "slug": "gigabyte-b650-aorus-elite-ax",
+    "sku": "P1-MB-GB-B650AE",
+    "brandSlug": "gigabyte",
+    "categorySlug": "motherboards",
+    "price": 7999,
+    "stock": 7,
+    "specs": { "chipset": "B650", "socket": "AM5", "memory": "DDR5", "formFactor": "ATX" },
+    "technicalAttributes": {
+      "motherboard.socket": "AM5",
+      "motherboard.chipset": "B650",
+      "motherboard.memory_type": "DDR5",
+      "motherboard.form_factor": "ATX"
+    },
+    "specPrimaryUrl": "https://www.gigabyte.com/Motherboard/B650-AORUS-ELITE-AX-rev-10#sp",
+    "specSecondaryUrls": "",
+    "imagePrimaryUrl": "https://static.gigabyte.com/StaticFile/Image/Global/db171cf121e076c5ac63c879c3820676/ProductRemoveBg/32102",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://www.gigabyte.com/Motherboard/B650-AORUS-ELITE-AX-rev-10",
+    "importBatch": "phase1-mini-2026-04",
+    "name": "Gigabyte B650 AORUS ELITE AX",
+    "shortUk": "B650, AM5, DDR5, ATX, Wi‑Fi 6E.",
+    "shortRu": "B650, AM5, DDR5, ATX, Wi‑Fi 6E.",
+    "shortEn": "B650, AM5, DDR5, ATX, Wi‑Fi 6E."
+  }
+]

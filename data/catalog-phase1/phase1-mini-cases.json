@@ -1,0 +1,77 @@
+[
+  {
+    "externalId": "phase1-fractal-north-charcoal-tg",
+    "slug": "fractal-design-north-charcoal-tg",
+    "sku": "P1-CASE-FD-NORTH",
+    "brandSlug": "fractal-design",
+    "categorySlug": "cases",
+    "price": 7499,
+    "stock": 6,
+    "specs": { "format": "Mid Tower", "motherboard": "ATX / mATX / Mini-ITX", "gpuClearance": "355 mm", "coolerClearance": "170 mm" },
+    "technicalAttributes": {
+      "case.supported_form_factors": "[\"ATX\",\"Micro-ATX\",\"Mini-ITX\"]",
+      "case.max_gpu_length_mm": "355",
+      "case.max_cooler_height_mm": "170"
+    },
+    "specPrimaryUrl": "https://www.fractal-design.com/products/cases/north/",
+    "specSecondaryUrls": "",
+    "imagePrimaryUrl": "https://www.fractal-design.com/app/uploads/2023/02/North_Charcoal_TGD_1-Left-Front-800x800.jpg",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://www.fractal-design.com/products/cases/north/",
+    "importBatch": "phase1-mini-2026-04",
+    "name": "Fractal Design North Charcoal TG",
+    "shortUk": "Mid Tower, дерев'яна панель, до 355 мм GPU, до 170 мм кулер.",
+    "shortRu": "Mid Tower, деревянная панель, до 355 мм GPU, до 170 мм кулер.",
+    "shortEn": "Mid tower, wood accent, up to 355 mm GPU, up to 170 mm CPU cooler."
+  },
+  {
+    "externalId": "phase1-nzxt-h7-flow-black",
+    "slug": "nzxt-h7-flow-black",
+    "sku": "P1-CASE-NZXT-H7F",
+    "brandSlug": "nzxt",
+    "categorySlug": "cases",
+    "price": 6299,
+    "stock": 9,
+    "specs": { "format": "Mid Tower", "motherboard": "E-ATX / ATX / mATX / Mini-ITX", "gpuClearance": "410 mm", "coolerClearance": "185 mm" },
+    "technicalAttributes": {
+      "case.supported_form_factors": "[\"E-ATX\",\"ATX\",\"Micro-ATX\",\"Mini-ITX\"]",
+      "case.max_gpu_length_mm": "410",
+      "case.max_cooler_height_mm": "185"
+    },
+    "specPrimaryUrl": "https://nzxt.com/product/h7-flow",
+    "specSecondaryUrls": "",
+    "imagePrimaryUrl": "https://nzxt.com/cdn/shop/files/h7-flow-side-empty-black.png",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://nzxt.com/product/h7-flow",
+    "importBatch": "phase1-mini-2026-04",
+    "name": "NZXT H7 Flow (Black)",
+    "shortUk": "Mid Tower, високий повітряний потік, до 410 мм GPU, до 185 мм кулер.",
+    "shortRu": "Mid Tower, высокий воздушный поток, до 410 мм GPU, до 185 мм кулер.",
+    "shortEn": "Mid tower, high airflow, up to 410 mm GPU, up to 185 mm CPU cooler."
+  },
+  {
+    "externalId": "phase1-lian-li-o11-dynamic-evo",
+    "slug": "lian-li-o11-dynamic-evo-black",
+    "sku": "P1-CASE-LL-O11EVO",
+    "brandSlug": "lian-li",
+    "categorySlug": "cases",
+    "price": 9999,
+    "stock": 4,
+    "specs": { "format": "Dual chamber", "motherboard": "E-ATX / ATX / mATX / Mini-ITX", "gpuClearance": "455.7 mm", "coolerClearance": "167 mm" },
+    "technicalAttributes": {
+      "case.supported_form_factors": "[\"E-ATX\",\"ATX\",\"Micro-ATX\",\"Mini-ITX\"]",
+      "case.max_gpu_length_mm": "456",
+      "case.max_cooler_height_mm": "167"
+    },
+    "specPrimaryUrl": "https://lian-li.com/product/o11d-evo/",
+    "specSecondaryUrls": "",
+    "imagePrimaryUrl": "https://lian-li.com/wp-content/uploads/2023/12/O11DERGB-000.jpg",
+    "imageSourceKind": "official",
+    "imageSourcePageUrl": "https://lian-li.com/product/o11d-evo/",
+    "importBatch": "phase1-mini-2026-04",
+    "name": "Lian Li O11 Dynamic EVO",
+    "shortUk": "Двокамерний корпус, широка сумісність заліза (офіційні ліміти Lian Li).",
+    "shortRu": "Двухкамерный корпус, широкая совместимость (официальные лимиты Lian Li).",
+    "shortEn": "Dual-chamber case, broad hardware support (Lian Li official clearances)."
+  }
+]

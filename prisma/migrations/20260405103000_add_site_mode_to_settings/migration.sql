@@ -1,0 +1,2 @@
+ALTER TABLE "SiteSettings"
+ADD COLUMN "siteMode" TEXT NOT NULL DEFAULT 'STORE';

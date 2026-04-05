@@ -1,0 +1,17 @@
+ALTER TABLE "PcBuildRequest"
+ADD COLUMN "budget" INTEGER,
+ADD COLUMN "useCase" TEXT,
+ADD COLUMN "preferences" TEXT,
+ADD COLUMN "needsMonitor" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "needsPeripherals" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "needsUpgrade" BOOLEAN NOT NULL DEFAULT false;
+
+UPDATE "PcBuildRequest"
+SET "status" = CASE
+  WHEN "status" = 'NEW' THEN 'NEW'
+  WHEN "status" = 'IN_PROGRESS' THEN 'IN_REVIEW'
+  WHEN "status" = 'CONFIRMED' THEN 'IN_REVIEW'
+  WHEN "status" = 'COMPLETED' THEN 'COMPLETED'
+  WHEN "status" = 'CANCELLED' THEN 'REJECTED'
+  ELSE 'NEW'
+END;

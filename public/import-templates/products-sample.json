@@ -1,0 +1,51 @@
+[
+  {
+    "externalId": "SUP-CPU-001",
+    "sku": "CPU-AMD-7800X3D",
+    "slug": "amd-ryzen-7-7800x3d",
+    "name": "AMD Ryzen 7 7800X3D",
+    "shortDescription": "Gaming CPU with AM5 socket",
+    "description": "Fast 8-core gaming processor for AM5 builds.",
+    "price": 18999,
+    "oldPrice": 19999,
+    "currency": "UAH",
+    "stock": 12,
+    "inventoryStatus": "IN_STOCK",
+    "status": "PUBLISHED",
+    "brandSlug": "amd",
+    "categorySlug": "processors",
+    "heroImage": "https://example.com/images/amd-7800x3d.png",
+    "gallery": [
+      "https://example.com/images/amd-7800x3d.png",
+      "https://example.com/images/amd-7800x3d-back.png"
+    ],
+    "technicalAttributes": {
+      "socket": "AM5",
+      "tdp": "120"
+    },
+    "specs": {
+      "cores": 8,
+      "threads": 16
+    },
+    "metadata": {
+      "source": "sample-json"
+    },
+    "translations": {
+      "uk": {
+        "name": "AMD Ryzen 7 7800X3D",
+        "shortDescription": "Ігровий процесор для сокета AM5",
+        "description": "Швидкий 8-ядерний процесор для ігрових збірок на AM5."
+      },
+      "ru": {
+        "name": "AMD Ryzen 7 7800X3D",
+        "shortDescription": "Игровой процессор для сокета AM5",
+        "description": "Быстрый 8-ядерный процессор для игровых сборок на AM5."
+      },
+      "en": {
+        "name": "AMD Ryzen 7 7800X3D",
+        "shortDescription": "Gaming CPU for the AM5 socket",
+        "description": "Fast 8-core gaming processor for AM5 builds."
+      }
+    }
+  }
+]
