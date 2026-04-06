@@ -106,7 +106,7 @@ export function isPrismaRecoverableReadError(error: unknown): boolean {
 
 /**
  * Runtime/storefront: when the DB file is empty, migrations were not applied, or the connection fails,
- * return {@link fallback} instead of crashing the request (e.g. Vercel without a migrated SQLite).
+ * return {@link fallback} instead of crashing the request (e.g. DB unreachable or unmigrated).
  */
 export async function withPrismaFallback<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
   try {

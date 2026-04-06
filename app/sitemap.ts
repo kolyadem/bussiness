@@ -11,7 +11,7 @@ import {
 const publicRoutes = ["", "/catalog", "/configurator"] as const;
 
 /**
- * Dynamic sitemap: generated per request so Vercel build does not require a migrated SQLite file.
+ * Dynamic sitemap: generated per request; falls back to static routes if the DB is unavailable.
  * Product URLs are loaded when the DB is available; otherwise only public static routes are listed.
  */
 export const dynamic = "force-dynamic";

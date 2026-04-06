@@ -1,59 +1,75 @@
-# Vercel + Neon (PostgreSQL)
+# Deploy: local + Vercel
 
-## Overview
+PostgreSQL only (`prisma/schema.prisma` → `provider = "postgresql"`). No SQLite.
 
-- **Locales:** URLs use a locale prefix (`/uk`, `/ru`, `/en`). The root **`proxy.ts`** (Next.js 16; replaces `middleware.ts`) runs **next-intl** so `/` redirects to **`/uk`**. Visiting `/` without this file yields **404**.
-- The app uses **PostgreSQL** via Prisma 7 and `@prisma/adapter-pg` (`lib/db.ts`). **SQLite / `file:./prisma/dev.db` is no longer used.**
-- **Default site mode** is **`PC_BUILD`** (configurator / build-first UX). `SiteSettings.siteMode` defaults to `PC_BUILD`; use **Admin → Settings → Site mode** to switch to classic **`STORE`** if needed. Migration `20260406120000_site_mode_default_pc_build` sets existing rows to `PC_BUILD` when they were `STORE`.
-- **Neon** is connected through Vercel (integration): add the **`DATABASE_URL`** env var in the Vercel project (Production / Preview). Use the **pooled** connection string from Neon unless Neon docs say otherwise for Prisma.
-- **Build** on Vercel runs migrations from `vercel.json`: `prisma migrate deploy && prisma generate && next build`. The Neon DB must exist and `DATABASE_URL` must be set **before** the build so migrations can apply.
+## A) Local `.env` (copy from `.env.example`)
 
-## Required environment variables
+Set at minimum:
 
-| Variable | Required | Notes |
-|----------|----------|--------|
-| `DATABASE_URL` | Yes | Postgres URL (`postgresql://...`). From Neon dashboard or Vercel Neon integration. |
-| `AUTH_SECRET` | Yes | Long random string for signing sessions. |
-| `NEXTAUTH_URL` / `AUTH_URL` | Yes in prod | Public site URL, e.g. `https://your-app.vercel.app`. |
-| `NEXT_PUBLIC_BASE_URL` | Yes | Same origin for canonical URLs, sitemap, OG. |
-| `IMPORT_SCHEDULER_SECRET` | If you use cron imports | Protects `/api/internal/imports/schedule`. |
-| `TELEGRAM_*` | Optional | Build-request notifications. |
+- `DATABASE_URL` — local Postgres, Neon dev branch, or Docker.
+- `AUTH_SECRET` — long random string.
+- `NEXTAUTH_URL`, `AUTH_URL`, `NEXT_PUBLIC_BASE_URL` — `http://localhost:3000`.
+- `IMPORT_SCHEDULER_SECRET` — any random string (cron route checks it).
+- `TELEGRAM_BOT_TOKEN` / `TELEGRAM_BUILD_REQUEST_CHAT_ID` — leave empty if unused.
+- `STORAGE_DRIVER`, `STORAGE_LOCAL_DIR` — defaults are fine.
+- **`MAIN_ADMIN_PASSWORD`** (+ optional `MAIN_ADMIN_USERNAME`, `MAIN_ADMIN_EMAIL`, `MAIN_ADMIN_NAME`) — for `npm run admin:ensure` or to mirror Vercel.
 
-Copy from `.env.example` and replace placeholders. Do not commit real secrets.
+## B) Owner auto-bootstrap on Vercel
 
-## First deploy (empty Neon DB)
+Each production **build** runs (see `vercel.json`):
 
-1. In Vercel → Project → Settings → Environment Variables: set `DATABASE_URL` (and auth/public URLs). Link the Neon integration if you use it.
-2. Deploy. The build runs **`prisma migrate deploy`**, which applies `prisma/migrations/*/migration.sql` to Neon.
-3. **Populate data** (otherwise the storefront is an empty shell with graceful fallbacks):
-   - From a machine with `DATABASE_URL` pointing at Neon:
-     - `npm run prisma:seed` (or `npx prisma db seed`) — storefront seed + demo catalog (see `prisma/seed-storefront.ts`).
-     - Optionally `npm run admin:ensure` (requires `MAIN_ADMIN_PASSWORD`; defaults: `MAIN_ADMIN_USERNAME=kolyadem1`, `MAIN_ADMIN_EMAIL=kolyadem2@gmail.com` via `.env` / `.env.example`).
-   - Or use existing import scripts (`catalog:*`, admin import) as documented in `package.json`.
+`prisma migrate deploy` → `prisma generate` → **`npm run bootstrap:owner`** → `next build`
 
-## Local development
+- **`bootstrap:owner`** runs `scripts/bootstrap-owner-production.ts`, which calls `lib/admin/ensure-owner-account.ts`.
+- If **`MAIN_ADMIN_PASSWORD`** is set in Vercel env: creates the owner **once**, or **updates** the same user on later deploys (same email/login lookup — **no duplicates**).
+- If **`MAIN_ADMIN_PASSWORD`** is **not** set: step **exits successfully** and prints a clear log; **no** owner is created.
 
-1. Create a Postgres database (Neon dev branch, Docker, or local install).
-2. Copy `.env.example` → `.env` and set `DATABASE_URL` (and `AUTH_SECRET`, URLs).
-3. Apply schema: `npx prisma migrate deploy` (or `npx prisma migrate dev` when creating new migrations).
-4. Optional: `npm run prisma:seed` then `npm run admin:ensure` (set `MAIN_ADMIN_PASSWORD` and optionally `MAIN_ADMIN_USERNAME` / `MAIN_ADMIN_EMAIL` in `.env`).
-5. `npm run dev`.
+Defaults when env vars are omitted: `MAIN_ADMIN_USERNAME=kolyadem1`, `MAIN_ADMIN_EMAIL=kolyadem2@gmail.com`, `MAIN_ADMIN_NAME=Admin` (password only ever from env, never hardcoded).
 
-Local **`npm run build`** expects `DATABASE_URL` in `.env` because the app loads `lib/db.ts` at runtime.
+## C) Vercel environment variables
 
-## Commands reference
+In **Project → Settings → Environment Variables** (Production + Preview as needed):
 
-| Command | Purpose |
-|---------|---------|
-| `npx prisma migrate deploy` | Apply migrations to the DB (production / CI / Neon). |
-| `npx prisma migrate dev` | Create a new migration in dev when you change `schema.prisma`. |
-| `npm run prisma:seed` | Run `prisma/seed-storefront.ts` (requires `DATABASE_URL`). |
-| `npm run build:with-migrate` | Same as Vercel build: migrate + generate + next build (use when testing deploy locally). |
+| Variable | Notes |
+|----------|--------|
+| `DATABASE_URL` | Neon pooled URL (or equivalent). |
+| `AUTH_SECRET` | Long random secret. |
+| `NEXTAUTH_URL`, `AUTH_URL`, `NEXT_PUBLIC_BASE_URL` | `https://your-project.vercel.app` or custom domain. |
+| `MAIN_ADMIN_PASSWORD` | **Set this** to auto-create/update owner on deploy. |
+| `MAIN_ADMIN_USERNAME` | Optional; default `kolyadem1`. |
+| `MAIN_ADMIN_EMAIL` | Optional; default `kolyadem2@gmail.com`. |
+| `MAIN_ADMIN_NAME` | Optional; default `Admin`. |
+| `IMPORT_SCHEDULER_SECRET` | If you use import cron. |
+| `TELEGRAM_*` | Optional. |
 
-## Build without running migrations
+Do **not** commit real secrets.
 
-- Default **`npm run build`** is `prisma generate && next build` (no migrations). Vercel uses **`vercel.json`** `buildCommand` to include `prisma migrate deploy`.
+## D) Commands from a clean clone (local)
 
-## Empty database behavior
+1. `npm install`
+2. `npm run db:prepare` — applies migrations + `prisma generate`
+3. (Optional) `npm run prisma:seed` — seed data + demo catalog
+4. `npm run admin:ensure` — same as bootstrap logic, but **requires** password in `.env` (CLI)
+5. `npm run dev`
 
-- If tables are missing or the DB is empty, existing **graceful fallbacks** in storefront queries avoid crashing; you still need **migrations** for a working schema and **seed/import** for a real catalog.
+Or use `npm run bootstrap:owner` locally after `db:prepare` (skips if no password).
+
+## E) After connecting the Git repo on Vercel
+
+1. Add env vars (section C), especially **`DATABASE_URL`**, **`AUTH_SECRET`**, public URLs, and **`MAIN_ADMIN_PASSWORD`** for owner auto-creation.
+2. Deploy. Build runs migrations, then owner bootstrap, then Next build.
+3. **Optional:** `npm run prisma:seed` from a machine with `DATABASE_URL` pointing at Neon if you want demo catalog.
+
+## F) Reference scripts
+
+| Script | Purpose |
+|--------|---------|
+| `npm run db:prepare` | `prisma migrate deploy` + `prisma generate` |
+| `npm run db:setup` | `db:prepare` + `prisma:seed` |
+| `npm run bootstrap:owner` | Idempotent owner upsert (skips if no `MAIN_ADMIN_PASSWORD`) |
+| `npm run build` | `prisma generate && next build` (no migrate — quick checks) |
+| `npm run build:with-migrate` | Same pipeline as Vercel (migrate + generate + bootstrap + next build) |
+
+## G) Routing note
+
+`proxy.ts` (Next.js 16) handles locale redirects; `/` should redirect to **`/uk`**. Missing `proxy.ts` can cause 404 on `/`.

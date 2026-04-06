@@ -18,8 +18,7 @@ The project already includes:
 - React 19
 - TypeScript
 - Tailwind CSS 4
-- Prisma 7
-- SQLite by default
+- Prisma 7 (PostgreSQL)
 - next-intl
 - next-auth/Auth.js
 
@@ -37,17 +36,31 @@ npm install
 copy .env.example .env
 ```
 
-3. Bootstrap the local database and demo data:
+3. Apply migrations and generate the Prisma client:
 
 ```bash
-npm run db:setup
+npm run db:prepare
 ```
 
-4. Start development:
+4. (Optional) Seed demo catalog and `SiteSettings`:
+
+```bash
+npm run prisma:seed
+```
+
+5. (Optional) Create/update owner admin (`kolyadem1` / `kolyadem2@gmail.com`, password from `MAIN_ADMIN_PASSWORD`):
+
+```bash
+npm run admin:ensure
+```
+
+6. Start development:
 
 ```bash
 npm run dev
 ```
+
+**Vercel / full deploy checklist:** see [`docs/vercel-deploy.md`](docs/vercel-deploy.md).
 
 ## Environment Variables
 
@@ -55,7 +68,7 @@ See [`.env.example`](/F:/bussiness/.env.example).
 
 Core variables:
 
-- `DATABASE_URL`: Prisma datasource, SQLite by default for local development
+- `DATABASE_URL`: PostgreSQL connection string (local, Neon, Docker, etc.)
 - `AUTH_SECRET`: required session/auth secret for production
 - `NEXTAUTH_SECRET`: optional legacy alias if a deploy target still expects it
 - `AUTH_URL`: app origin used by auth callbacks
@@ -101,9 +114,8 @@ npm run prisma:migrate:deploy
 
 Notes:
 
-- The checked-in migration history is now ordered as a clean baseline followed by incremental storefront/import migrations.
-- Fresh environments should use Prisma migrations, not `prisma db push`.
-- If you have an older local SQLite file created before the migration cleanup, recreate it or point `DATABASE_URL` to a fresh database before running `npm run prisma:migrate:deploy`.
+- The checked-in migration history is a PostgreSQL baseline plus incremental migrations.
+- Fresh environments should use Prisma migrations, not `prisma db push`, for production-like setups.
 
 ## Development Commands
 
@@ -118,6 +130,8 @@ npm run prisma:migrate -- --name your_change
 npm run prisma:migrate:deploy
 npm run prisma:seed
 npm run db:setup
+npm run db:prepare
+npm run bootstrap:owner
 npm run admin:ensure
 ```
 
@@ -132,8 +146,8 @@ npm run start
 
 ## Deploy Notes
 
+- See [`docs/vercel-deploy.md`](docs/vercel-deploy.md) for Vercel env and build. The Vercel build runs **`prisma migrate deploy` → `prisma generate` → `npm run bootstrap:owner` → `next build`**: owner/admin is created or updated from **`MAIN_ADMIN_*`** when **`MAIN_ADMIN_PASSWORD`** is set (no duplicates; idempotent).
 - Set `AUTH_SECRET`, `AUTH_URL`, `NEXTAUTH_URL` and `NEXT_PUBLIC_BASE_URL` to the real public origin before deployment.
-- Run `npm run prisma:migrate:deploy` during deploy.
 - Do not rely on `prisma db push` for production schema changes.
 - Keep `AUTH_SECRET` stable between releases.
 - The upload flow now goes through a storage abstraction layer. `local` storage still writes into `public/uploads/products` by default, and future `s3 / r2 / supabase` adapters can be wired into the same interface.
@@ -148,10 +162,9 @@ Docker is intentionally not added at this stage to avoid overengineering a simpl
 
 ## Test Login
 
-After running the seed:
+After `npm run prisma:seed`, the seed may create a demo admin (see `prisma/seed-storefront.ts`).
 
-- email: `admin@luminatech.store`
-- password: `Admin12345!`
+For a known owner account, run `npm run admin:ensure` with `MAIN_ADMIN_PASSWORD` set in `.env` — login **`kolyadem1`**, email **`kolyadem2@gmail.com`** (credentials provider accepts login or email).
 
 ## Branding
 
@@ -191,6 +204,6 @@ The storefront now ships with:
 
 - There is still no real payment integration or external order management flow.
 - Automated test coverage is not present yet; readiness currently relies on lint/build/runtime validation.
-- The default local setup uses SQLite, so production databases with different engines still need env-level migration planning.
+- Local and production both use PostgreSQL; keep `DATABASE_URL` pointed at the right instance per environment.
 - External storage adapters are prepared conceptually via the abstraction layer, but only the local driver is implemented right now.
 - The analytics/logging foundation currently writes to local log files and is not yet connected to a managed analytics or error-monitoring service.

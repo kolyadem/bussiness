@@ -3,7 +3,11 @@ import type { Review } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { isPrismaRecoverableBuildTimeError, withPrismaFallback } from "@/lib/prisma-build";
+import {
+  isPrismaRecoverableBuildTimeError,
+  isPrismaRecoverableReadError,
+  withPrismaFallback,
+} from "@/lib/prisma-build";
 import { defaultLocale, inventoryLabels, type AppLocale } from "@/lib/constants";
 import { getSiteSettingsRecord } from "@/lib/site-config";
 import {
@@ -405,7 +409,7 @@ export async function getHomepageData(locale: AppLocale) {
       locale,
     };
   } catch (error) {
-    if (isPrismaRecoverableBuildTimeError(error)) {
+    if (isPrismaRecoverableBuildTimeError(error) || isPrismaRecoverableReadError(error)) {
       return {
         settings: null,
         banners: [],
