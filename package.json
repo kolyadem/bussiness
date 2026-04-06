@@ -26,8 +26,8 @@
     "db:prepare": "prisma migrate deploy && prisma generate",
     "prisma:seed": "tsx prisma/seed-storefront.ts",
     "db:setup": "npm run prisma:generate && npm run prisma:migrate:deploy && npm run prisma:seed",
-    "admin:ensure": "tsx scripts/ensure-admin-user.ts",
-    "bootstrap:owner": "tsx scripts/bootstrap-owner-production.ts",
+    "admin:ensure": "node ./node_modules/tsx/dist/cli.mjs ./scripts/ensure-admin-user.ts",
+    "bootstrap:owner": "node ./node_modules/tsx/dist/cli.mjs ./scripts/bootstrap-owner-production.ts",
     "catalog:expand": "tsx scripts/import-expanded-configurator-catalog.ts",
     "catalog:pilot": "tsx scripts/import-pilot-pc-components.ts",
     "catalog:bootstrap-pilot-categories": "tsx scripts/bootstrap-pilot-categories.ts",
@@ -55,6 +55,7 @@
     "react-hook-form": "^7.72.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
+    "tsx": "^4.21.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -68,6 +69,6 @@
     "typescript": "^5"
   },
   "prisma": {
-    "seed": "tsx prisma/seed-storefront.ts"
+    "seed": "node ./node_modules/tsx/dist/cli.mjs ./prisma/seed-storefront.ts"
   }
 }
