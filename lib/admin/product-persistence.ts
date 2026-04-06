@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { defaultLocale } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { parseExistingGallery, type NormalizedProductPersistenceData } from "@/lib/admin/product-ingest";
 import {
@@ -20,12 +21,12 @@ async function syncProductTechnicalAttributes(
           code: definition.code,
         },
         update: {
-          label: getTechnicalAttributeLabel(definition, "en"),
+          label: getTechnicalAttributeLabel(definition, defaultLocale),
           unit: definition.unit ?? null,
         },
         create: {
           code: definition.code,
-          label: getTechnicalAttributeLabel(definition, "en"),
+          label: getTechnicalAttributeLabel(definition, defaultLocale),
           unit: definition.unit ?? null,
         },
         select: {

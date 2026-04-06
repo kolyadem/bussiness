@@ -7,36 +7,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { AppLocale } from "@/lib/constants";
 
-function getCopy(locale: AppLocale) {
-  if (locale === "uk") {
-    return {
-      title: "Нотатка менеджера",
-      description: "Внутрішня примітка для обробки заявки. Клієнт її не бачить.",
-      placeholder: "Наприклад: зателефонувати після 18:00, запропонувати два сценарії під бюджет, уточнити апгрейд.",
-      save: "Зберегти",
-      success: "Нотатку оновлено",
-      error: "Не вдалося зберегти нотатку",
-    };
-  }
-
-  if (locale === "ru") {
-    return {
-      title: "Заметка менеджера",
-      description: "Внутренняя заметка для обработки заявки. Клиент ее не видит.",
-      placeholder: "Например: позвонить после 18:00, предложить два сценария под бюджет, уточнить апгрейд.",
-      save: "Сохранить",
-      success: "Заметка обновлена",
-      error: "Не удалось сохранить заметку",
-    };
-  }
-
+function getCopy(_locale: AppLocale) {
   return {
-    title: "Manager note",
-    description: "Internal note for the admin workflow. The client never sees it.",
-    placeholder: "For example: call after 6 PM, prepare two options within budget, clarify the upgrade path.",
-    save: "Save",
-    success: "Manager note updated",
-    error: "Could not save the note",
+    title: "Нотатка менеджера",
+    description: "Внутрішня примітка для обробки заявки. Клієнт її не бачить.",
+    placeholder: "Наприклад: зателефонувати після 18:00, запропонувати два сценарії під бюджет, уточнити апгрейд.",
+    save: "Зберегти",
+    success: "Нотатку оновлено",
+    error: "Не вдалося зберегти нотатку",
   };
 }
 

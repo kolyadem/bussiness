@@ -32,25 +32,18 @@ export function AdminAccountForm({
     status: "idle",
   });
   const copy = {
-    profile: locale === "uk" ? "Профіль" : locale === "ru" ? "Профиль" : "Profile",
-    password: locale === "uk" ? "Зміна пароля" : locale === "ru" ? "Смена пароля" : "Password change",
-    login: locale === "uk" ? "Логін" : locale === "ru" ? "Логин" : "Login",
-    role: locale === "uk" ? "Роль" : locale === "ru" ? "Роль" : "Role",
-    name: locale === "uk" ? "Ім'я" : locale === "ru" ? "Имя" : "Name",
+    profile: "Профіль",
+    password: "Зміна пароля",
+    login: "Логін",
+    role: "Роль",
+    name: "Ім'я",
     email: "Email",
-    phone: locale === "uk" ? "Телефон" : locale === "ru" ? "Телефон" : "Phone",
-    currentPassword:
-      locale === "uk" ? "Поточний пароль" : locale === "ru" ? "Текущий пароль" : "Current password",
-    nextPassword:
-      locale === "uk" ? "Новий пароль" : locale === "ru" ? "Новый пароль" : "New password",
-    confirmPassword:
-      locale === "uk"
-        ? "Підтвердження пароля"
-        : locale === "ru"
-          ? "Подтверждение пароля"
-          : "Confirm password",
-    save: locale === "uk" ? "Зберегти зміни" : locale === "ru" ? "Сохранить изменения" : "Save changes",
-    saving: locale === "uk" ? "Збереження..." : locale === "ru" ? "Сохранение..." : "Saving...",
+    phone: "Телефон",
+    currentPassword: "Поточний пароль",
+    nextPassword: "Новий пароль",
+    confirmPassword: "Підтвердження пароля",
+    save: "Зберегти зміни",
+    saving: "Збереження...",
   };
 
   return (

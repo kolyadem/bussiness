@@ -1,4 +1,4 @@
-import { locales, type AppLocale } from "@/lib/constants";
+import { defaultLocale, type AppLocale } from "@/lib/constants";
 import { db } from "@/lib/db";
 import {
   createImportJob,
@@ -22,7 +22,7 @@ import {
   updateProductRecord,
 } from "@/lib/admin/product-persistence";
 import { downloadRemoteProductImage } from "@/lib/admin/product-assets";
-import { parseJson, slugify } from "@/lib/utils";
+import { parseJson, slugify, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
 type ImportPipelineInput = {
   startedByUserId?: string | null;
@@ -340,10 +340,11 @@ function buildTranslations(record: Record<string, unknown>) {
   }
 
   if (isRecord(explicit)) {
-    return locales.map((supportedLocale) => {
-      const localized = explicit[supportedLocale];
-      const localizedRecord = isRecord(localized) ? localized : {};
-      return {
+    const supportedLocale = defaultLocale;
+    const localized = explicit[supportedLocale];
+    const localizedRecord = isRecord(localized) ? localized : {};
+    return [
+      {
         locale: supportedLocale,
         name: String(localizedRecord.name ?? record.name ?? "").trim(),
         shortDescription: String(
@@ -358,26 +359,29 @@ function buildTranslations(record: Record<string, unknown>) {
         ).trim(),
         seoTitle: String(localizedRecord.seoTitle ?? "").trim() || undefined,
         seoDescription: String(localizedRecord.seoDescription ?? "").trim() || undefined,
-      };
-    });
+      },
+    ];
   }
 
   const fallbackName = String(record.name ?? record.title ?? "").trim();
   const fallbackShort = String(record.shortDescription ?? record.summary ?? fallbackName).trim();
   const fallbackDescription = String(record.description ?? fallbackShort).trim();
 
-  return locales.map((supportedLocale) => ({
-    locale: supportedLocale,
-    name: String(record[`name_${supportedLocale}`] ?? fallbackName).trim(),
-    shortDescription: String(
-      record[`shortDescription_${supportedLocale}`] ??
-        record[`summary_${supportedLocale}`] ??
-        fallbackShort,
-    ).trim(),
-    description: String(record[`description_${supportedLocale}`] ?? fallbackDescription).trim(),
-    seoTitle: String(record[`seoTitle_${supportedLocale}`] ?? "").trim() || undefined,
-    seoDescription: String(record[`seoDescription_${supportedLocale}`] ?? "").trim() || undefined,
-  }));
+  const supportedLocale = defaultLocale;
+  return [
+    {
+      locale: supportedLocale,
+      name: String(record[`name_${supportedLocale}`] ?? fallbackName).trim(),
+      shortDescription: String(
+        record[`shortDescription_${supportedLocale}`] ??
+          record[`summary_${supportedLocale}`] ??
+          fallbackShort,
+      ).trim(),
+      description: String(record[`description_${supportedLocale}`] ?? fallbackDescription).trim(),
+      seoTitle: String(record[`seoTitle_${supportedLocale}`] ?? "").trim() || undefined,
+      seoDescription: String(record[`seoDescription_${supportedLocale}`] ?? "").trim() || undefined,
+    },
+  ];
 }
 
 async function loadImportMaps() {
@@ -606,7 +610,7 @@ function normalizeSourceRecord(input: {
       input.record.oldPrice === null || input.record.oldPrice === undefined
         ? null
         : String(input.record.oldPrice),
-    currency: String(input.record.currency ?? "USD").trim().toUpperCase(),
+    currency: String(input.record.currency ?? STOREFRONT_CURRENCY_CODE).trim().toUpperCase(),
     inventoryStatus:
       String(input.record.inventoryStatus ?? (Number(input.record.stock ?? 0) > 0 ? "IN_STOCK" : "OUT_OF_STOCK"))
         .trim()

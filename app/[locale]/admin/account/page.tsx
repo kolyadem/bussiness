@@ -18,9 +18,9 @@ export default async function AdminAccountPage({
   return (
     <div className="space-y-6">
       <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-6">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-[color:var(--color-text-soft)]">Account</p>
+        <p className="text-[11px] uppercase tracking-[0.24em] text-[color:var(--color-text-soft)]">Обліковий запис</p>
         <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
-          {locale === "uk" ? "Налаштування адміністратора" : locale === "ru" ? "Настройки администратора" : "Administrator settings"}
+          Налаштування адміністратора
         </h2>
       </section>
       <AdminAccountForm

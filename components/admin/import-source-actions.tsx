@@ -4,15 +4,16 @@ import { startTransition, useState } from "react";
 import { LoaderCircle, Pause, Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import type { AppLocale } from "@/lib/constants";
 
 export function ImportSourceActions({
   sourceId,
-  locale,
+  locale: _locale,
   isActive,
   isSyncing,
 }: {
   sourceId: string;
-  locale: "uk" | "ru" | "en";
+  locale: AppLocale;
   isActive: boolean;
   isSyncing: boolean;
 }) {
@@ -33,25 +34,15 @@ export function ImportSourceActions({
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
 
         if (!response.ok) {
-          throw new Error(payload?.error || "Could not update source");
+          throw new Error(payload?.error || "Не вдалося оновити джерело");
         }
 
         toast.success(
-          nextIsActive
-            ? locale === "uk"
-              ? "Джерело знову активне"
-              : locale === "ru"
-                ? "Источник снова активен"
-                : "Source resumed"
-            : locale === "uk"
-              ? "Джерело поставлено на паузу"
-              : locale === "ru"
-                ? "Источник поставлен на паузу"
-                : "Source paused",
+          nextIsActive ? "Джерело знову активне" : "Джерело поставлено на паузу",
         );
         window.location.reload();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Could not update source");
+        toast.error(error instanceof Error ? error.message : "Не вдалося оновити джерело");
       } finally {
         setPending(null);
       }
@@ -74,21 +65,15 @@ export function ImportSourceActions({
           throw new Error(payload?.error || "Could not run source");
         }
 
-        toast.success(
-          locale === "uk"
-            ? "Запуск імпорту розпочато"
-            : locale === "ru"
-              ? "Запуск импорта начат"
-              : "Source run started",
-        );
+        toast.success("Запуск імпорту розпочато");
 
         if (payload?.jobId) {
-          window.location.assign(`/${locale}/admin/imports/${payload.jobId}`);
+          window.location.assign(`/admin/imports/${payload.jobId}`);
         } else {
           window.location.reload();
         }
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Could not run source");
+        toast.error(error instanceof Error ? error.message : "Не вдалося запустити джерело");
       } finally {
         setPending(null);
       }
@@ -104,7 +89,7 @@ export function ImportSourceActions({
         onClick={() => runNow()}
       >
         {pending === "run" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-        <span>{locale === "uk" ? "Запустити зараз" : locale === "ru" ? "Запустить сейчас" : "Run now"}</span>
+        <span>Запустити зараз</span>
       </Button>
       <Button
         type="button"
@@ -119,19 +104,7 @@ export function ImportSourceActions({
         ) : (
           <Play className="h-4 w-4" />
         )}
-        <span>
-          {isActive
-            ? locale === "uk"
-              ? "Пауза"
-              : locale === "ru"
-                ? "Пауза"
-                : "Pause"
-            : locale === "uk"
-              ? "Відновити"
-              : locale === "ru"
-                ? "Возобновить"
-                : "Resume"}
-        </span>
+        <span>{isActive ? "Пауза" : "Відновити"}</span>
       </Button>
     </div>
   );

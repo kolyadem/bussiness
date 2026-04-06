@@ -30,7 +30,7 @@ export function ConfiguratorOpenTracker({
     sentRef.current = true;
     sendAnalytics({
       event: "configurator_open",
-      pathname: `/${locale}/configurator`,
+      pathname: `/configurator`,
       locale,
       details: buildSlug ? { buildSlug } : undefined,
     });

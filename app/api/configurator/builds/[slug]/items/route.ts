@@ -31,7 +31,7 @@ export async function POST(
     !assertLocale(parsed.data.locale) ||
     !isConfiguratorSlotKey(parsed.data.slot)
   ) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
   }
 
   try {
@@ -43,13 +43,13 @@ export async function POST(
     });
 
     if (!build) {
-      return NextResponse.json({ error: "Build not found" }, { status: 404 });
+      return NextResponse.json({ error: "Збірку не знайдено" }, { status: 404 });
     }
 
     return NextResponse.json({ ok: true, build });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Could not update slot" },
+      { error: error instanceof Error ? error.message : "Не вдалося оновити слот" },
       { status: 400 },
     );
   }
@@ -68,7 +68,7 @@ export async function DELETE(
     !assertLocale(parsed.data.locale) ||
     !isConfiguratorSlotKey(parsed.data.slot)
   ) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
   }
 
   const build = await removeConfiguratorSlotItem({
@@ -78,7 +78,7 @@ export async function DELETE(
   });
 
   if (!build) {
-    return NextResponse.json({ error: "Build not found" }, { status: 404 });
+    return NextResponse.json({ error: "Збірку не знайдено" }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true, build });

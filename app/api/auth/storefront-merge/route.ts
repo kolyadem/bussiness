@@ -7,7 +7,7 @@ export async function POST() {
   const [viewer, sessionId] = await Promise.all([getAuthenticatedUser(), getSessionId()]);
 
   if (!viewer?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Потрібна автентифікація" }, { status: 401 });
   }
 
   await mergeStorefrontStateIntoUser({

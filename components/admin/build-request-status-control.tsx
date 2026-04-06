@@ -56,25 +56,13 @@ export function BuildRequestStatusControl({
 
               if (!response.ok) {
                 const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-                throw new Error(payload?.error || "Unable to update request");
+                throw new Error(payload?.error || "Не вдалося оновити заявку");
               }
 
-              toast.success(
-                locale === "uk"
-                  ? "Статус заявки оновлено"
-                  : locale === "ru"
-                    ? "Статус заявки обновлён"
-                    : "Build request status updated",
-              );
+              toast.success("Статус заявки оновлено");
               window.location.reload();
             } catch {
-              toast.error(
-                locale === "uk"
-                  ? "Не вдалося змінити статус"
-                  : locale === "ru"
-                    ? "Не удалось изменить статус"
-                    : "Could not update status",
-              );
+              toast.error("Не вдалося змінити статус");
             } finally {
               setPending(false);
             }
@@ -82,7 +70,7 @@ export function BuildRequestStatusControl({
         }}
       >
         {pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-        <span>{locale === "uk" ? "Зберегти" : locale === "ru" ? "Сохранить" : "Save"}</span>
+        <span>Зберегти</span>
       </Button>
     </div>
   );

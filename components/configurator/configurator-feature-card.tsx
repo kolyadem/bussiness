@@ -5,73 +5,25 @@ import { Link } from "@/lib/i18n/routing";
 import { getSiteExperienceCopy } from "@/lib/site-experience";
 import { SITE_MODES, type SiteMode } from "@/lib/site-mode";
 
-function getStoreCopy(locale: AppLocale, variant: "default" | "catalog") {
+function getStoreCopy(_locale: AppLocale, variant: "default" | "catalog") {
   if (variant === "catalog") {
     return {
-      badge:
-        locale === "uk"
-          ? "Конфігуратор ПК"
-          : locale === "ru"
-            ? "Конфигуратор ПК"
-            : "PC Configurator",
-      title:
-        locale === "uk"
-          ? "Зібрати конфігурацію по компонентах"
-          : locale === "ru"
-            ? "Собрать конфигурацию по компонентам"
-            : "Build a PC configuration step by step",
+      badge: "Конфігуратор ПК",
+      title: "Зібрати конфігурацію по компонентах",
       description:
-        locale === "uk"
-          ? "Перейдіть до configurator, щоб послідовно підібрати сумісні компоненти й зібрати систему під свій сценарій."
-          : locale === "ru"
-            ? "Перейдите в configurator, чтобы по шагам подобрать совместимые компоненты и собрать систему под свой сценарий."
-            : "Open the configurator to choose compatible parts step by step and shape a system around your goals.",
-      cta:
-        locale === "uk"
-          ? "Відкрити configurator"
-          : locale === "ru"
-            ? "Открыть configurator"
-            : "Open configurator",
-      points:
-        locale === "uk"
-          ? ["Сумісні компоненти", "Покроковий сценарій", "Збереження збірки"]
-          : locale === "ru"
-            ? ["Совместимые компоненты", "Пошаговый сценарий", "Сохранение сборки"]
-            : ["Compatible parts", "Step-by-step flow", "Saved builds"],
+        "Перейдіть до configurator, щоб послідовно підібрати сумісні компоненти й зібрати систему під свій сценарій.",
+      cta: "Відкрити configurator",
+      points: ["Сумісні компоненти", "Покроковий сценарій", "Збереження збірки"],
     };
   }
 
   return {
-    badge:
-      locale === "uk"
-        ? "Конфігуратор ПК"
-        : locale === "ru"
-          ? "Конфигуратор ПК"
-          : "PC Configurator",
-    title:
-      locale === "uk"
-        ? "Підбір сумісної конфігурації без зайвого шуму"
-        : locale === "ru"
-          ? "Подбор совместимой конфигурации без лишнего шума"
-          : "Shape a compatible PC without extra noise",
+    badge: "Конфігуратор ПК",
+    title: "Підбір сумісної конфігурації без зайвого шуму",
     description:
-      locale === "uk"
-        ? "Оберіть ключові компоненти, перевірте сумісність і збережіть збірку в одному акуратному сценарії."
-        : locale === "ru"
-          ? "Подберите ключевые компоненты, проверьте совместимость и сохраните сборку в одном аккуратном сценарии."
-          : "Choose core components, check compatibility, and keep the build together in one focused flow.",
-    cta:
-      locale === "uk"
-        ? "Перейти до configurator"
-        : locale === "ru"
-          ? "Перейти в configurator"
-          : "Go to configurator",
-    points:
-      locale === "uk"
-        ? ["CPU, GPU, пам'ять, корпус", "Перевірка сумісності", "Швидкий перехід до вибору слотів"]
-        : locale === "ru"
-          ? ["CPU, GPU, память, корпус", "Проверка совместимости", "Быстрый переход к выбору слотов"]
-          : ["CPU, GPU, memory, case", "Compatibility checks", "Fast slot-by-slot selection"],
+      "Оберіть ключові компоненти, перевірте сумісність і збережіть збірку в одному акуратному сценарії.",
+    cta: "Перейти до configurator",
+    points: ["CPU, GPU, пам'ять, корпус", "Перевірка сумісності", "Швидкий перехід до вибору слотів"],
   };
 }
 

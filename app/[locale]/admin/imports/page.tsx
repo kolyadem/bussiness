@@ -32,6 +32,7 @@ import {
   type ImportSourceType,
 } from "@/lib/admin/imports/types";
 import { Link } from "@/lib/i18n/routing";
+import type { AppLocale } from "@/lib/constants";
 import { parseJson } from "@/lib/utils";
 
 type AlertFilter = "active" | "resolved" | "all";
@@ -56,19 +57,19 @@ function getAlertFilterHref(filter: AlertFilter) {
   return `/admin/imports?alerts=${filter}`;
 }
 
-function formatRelativeStatus(locale: "uk" | "ru" | "en", active: boolean) {
+function formatRelativeStatus(_locale: AppLocale, active: boolean) {
   if (active) {
-    return locale === "uk" ? "Активний" : locale === "ru" ? "Активный" : "Active";
+    return "Активний";
   }
 
-  return locale === "uk" ? "На паузі" : locale === "ru" ? "На паузе" : "Paused";
+  return "На паузі";
 }
 
 export default async function AdminImportsPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: "uk" | "ru" | "en" }>;
+  params: Promise<{ locale: AppLocale }>;
   searchParams: Promise<{ alerts?: string | string[] }>;
 }) {
   const { locale } = await params;
@@ -127,69 +128,39 @@ export default async function AdminImportsPage({
   }
 
   const copy = {
-    title: "Import Center",
+    title: "Центр імпорту",
     subtitle:
-      locale === "uk"
-        ? "Масовий імпорт товарів з preview, dry-run, історією job-ів, збереженими source configs і сигналами по health імпортів."
-        : locale === "ru"
-          ? "Массовый импорт товаров с preview, dry-run, историей job-ов, сохранёнными source configs и сигналами по health импортов."
-          : "Bulk product import with preview, dry-run, saved source configs, job history, and import health alerts.",
-    alertFeed: locale === "uk" ? "Import alerts" : locale === "ru" ? "Import alerts" : "Import alerts",
+      "Масовий імпорт товарів із попереднім переглядом, dry-run, історією завдань, збереженими конфігураціями джерел і сигналами щодо стану імпортів.",
+    alertFeed: "Сигнали імпорту",
     alertFeedText:
-      locale === "uk"
-        ? "Активні проблеми видно одразу: повторні падіння, застарілий sync, stuck execution та критичні source errors."
-        : locale === "ru"
-          ? "Активные проблемы видны сразу: повторные падения, устаревший sync, stuck execution и критические source errors."
-          : "Critical import health signals stay visible here: repeated failures, stale sync, stuck execution, and source-level errors.",
-    active: locale === "uk" ? "Активні" : locale === "ru" ? "Активные" : "Active",
-    resolved: locale === "uk" ? "Вирішені" : locale === "ru" ? "Решённые" : "Resolved",
-    all: locale === "uk" ? "Усі" : locale === "ru" ? "Все" : "All",
-    noAlerts:
-      locale === "uk"
-        ? "Зараз немає import alerts для цього фільтра."
-        : locale === "ru"
-          ? "Сейчас нет import alerts для этого фильтра."
-          : "No import alerts for this filter right now.",
-    issueStarted:
-      locale === "uk" ? "Проблема з" : locale === "ru" ? "Проблема с" : "Started",
-    lastSeen:
-      locale === "uk" ? "Останній сигнал" : locale === "ru" ? "Последний сигнал" : "Last seen",
-    occurrences: locale === "uk" ? "Повторів" : locale === "ru" ? "Повторов" : "Occurrences",
-    source: locale === "uk" ? "Джерело" : locale === "ru" ? "Источник" : "Source",
-    relatedJob: locale === "uk" ? "Пов’язаний job" : locale === "ru" ? "Связанный job" : "Related job",
-    history: locale === "uk" ? "Історія імпортів" : locale === "ru" ? "История импортов" : "Import history",
-    sourceStatus:
-      locale === "uk" ? "Saved sources" : locale === "ru" ? "Saved sources" : "Saved sources",
-    templates:
-      locale === "uk" ? "Sample templates" : locale === "ru" ? "Sample templates" : "Sample templates",
-    noHistory:
-      locale === "uk"
-        ? "Import jobs ще не запускалися."
-        : locale === "ru"
-          ? "Import jobs ещё не запускались."
-          : "No import jobs yet.",
-    open: locale === "uk" ? "Відкрити" : locale === "ru" ? "Открыть" : "Open",
-    job: "Job",
-    mode: locale === "uk" ? "Режим" : locale === "ru" ? "Режим" : "Mode",
-    result: locale === "uk" ? "Підсумок" : locale === "ru" ? "Итог" : "Result",
-    updated: locale === "uk" ? "Оновлено" : locale === "ru" ? "Обновлено" : "Updated",
-    nextSync: locale === "uk" ? "Наступний sync" : locale === "ru" ? "Следующий sync" : "Next sync",
-    lastSync: locale === "uk" ? "Останній sync" : locale === "ru" ? "Последний sync" : "Last sync",
-    lastResult:
-      locale === "uk" ? "Останній результат" : locale === "ru" ? "Последний результат" : "Last result",
-    runningNow:
-      locale === "uk" ? "Виконується зараз" : locale === "ru" ? "Выполняется сейчас" : "Running now",
-    uploadSource:
-      locale === "uk" ? "Локальний upload source" : locale === "ru" ? "Локальный upload source" : "Uploaded source",
+      "Активні проблеми видно одразу: повторні збої, застаріла синхронізація, завислі виконання та критичні помилки джерел.",
+    active: "Активні",
+    resolved: "Вирішені",
+    all: "Усі",
+    noAlerts: "Зараз немає сигналів для цього фільтра.",
+    issueStarted: "Проблема з",
+    lastSeen: "Останній сигнал",
+    occurrences: "Повторів",
+    source: "Джерело",
+    relatedJob: "Пов’язане завдання",
+    history: "Історія імпортів",
+    sourceStatus: "Збережені джерела",
+    templates: "Приклади шаблонів",
+    noHistory: "Завдання імпорту ще не запускалися.",
+    open: "Відкрити",
+    job: "Завдання",
+    mode: "Режим",
+    result: "Підсумок",
+    updated: "Оновлено",
+    nextSync: "Наступна синхронізація",
+    lastSync: "Остання синхронізація",
+    lastResult: "Останній результат",
+    runningNow: "Виконується зараз",
+    uploadSource: "Локальне завантаження",
     noSources:
-      locale === "uk"
-        ? "Поки що немає збережених джерел. Після першого запуску можна зберегти reusable source config."
-        : locale === "ru"
-          ? "Пока нет сохранённых источников. После первого запуска можно сохранить reusable source config."
-          : "No saved sources yet. After the first run you can save a reusable source config.",
-    consecutiveFailures:
-      locale === "uk" ? "Провалів поспіль" : locale === "ru" ? "Падений подряд" : "Failures in a row",
-    alerts: locale === "uk" ? "Alerts" : locale === "ru" ? "Alerts" : "Alerts",
+      "Поки що немає збережених джерел. Після першого запуску можна зберегти шаблон джерела для повторного використання.",
+    consecutiveFailures: "Провалів поспіль",
+    alerts: "Сигнали",
   };
 
   return (

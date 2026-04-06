@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 function jsonAuthError(status: 401 | 403) {
   return NextResponse.json(
     {
-      error: status === 401 ? "Authentication required" : "Insufficient permissions",
+      error: status === 401 ? "Потрібна автентифікація" : "Недостатньо прав",
     },
     { status },
   );
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   const files = formData.getAll("files").filter(isFile);
 
   if (files.length === 0) {
-    return NextResponse.json({ error: "No files provided" }, { status: 400 });
+    return NextResponse.json({ error: "Файли не надіслано" }, { status: 400 });
   }
 
   const uploaded = await Promise.all(
@@ -78,13 +78,13 @@ export async function DELETE(request: Request) {
     : [];
 
   if (paths.length === 0) {
-    return NextResponse.json({ error: "No asset paths provided" }, { status: 400 });
+    return NextResponse.json({ error: "Не вказано шляхи до файлів" }, { status: 400 });
   }
 
   const invalidPath = paths.find((assetPath) => !isManagedProductAssetPath(assetPath));
 
   if (invalidPath) {
-    return NextResponse.json({ error: "Unsupported asset path" }, { status: 400 });
+    return NextResponse.json({ error: "Непідтримуваний шлях до файлу" }, { status: 400 });
   }
 
   await Promise.all(paths.map((assetPath) => safeDeleteUploadedProductAsset(assetPath)));

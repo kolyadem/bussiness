@@ -61,7 +61,7 @@ export function PriceRollbackList({ rows, locale }: { rows: RollbackRow[]; local
             <tr key={r.id} className="border-t border-[color:var(--color-line-strong)] text-[color:var(--color-text)]">
               <td className="p-3 font-mono text-xs">{r.productSku}</td>
               <td className="p-3 text-xs">
-                {new Date(r.appliedAt).toLocaleString(locale === "uk" ? "uk-UA" : locale === "ru" ? "ru-RU" : "en-US")}
+                {new Date(r.appliedAt).toLocaleString("uk-UA")}
               </td>
               <td className="p-3">{r.previousPriceDisplay}</td>
               <td className="p-3">{r.newPriceDisplay}</td>

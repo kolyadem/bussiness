@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const parsed = createSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
     }
 
     const product = await db.product.findFirst({
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     });
 
     if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      return NextResponse.json({ error: "Товар не знайдено" }, { status: 404 });
     }
 
     const owner = await resolveStorefrontOwner({ ensureSession: true });
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     });
 
     if (!result) {
-      return NextResponse.json({ error: "Could not resolve cart owner" }, { status: 400 });
+      return NextResponse.json({ error: "Не вдалося визначити власника кошика" }, { status: 400 });
     }
 
     return NextResponse.json({
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       area: "cart.route.post",
       message: "Failed to add product to cart",
     });
-    return NextResponse.json({ error: "Could not update the cart right now" }, { status: 500 });
+    return NextResponse.json({ error: "Не вдалося оновити кошик зараз. Спробуйте ще раз." }, { status: 500 });
   }
 }
 
@@ -79,7 +79,7 @@ export async function PATCH(request: Request) {
     const parsed = updateSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
     }
 
     const owner = await resolveStorefrontOwner();
@@ -90,7 +90,7 @@ export async function PATCH(request: Request) {
     });
 
     if (!result) {
-      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+      return NextResponse.json({ error: "Позицію не знайдено" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -104,7 +104,7 @@ export async function PATCH(request: Request) {
       area: "cart.route.patch",
       message: "Failed to update cart quantity",
     });
-    return NextResponse.json({ error: "Could not update the cart right now" }, { status: 500 });
+    return NextResponse.json({ error: "Не вдалося оновити кошик зараз. Спробуйте ще раз." }, { status: 500 });
   }
 }
 
@@ -114,7 +114,7 @@ export async function DELETE(request: Request) {
     const parsed = removeSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
     }
 
     const owner = await resolveStorefrontOwner();
@@ -134,6 +134,6 @@ export async function DELETE(request: Request) {
       area: "cart.route.delete",
       message: "Failed to remove cart item",
     });
-    return NextResponse.json({ error: "Could not update the cart right now" }, { status: 500 });
+    return NextResponse.json({ error: "Не вдалося оновити кошик зараз. Спробуйте ще раз." }, { status: 500 });
   }
 }

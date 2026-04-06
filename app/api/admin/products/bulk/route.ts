@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { getAuthenticatedUser, hasRole, USER_ROLES } from "@/lib/auth";
 import { safeDeleteUploadedProductAsset } from "@/lib/admin/product-assets";
-import { displayPriceToStoredMinorUnits, parseJson } from "@/lib/utils";
+import { displayPriceToStoredMinorUnits, parseJson, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
 const bulkSchema = z.object({
   productIds: z.array(z.string().trim().min(1)).min(1),
@@ -27,7 +27,7 @@ const bulkSchema = z.object({
 function jsonAuthError(status: 401 | 403) {
   return NextResponse.json(
     {
-      error: status === 401 ? "Authentication required" : "Insufficient permissions",
+      error: status === 401 ? "Потрібна автентифікація" : "Недостатньо прав",
     },
     { status },
   );
@@ -58,28 +58,28 @@ export async function POST(request: Request) {
   const parsed = bulkSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
   }
 
   const { productIds, action } = parsed.data;
 
   if (action === "ASSIGN_CATEGORY" && !parsed.data.categoryId) {
-    return NextResponse.json({ error: "categoryId is required" }, { status: 400 });
+    return NextResponse.json({ error: "Потрібен categoryId" }, { status: 400 });
   }
 
   if (action === "SET_PRICE" && typeof parsed.data.price !== "number") {
-    return NextResponse.json({ error: "price is required" }, { status: 400 });
+    return NextResponse.json({ error: "Потрібна ціна" }, { status: 400 });
   }
 
   if (action === "SET_STOCK" && typeof parsed.data.stock !== "number") {
-    return NextResponse.json({ error: "stock is required" }, { status: 400 });
+    return NextResponse.json({ error: "Потрібна кількість на складі" }, { status: 400 });
   }
 
   if (
     (action === "ADJUST_STOCK" || action === "ADJUST_PRICE_PERCENT") &&
     typeof parsed.data.delta !== "number"
   ) {
-    return NextResponse.json({ error: "delta is required" }, { status: 400 });
+    return NextResponse.json({ error: "Потрібна зміна (delta)" }, { status: 400 });
   }
 
   if (action === "DELETE") {
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
           ),
         );
       } catch (error) {
-        errors.push(error instanceof Error ? error.message : `Could not delete ${product.id}`);
+        errors.push(error instanceof Error ? error.message : `Не вдалося видалити ${product.id}`);
       }
     }
 
@@ -156,7 +156,7 @@ export async function POST(request: Request) {
     });
 
     if (!category) {
-      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+      return NextResponse.json({ error: "Категорію не знайдено" }, { status: 404 });
     }
 
     const result = await db.product.updateMany({
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
         },
       },
       data: {
-        price: displayPriceToStoredMinorUnits(parsed.data.price!),
+        price: displayPriceToStoredMinorUnits(parsed.data.price!, STOREFRONT_CURRENCY_CODE),
       },
     });
 
@@ -270,5 +270,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, processedCount: products.length });
   }
 
-  return NextResponse.json({ error: "Unsupported bulk action" }, { status: 400 });
+  return NextResponse.json({ error: "Непідтримувана масова дія" }, { status: 400 });
 }

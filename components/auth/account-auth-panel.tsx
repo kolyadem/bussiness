@@ -131,7 +131,7 @@ async function mergeStorefrontState() {
   });
 
   if (!response.ok) {
-    throw new Error("Could not merge storefront state");
+    throw new Error("Не вдалося об'єднати стан вітрини");
   }
 }
 
@@ -219,14 +219,9 @@ export function AccountAuthPanel() {
     registerForm.password.length >= 8 &&
     registerForm.confirmPassword.length >= 8 &&
     registerForm.password === registerForm.confirmPassword;
-  const tooManyLoginAttemptsMessage =
-    locale === "uk"
-      ? "Забагато спроб входу. Спробуйте трохи пізніше."
-      : locale === "ru"
-        ? "Слишком много попыток входа. Попробуйте немного позже."
-        : "Too many login attempts. Please try again later.";
+  const tooManyLoginAttemptsMessage = "Забагато спроб входу. Спробуйте трохи пізніше.";
 
-  const resolvedLocale = locale === "uk" || locale === "ru" || locale === "en" ? locale : "uk";
+  const resolvedLocale = locale;
   const redirectAfterLogin = useCallback(
     (role?: string | null) => {
       const destination = MANAGER_ROLES.has(role ?? "")
@@ -374,13 +369,7 @@ export function AccountAuthPanel() {
             value={loginForm.login}
             onChange={(value) => setLoginForm((current) => ({ ...current, login: value }))}
             autoComplete="username"
-            placeholder={
-              t("authLogin") === "Login"
-                ? "Login or email"
-                : t("authLogin") === "Логин"
-                  ? "Логин или email"
-                  : "Логін або email"
-            }
+            placeholder="Логін або email"
           />
           <Field
             label={t("authPassword")}

@@ -1,18 +1,15 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { locales, type AppLocale } from "@/lib/constants";
+import { defaultLocale } from "@/lib/constants";
 import { AdminSubmitButton } from "@/components/admin/admin-submit-button";
 import { ProductImageFrame } from "@/components/ui/product-image-frame";
 
-type BannerTranslations = Record<
-  AppLocale,
-  {
-    title: string;
-    subtitle: string;
-    ctaLabel: string;
-  }
->;
+type BannerTranslationFields = {
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+};
 
 type EntityState = {
   status: "idle" | "error";
@@ -20,6 +17,24 @@ type EntityState = {
 };
 
 type EntityAction = (state: EntityState, formData: FormData) => Promise<EntityState>;
+
+const COPY = {
+  title: "Параметри банера",
+  key: "Ключ",
+  type: "Тип",
+  sortOrder: "Порядок",
+  href: "Href",
+  active: "Банер активний",
+  image: "Зображення банера",
+  imageHint: "Можна залишити порожнім, якщо хочете зберегти поточне зображення.",
+  name: "Заголовок",
+  subtitle: "Підзаголовок",
+  ctaLabel: "Підпис кнопки",
+  hero: "Hero",
+  promo: "Promo",
+  save: "Зберегти банер",
+  saving: "Збереження...",
+};
 
 export function AdminBannerForm({
   locale,
@@ -35,52 +50,22 @@ export function AdminBannerForm({
     isActive: boolean;
     sortOrder: number;
     image: string;
-    translations: BannerTranslations;
+    translations: BannerTranslationFields;
   };
 }) {
   const [state, formAction] = useActionState(action, { status: "idle" });
-  const [activeLocale, setActiveLocale] = useState<AppLocale>("uk");
-  const [translations, setTranslations] = useState<BannerTranslations>(
+  const [translations, setTranslations] = useState<BannerTranslationFields>(
     initialValues?.translations ?? {
-      uk: { title: "", subtitle: "", ctaLabel: "" },
-      ru: { title: "", subtitle: "", ctaLabel: "" },
-      en: { title: "", subtitle: "", ctaLabel: "" },
+      title: "",
+      subtitle: "",
+      ctaLabel: "",
     },
   );
-  const copy = {
-    title: locale === "uk" ? "Параметри банера" : locale === "ru" ? "Параметры баннера" : "Banner settings",
-    key: locale === "uk" ? "Ключ" : locale === "ru" ? "Ключ" : "Key",
-    type: locale === "uk" ? "Тип" : locale === "ru" ? "Тип" : "Type",
-    sortOrder: locale === "uk" ? "Порядок" : locale === "ru" ? "Порядок" : "Sort order",
-    href: "Href",
-    active: locale === "uk" ? "Банер активний" : locale === "ru" ? "Баннер активен" : "Banner is active",
-    image: locale === "uk" ? "Зображення банера" : locale === "ru" ? "Изображение баннера" : "Banner image",
-    imageHint:
-      locale === "uk"
-        ? "Можна залишити порожнім, якщо хочете зберегти поточне зображення."
-        : locale === "ru"
-          ? "Можно оставить пустым, если нужно сохранить текущее изображение."
-          : "Leave empty to keep the current image.",
-    name: locale === "uk" ? "Заголовок" : locale === "ru" ? "Заголовок" : "Title",
-    subtitle: locale === "uk" ? "Підзаголовок" : locale === "ru" ? "Подзаголовок" : "Subtitle",
-    ctaLabel: locale === "uk" ? "Підпис кнопки" : locale === "ru" ? "Подпись кнопки" : "CTA label",
-    hero: "Hero",
-    promo: "Promo",
-    save: locale === "uk" ? "Зберегти банер" : locale === "ru" ? "Сохранить баннер" : "Save banner",
-    saving: locale === "uk" ? "Збереження..." : locale === "ru" ? "Сохранение..." : "Saving...",
-  };
 
-  const updateTranslation = (
-    targetLocale: AppLocale,
-    field: keyof BannerTranslations[AppLocale],
-    value: string,
-  ) => {
+  const updateTranslation = (field: keyof BannerTranslationFields, value: string) => {
     setTranslations((current) => ({
       ...current,
-      [targetLocale]: {
-        ...current[targetLocale],
-        [field]: value,
-      },
+      [field]: value,
     }));
   };
 
@@ -91,13 +76,13 @@ export function AdminBannerForm({
 
       <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-2xl font-semibold text-[color:var(--color-text)]">{copy.title}</h2>
-          <AdminSubmitButton pendingLabel={copy.saving}>{copy.save}</AdminSubmitButton>
+          <h2 className="text-2xl font-semibold text-[color:var(--color-text)]">{COPY.title}</h2>
+          <AdminSubmitButton pendingLabel={COPY.saving}>{COPY.save}</AdminSubmitButton>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <span>{copy.key}</span>
+            <span>{COPY.key}</span>
             <input
               name="key"
               defaultValue={initialValues?.key ?? ""}
@@ -106,18 +91,18 @@ export function AdminBannerForm({
             />
           </label>
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <span>{copy.type}</span>
+            <span>{COPY.type}</span>
             <select
               name="type"
               defaultValue={initialValues?.type ?? "PROMO"}
               className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
             >
-              <option value="HERO">{copy.hero}</option>
-              <option value="PROMO">{copy.promo}</option>
+              <option value="HERO">{COPY.hero}</option>
+              <option value="PROMO">{COPY.promo}</option>
             </select>
           </label>
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <span>{copy.sortOrder}</span>
+            <span>{COPY.sortOrder}</span>
             <input
               name="sortOrder"
               type="number"
@@ -127,7 +112,7 @@ export function AdminBannerForm({
             />
           </label>
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)] md:col-span-2">
-            <span>{copy.href}</span>
+            <span>{COPY.href}</span>
             <input
               name="href"
               defaultValue={initialValues?.href ?? ""}
@@ -136,7 +121,7 @@ export function AdminBannerForm({
           </label>
           <label className="flex items-center gap-3 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-sm text-[color:var(--color-text)]">
             <input name="isActive" type="checkbox" defaultChecked={initialValues?.isActive ?? true} />
-            <span>{copy.active}</span>
+            <span>{COPY.active}</span>
           </label>
         </div>
       </section>
@@ -146,87 +131,56 @@ export function AdminBannerForm({
           {initialValues?.image ? (
             <ProductImageFrame
               src={initialValues.image}
-              alt={copy.image}
+              alt={COPY.image}
               className="bg-white/90 shadow-none"
             />
           ) : (
             <div className="rounded-[1.6rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)]" />
           )}
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <span>{copy.image}</span>
+            <span>{COPY.image}</span>
             <input
               name="imageFile"
               type="file"
               accept="image/*"
               className="rounded-[1rem] border border-dashed border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4 text-[color:var(--color-text-soft)]"
             />
-            <span className="text-xs leading-6 text-[color:var(--color-text-soft)]">{copy.imageHint}</span>
+            <span className="text-xs leading-6 text-[color:var(--color-text-soft)]">{COPY.imageHint}</span>
           </label>
         </div>
       </section>
 
       <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
-        <div className="flex flex-wrap gap-2">
-          {locales.map((tabLocale) => (
-            <button
-              key={tabLocale}
-              type="button"
-              onClick={() => setActiveLocale(tabLocale)}
-              className={
-                activeLocale === tabLocale
-                  ? "rounded-full border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] px-4 py-2 text-sm font-medium text-[color:var(--color-text)]"
-                  : "rounded-full border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-2 text-sm text-[color:var(--color-text-soft)]"
-              }
-            >
-              {tabLocale.toUpperCase()}
-            </button>
-          ))}
-        </div>
-
         <div className="mt-6 grid gap-4">
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <span>{copy.name}</span>
+            <span>{COPY.name}</span>
             <input
-              name={`title:${activeLocale}`}
-              value={translations[activeLocale].title}
-              onChange={(event) => updateTranslation(activeLocale, "title", event.target.value)}
+              name={`title:${defaultLocale}`}
+              value={translations.title}
+              onChange={(event) => updateTranslation("title", event.target.value)}
               required
               className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
             />
           </label>
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <span>{copy.subtitle}</span>
+            <span>{COPY.subtitle}</span>
             <textarea
-              name={`subtitle:${activeLocale}`}
-              value={translations[activeLocale].subtitle}
-              onChange={(event) => updateTranslation(activeLocale, "subtitle", event.target.value)}
+              name={`subtitle:${defaultLocale}`}
+              value={translations.subtitle}
+              onChange={(event) => updateTranslation("subtitle", event.target.value)}
               className="min-h-24 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-[color:var(--color-text)] outline-none"
             />
           </label>
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <span>{copy.ctaLabel}</span>
+            <span>{COPY.ctaLabel}</span>
             <input
-              name={`ctaLabel:${activeLocale}`}
-              value={translations[activeLocale].ctaLabel}
-              onChange={(event) => updateTranslation(activeLocale, "ctaLabel", event.target.value)}
+              name={`ctaLabel:${defaultLocale}`}
+              value={translations.ctaLabel}
+              onChange={(event) => updateTranslation("ctaLabel", event.target.value)}
               className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
             />
           </label>
         </div>
-
-        {locales
-          .filter((tabLocale) => tabLocale !== activeLocale)
-          .map((hiddenLocale) => (
-            <div key={hiddenLocale} className="hidden">
-              <input name={`title:${hiddenLocale}`} value={translations[hiddenLocale].title} readOnly />
-              <textarea name={`subtitle:${hiddenLocale}`} value={translations[hiddenLocale].subtitle} readOnly />
-              <input
-                name={`ctaLabel:${hiddenLocale}`}
-                value={translations[hiddenLocale].ctaLabel}
-                readOnly
-              />
-            </div>
-          ))}
       </section>
 
       {state.message ? (

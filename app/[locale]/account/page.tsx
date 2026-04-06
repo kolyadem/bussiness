@@ -29,15 +29,12 @@ import {
 import { getAccountSurfaceData } from "@/lib/storefront/queries";
 import { formatPrice } from "@/lib/utils";
 
-function formatDate(value: Date, locale: AppLocale) {
-  return new Intl.DateTimeFormat(
-    locale === "uk" ? "uk-UA" : locale === "ru" ? "ru-RU" : "en-US",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    },
-  ).format(value);
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("uk-UA", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(value);
 }
 
 export async function generateMetadata({
@@ -94,7 +91,7 @@ export default async function AccountPage({
                     href="/admin"
                     className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--color-line)] px-4 text-sm text-[color:var(--color-text)] transition hover:border-[color:var(--color-line-strong)] hover:bg-[color:var(--color-surface-elevated)]"
                   >
-                    {locale === "uk" ? "Адмін-панель" : locale === "ru" ? "Админ-панель" : "Admin panel"}
+                    Адмін-панель
                   </Link>
                 ) : null}
                 <SignOutButton />
@@ -103,7 +100,7 @@ export default async function AccountPage({
             <div className="grid gap-3 sm:grid-cols-4">
               <div className="rounded-[1.7rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-[11px] uppercase tracking-[0.22em] text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Замовлення" : locale === "ru" ? "Заказы" : "Orders"}
+                  Замовлення
                 </p>
                 <p className="mt-2 font-heading text-3xl font-semibold text-[color:var(--color-text)]">
                   {account.orders.length}
@@ -111,7 +108,7 @@ export default async function AccountPage({
               </div>
               <div className="rounded-[1.7rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-[11px] uppercase tracking-[0.22em] text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Заявки на збірку" : locale === "ru" ? "Заявки на сборку" : "Build requests"}
+                  Заявки на збірку
                 </p>
                 <p className="mt-2 font-heading text-3xl font-semibold text-[color:var(--color-text)]">
                   {account.buildRequests.length}
@@ -146,13 +143,7 @@ export default async function AccountPage({
                   {t("accountMode")}
                 </p>
                 <p className="mt-2 font-heading text-2xl font-semibold text-[color:var(--color-text)]">
-                  {hasAdminAccess
-                    ? locale === "uk"
-                      ? "Адміністратор"
-                      : locale === "ru"
-                        ? "Администратор"
-                        : "Administrator"
-                    : t("accountClient")}
+                  {hasAdminAccess ? "Адміністратор" : t("accountClient")}
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-4 py-4">
@@ -160,7 +151,7 @@ export default async function AccountPage({
                   {t("subtotal")}
                 </p>
                 <p className="mt-2 font-heading text-2xl font-semibold text-[color:var(--color-text)]">
-                  {formatPrice(account.cartSubtotal, locale)}
+                  {formatPrice(account.cartSubtotal, locale, account.cartCurrency)}
                 </p>
                 <p className="mt-1 text-sm text-[color:var(--color-text-soft)]">
                   {account.cartItemsCount} {t("accountItems")}
@@ -176,20 +167,20 @@ export default async function AccountPage({
           <section className="rounded-[2.2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)] backdrop-blur-2xl sm:p-6">
             <div className="mb-5 flex items-center justify-between gap-3">
               <h2 className="font-heading text-3xl font-semibold text-[color:var(--color-text)]">
-                {locale === "uk" ? "Замовлення товарів" : locale === "ru" ? "Заказы товаров" : "Store orders"}
+                Замовлення товарів
               </h2>
               {account.orders.length > 0 ? (
                 <Link
                   href="/cart"
                   className="text-sm text-[color:var(--color-text-soft)] transition hover:text-[color:var(--color-text)]"
                 >
-                  {locale === "uk" ? "До кошика" : locale === "ru" ? "В корзину" : "Go to cart"}
+                  До кошика
                 </Link>
               ) : null}
             </div>
             {account.orders.length === 0 ? (
               <EmptyState
-                title={locale === "uk" ? "Ще немає замовлень" : locale === "ru" ? "Заказов пока нет" : "No orders yet"}
+                title="Ще немає замовлень"
                 action={
                   <Link href="/catalog">
                     <Button variant="secondary">{t("continueShopping")}</Button>
@@ -219,7 +210,7 @@ export default async function AccountPage({
                               {getOrderKindLabel(order.orderKind, locale)}
                             </span>
                           </div>
-                          <p className="text-sm text-[color:var(--color-text-soft)]">{formatDate(order.createdAt, locale)}</p>
+                          <p className="text-sm text-[color:var(--color-text-soft)]">{formatDate(order.createdAt)}</p>
                           <p className="text-sm text-[color:var(--color-text-soft)]">
                             {order.deliveryCity ?? "—"}
                             {order.deliveryMethod && isOrderDeliveryMethod(order.deliveryMethod)
@@ -245,12 +236,12 @@ export default async function AccountPage({
                               {t("subtotal")}
                             </p>
                             <p className="mt-1 font-heading text-2xl font-semibold text-[color:var(--color-text)]">
-                              {formatPrice(order.total, locale)}
+                              {formatPrice(order.total, locale, order.currency)}
                             </p>
                           </div>
                           <Link href={`/account/orders/${order.id}`}>
                             <Button variant="secondary">
-                              {locale === "uk" ? "Деталі" : locale === "ru" ? "Детали" : "Details"}
+                              Деталі
                             </Button>
                           </Link>
                         </div>
@@ -264,11 +255,11 @@ export default async function AccountPage({
 
           <section className="rounded-[2.2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)] backdrop-blur-2xl sm:p-6">
             <h2 className="mb-5 font-heading text-3xl font-semibold text-[color:var(--color-text)]">
-              {locale === "uk" ? "Заявки на збірку" : locale === "ru" ? "Заявки на сборку" : "Build requests"}
+              Заявки на збірку
             </h2>
             {account.buildRequests.length === 0 ? (
               <EmptyState
-                title={locale === "uk" ? "Немає заявок на збірку" : locale === "ru" ? "Заявок на сборку нет" : "No build requests yet"}
+                title="Немає заявок на збірку"
               />
             ) : (
               <div className="grid gap-4">
@@ -290,7 +281,7 @@ export default async function AccountPage({
                               {getBuildRequestStatusLabel(status, locale)}
                             </span>
                           </div>
-                          <p className="text-sm text-[color:var(--color-text-soft)]">{formatDate(request.createdAt, locale)}</p>
+                          <p className="text-sm text-[color:var(--color-text-soft)]">{formatDate(request.createdAt)}</p>
                           <div className="flex flex-wrap gap-2">
                             {request.items.slice(0, 3).map((item) => (
                               <span
@@ -307,7 +298,7 @@ export default async function AccountPage({
                             {t("subtotal")}
                           </p>
                           <p className="mt-1 font-heading text-2xl font-semibold text-[color:var(--color-text)]">
-                            {formatPrice(request.total, locale)}
+                            {formatPrice(request.total, locale, request.currency)}
                           </p>
                         </div>
                       </div>
@@ -354,7 +345,7 @@ export default async function AccountPage({
                       </Link>
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <p className="font-heading text-xl font-semibold text-[color:var(--color-text)]">
-                          {formatPrice(item.product.price, locale)}
+                          {formatPrice(item.product.price, locale, item.product.currency)}
                         </p>
                         <ListRemoveButton endpoint="/api/wishlist" productId={item.productId} />
                       </div>
@@ -386,11 +377,11 @@ export default async function AccountPage({
                           </Link>
                         </h3>
                         <p className="mt-1 text-sm text-[color:var(--color-text-soft)]">
-                          {formatDate(build.updatedAt, locale)}
+                          {formatDate(build.updatedAt)}
                         </p>
                       </div>
                       <p className="font-heading text-xl font-semibold text-[color:var(--color-text)]">
-                        {formatPrice(build.totalPrice, locale)}
+                        {formatPrice(build.totalPrice, locale, build.currency)}
                       </p>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">

@@ -13,7 +13,7 @@ const rerunSchema = z.object({
 function jsonAuthError(status: 401 | 403) {
   return NextResponse.json(
     {
-      error: status === 401 ? "Authentication required" : "Insufficient permissions",
+      error: status === 401 ? "Потрібна автентифікація" : "Недостатньо прав",
     },
     { status },
   );
@@ -48,7 +48,7 @@ export async function POST(
   const parsed = rerunSchema.safeParse(payload ?? {});
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
   }
 
   const job = await db.importJob.findUnique({
@@ -61,20 +61,20 @@ export async function POST(
   });
 
   if (!job) {
-    return NextResponse.json({ error: "Import job not found" }, { status: 404 });
+    return NextResponse.json({ error: "Завдання імпорту не знайдено" }, { status: 404 });
   }
 
   const sourceType = job.sourceConfig?.sourceType ?? job.sourceType;
   const importMode = parsed.data.importMode ?? job.sourceConfig?.defaultImportMode ?? job.importMode;
 
   if (!isImportSourceType(sourceType) || !isImportMode(importMode)) {
-    return NextResponse.json({ error: "Stored import job configuration is invalid" }, { status: 400 });
+    return NextResponse.json({ error: "Збережена конфігурація завдання імпорту некоректна" }, { status: 400 });
   }
 
   if (sourceType.startsWith("UPLOAD_")) {
     return NextResponse.json(
       {
-        error: "Uploaded file imports cannot be re-run automatically without a new file",
+        error: "Імпорт із завантаженого файлу не можна повторити автоматично без нового файлу",
       },
       { status: 400 },
     );

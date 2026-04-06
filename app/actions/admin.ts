@@ -32,10 +32,10 @@ import {
   getTechnicalAttributeLabel,
   normalizeTechnicalAttributeInput,
 } from "@/lib/configurator/technical-attributes";
-import { locales, type AppLocale } from "@/lib/constants";
+import { defaultLocale, locales, type AppLocale } from "@/lib/constants";
 import { getDefaultBrandId } from "@/lib/commerce/default-brand";
 import { db } from "@/lib/db";
-import { parseJson, slugify } from "@/lib/utils";
+import { parseJson, slugify, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
 type ProductFormState = {
   status: "idle" | "error";
@@ -62,8 +62,8 @@ const PRODUCT_UPLOAD_DIR = path.join(PUBLIC_DIR, "uploads", "products");
 const SITE_UPLOAD_DIR = path.join(PUBLIC_DIR, "uploads", "site");
 const BANNER_UPLOAD_DIR = path.join(PUBLIC_DIR, "uploads", "banners");
 
-function adminText(locale: AppLocale, copy: { uk: string; ru: string; en: string }) {
-  return copy[locale] ?? copy.en;
+function adminText(_locale: AppLocale, copy: { uk: string }) {
+  return copy.uk;
 }
 
 function isFile(input: FormDataEntryValue | null): input is File {
@@ -107,8 +107,6 @@ function buildProductConflictMessage(locale: AppLocale, error: unknown) {
   if (!isUniqueConstraintError(error)) {
     return adminText(locale, {
       uk: "Не вдалося зберегти товар.",
-      ru: "Не удалось сохранить товар.",
-      en: "Unable to save product.",
     });
   }
 
@@ -120,23 +118,17 @@ function buildProductConflictMessage(locale: AppLocale, error: unknown) {
   if (target.includes("slug")) {
     return adminText(locale, {
       uk: "Такий адрес сторінки вже використовується. Вкажіть інший slug.",
-      ru: "Такой адрес страницы уже используется. Укажите другой slug.",
-      en: "This page address is already in use. Choose a different slug.",
     });
   }
 
   if (target.includes("sku")) {
     return adminText(locale, {
       uk: "Такий SKU уже існує. Вкажіть інший артикул.",
-      ru: "Такой SKU уже существует. Укажите другой артикул.",
-      en: "This SKU already exists. Enter a different SKU.",
     });
   }
 
   return adminText(locale, {
     uk: "Slug і SKU мають бути унікальними.",
-    ru: "Slug и SKU должны быть уникальными.",
-    en: "Slug and SKU must be unique.",
   });
 }
 
@@ -210,18 +202,9 @@ const siteSettingsSchema = z.object({
 });
 
 function buildLocalizedCategoryTranslations(formData: FormData) {
-  const perLocale = locales.map((locale) => ({
-    locale,
-    name: String(formData.get(`name:${locale}`) ?? "").trim(),
-    description: String(formData.get(`description:${locale}`) ?? "").trim(),
-  }));
-  /** If only one tab was filled (e.g. UK), reuse that name for RU/EN so validation passes. */
-  const seedName = perLocale.find((row) => row.name.length >= 2)?.name ?? "";
-  const translations = perLocale.map((row) => ({
-    locale: row.locale,
-    name: row.name.length >= 2 ? row.name : seedName,
-    description: row.description,
-  }));
+  const name = String(formData.get(`name:${defaultLocale}`) ?? "").trim();
+  const description = String(formData.get(`description:${defaultLocale}`) ?? "").trim();
+  const translations = [{ locale: defaultLocale, name, description }];
   const parsed = z.array(localizedCategorySchema).safeParse(translations);
 
   if (!parsed.success) {
@@ -239,18 +222,20 @@ function resolveCategorySlug(formData: FormData, translations: NonNullable<Retur
   if (raw.length > 0) {
     return slugify(raw);
   }
-  const uk = translations.find((t) => t.locale === "uk")?.name?.trim() ?? "";
+  const uk = translations.find((t) => t.locale === defaultLocale)?.name?.trim() ?? "";
   const any = translations.find((t) => t.name.trim().length >= 2)?.name.trim() ?? "";
   return slugify(uk || any);
 }
 
 function buildLocalizedBannerTranslations(formData: FormData) {
-  const translations = locales.map((locale) => ({
-    locale,
-    title: String(formData.get(`title:${locale}`) ?? "").trim(),
-    subtitle: String(formData.get(`subtitle:${locale}`) ?? "").trim(),
-    ctaLabel: String(formData.get(`ctaLabel:${locale}`) ?? "").trim(),
-  }));
+  const translations = [
+    {
+      locale: defaultLocale,
+      title: String(formData.get(`title:${defaultLocale}`) ?? "").trim(),
+      subtitle: String(formData.get(`subtitle:${defaultLocale}`) ?? "").trim(),
+      ctaLabel: String(formData.get(`ctaLabel:${defaultLocale}`) ?? "").trim(),
+    },
+  ];
   const parsed = z.array(localizedBannerSchema).safeParse(translations);
 
   if (!parsed.success) {
@@ -295,14 +280,16 @@ async function wouldCreateCategoryCycle(categoryId: string, nextParentId: string
 }
 
 function buildLocalizedTranslations(formData: FormData) {
-  const translations = locales.map((locale) => ({
-    locale,
-    name: String(formData.get(`name:${locale}`) ?? "").trim(),
-    shortDescription: String(formData.get(`shortDescription:${locale}`) ?? "").trim(),
-    description: String(formData.get(`description:${locale}`) ?? "").trim(),
-    seoTitle: String(formData.get(`seoTitle:${locale}`) ?? "").trim(),
-    seoDescription: String(formData.get(`seoDescription:${locale}`) ?? "").trim(),
-  }));
+  const translations = [
+    {
+      locale: defaultLocale,
+      name: String(formData.get(`name:${defaultLocale}`) ?? "").trim(),
+      shortDescription: String(formData.get(`shortDescription:${defaultLocale}`) ?? "").trim(),
+      description: String(formData.get(`description:${defaultLocale}`) ?? "").trim(),
+      seoTitle: String(formData.get(`seoTitle:${defaultLocale}`) ?? "").trim(),
+      seoDescription: String(formData.get(`seoDescription:${defaultLocale}`) ?? "").trim(),
+    },
+  ];
 
   const parsed = normalizeLocalizedProductInput(translations);
 
@@ -356,8 +343,6 @@ function buildTechnicalAttributesPayload(
       return {
         error: adminText(locale, {
           uk: `Поле "${getTechnicalAttributeLabel(definition, locale)}" містить некоректне значення.`,
-          ru: `Поле "${getTechnicalAttributeLabel(definition, locale)}" содержит некорректное значение.`,
-          en: `"${getTechnicalAttributeLabel(definition, locale)}" contains an invalid value.`,
         }),
       } as const;
     }
@@ -430,7 +415,7 @@ function getSlugSourceFromTranslations(
     name: string;
   }>,
 ) {
-  const priority = [locale, "uk", "ru", "en"];
+  const priority = [locale, defaultLocale];
 
   for (const targetLocale of priority) {
     const match = translations.find(
@@ -463,9 +448,7 @@ async function buildProductPayload(
   if (!localizedTranslations) {
     return {
       error: adminText(locale, {
-        uk: "Заповніть локалізовані поля товару для всіх мов.",
-        ru: "Заполните локализованные поля товара для всех языков.",
-        en: "Fill in the localized product fields for every language.",
+        uk: "Заповніть обов'язкові локалізовані поля товару (назва, короткий опис тощо).",
       }),
     } as const;
   }
@@ -485,8 +468,6 @@ async function buildProductPayload(
     return {
       error: adminText(locale, {
         uk: "Додайте головне фото товару.",
-        ru: "Добавьте главное фото товара.",
-        en: "Add a main product image.",
       }),
     } as const;
   }
@@ -497,8 +478,6 @@ async function buildProductPayload(
     return {
       error: adminText(locale, {
         uk: "Поле metadata повинно містити коректний JSON-об'єкт.",
-        ru: "Поле metadata должно содержать корректный JSON-объект.",
-        en: "Metadata must contain a valid JSON object.",
       }),
     } as const;
   }
@@ -519,8 +498,6 @@ async function buildProductPayload(
     return {
       error: adminText(locale, {
         uk: "Вкажіть назву товару або slug, щоб сформувати адресу сторінки.",
-        ru: "Укажите название товара или slug, чтобы сформировать адрес страницы.",
-        en: "Add a product name or slug so we can build the page address.",
       }),
     } as const;
   }
@@ -546,7 +523,7 @@ async function buildProductPayload(
     price: String(formData.get("price") ?? ""),
     purchasePrice: normalizeOptionalText(formData.get("purchasePrice")),
     oldPrice: normalizeOptionalText(formData.get("oldPrice")),
-    currency: String(formData.get("currency") ?? "USD"),
+    currency: String(formData.get("currency") ?? STOREFRONT_CURRENCY_CODE),
     inventoryStatus: String(formData.get("inventoryStatus") ?? "IN_STOCK"),
     stock: String(formData.get("stock") ?? "0"),
     heroImage,
@@ -561,8 +538,6 @@ async function buildProductPayload(
     return {
       error: adminText(locale, {
         uk: "Перевірте обов'язкові поля товару перед збереженням.",
-        ru: "Проверьте обязательные поля товара перед сохранением.",
-        en: "Check the required product fields before saving.",
       }),
     } as const;
   }
@@ -615,8 +590,6 @@ export async function createProductAction(
       status: "error",
       message: adminText(locale, {
         uk: "Категорію не знайдено.",
-        ru: "Категория не найдена.",
-        en: "Category was not found.",
       }),
     };
   }
@@ -624,7 +597,7 @@ export async function createProductAction(
   try {
     const product = await createProductRecord(payload.data);
 
-    redirect(`/${payload.data.locale}/admin/products/${product.id}/edit?created=1`);
+    redirect(`/admin/products/${product.id}/edit?created=1`);
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
@@ -634,8 +607,6 @@ export async function createProductAction(
         status: "error",
         message: adminText(locale, {
           uk: "Slug і SKU мають бути унікальними.",
-          ru: "Slug и SKU должны быть уникальными.",
-          en: "Slug and SKU must be unique.",
         }),
       };
     }
@@ -660,8 +631,6 @@ export async function updateProductFormAction(
       status: "error",
       message: adminText(locale, {
         uk: "Не вдалося визначити товар для редагування.",
-        ru: "Не удалось определить товар для редактирования.",
-        en: "Unable to determine which product should be updated.",
       }),
     };
   }
@@ -687,8 +656,6 @@ export async function updateProductFormAction(
       status: "error",
       message: adminText(locale, {
         uk: "Категорію не знайдено.",
-        ru: "Категория не найдена.",
-        en: "Category was not found.",
       }),
     };
   }
@@ -710,7 +677,7 @@ export async function updateProductFormAction(
         .map((assetPath) => safeDeleteUploadedProductAsset(assetPath)),
     );
 
-    redirect(`/${payload.data.locale}/admin/products/${productId}/edit?saved=1`);
+    redirect(`/admin/products/${productId}/edit?saved=1`);
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
@@ -751,8 +718,6 @@ export async function updateProductAction(
       status: "error",
       message: adminText(locale, {
         uk: "Категорію не знайдено.",
-        ru: "Категория не найдена.",
-        en: "Category was not found.",
       }),
     };
   }
@@ -769,7 +734,7 @@ export async function updateProductAction(
         .map((assetPath) => safeDeleteUploadedProductAsset(assetPath)),
     );
 
-    redirect(`/${payload.data.locale}/admin/products/${productId}/edit?saved=1`);
+    redirect(`/admin/products/${productId}/edit?saved=1`);
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
@@ -779,8 +744,6 @@ export async function updateProductAction(
         status: "error",
         message: adminText(locale, {
           uk: "Slug і SKU мають бути унікальними.",
-          ru: "Slug и SKU должны быть уникальными.",
-          en: "Slug and SKU must be unique.",
         }),
       };
     }
@@ -789,8 +752,6 @@ export async function updateProductAction(
       status: "error",
       message: adminText(locale, {
         uk: "Не вдалося оновити товар.",
-        ru: "Не удалось обновить товар.",
-        en: "Unable to update product.",
       }),
     };
   }
@@ -802,7 +763,7 @@ export async function deleteProductAction(formData: FormData) {
   const productId = String(formData.get("productId") ?? "").trim();
 
   if (!productId) {
-    redirect(`/${locale}/admin/products`);
+    redirect(`/admin/products`);
   }
 
   const product = await db.product.findUnique({
@@ -830,7 +791,7 @@ export async function deleteProductAction(formData: FormData) {
     );
   }
 
-  redirect(`/${locale}/admin/products?deleted=1`);
+  redirect(`/admin/products?deleted=1`);
 }
 
 export async function updateAdminAccountAction(
@@ -850,8 +811,6 @@ export async function updateAdminAccountAction(
       status: "error",
       message: adminText(locale, {
         uk: "Перевірте обов'язкові поля профілю перед збереженням.",
-        ru: "Проверьте обязательные поля профиля перед сохранением.",
-        en: "Check the required account fields before saving.",
       }),
     };
   }
@@ -863,7 +822,7 @@ export async function updateAdminAccountAction(
   });
 
   if (!dbUser) {
-    redirect(`/${locale}/account`);
+    redirect(`/account`);
   }
 
   if (nextPassword || confirmPassword || currentPassword) {
@@ -872,8 +831,6 @@ export async function updateAdminAccountAction(
         status: "error",
         message: adminText(locale, {
           uk: "Для цього акаунта зміна пароля недоступна.",
-          ru: "Для этого аккаунта смена пароля недоступна.",
-          en: "Password change is unavailable for this account.",
         }),
       };
     }
@@ -885,8 +842,6 @@ export async function updateAdminAccountAction(
         status: "error",
         message: adminText(locale, {
           uk: "Поточний пароль вказано неправильно.",
-          ru: "Текущий пароль указан неверно.",
-          en: "Current password is incorrect.",
         }),
       };
     }
@@ -896,8 +851,6 @@ export async function updateAdminAccountAction(
         status: "error",
         message: adminText(locale, {
           uk: "Новий пароль має містити щонайменше 8 символів.",
-          ru: "Новый пароль должен содержать не меньше 8 символов.",
-          en: "New password must be at least 8 characters.",
         }),
       };
     }
@@ -907,8 +860,6 @@ export async function updateAdminAccountAction(
         status: "error",
         message: adminText(locale, {
           uk: "Підтвердження пароля не збігається.",
-          ru: "Подтверждение пароля не совпадает.",
-          en: "Password confirmation does not match.",
         }),
       };
     }
@@ -934,8 +885,6 @@ export async function updateAdminAccountAction(
       status: "success",
       message: adminText(locale, {
         uk: "Профіль оновлено.",
-        ru: "Профиль обновлён.",
-        en: "Account updated.",
       }),
     };
   } catch (error) {
@@ -944,8 +893,6 @@ export async function updateAdminAccountAction(
         status: "error",
         message: adminText(locale, {
           uk: "Цей email уже використовується.",
-          ru: "Этот email уже используется.",
-          en: "This email is already in use.",
         }),
       };
     }
@@ -954,8 +901,6 @@ export async function updateAdminAccountAction(
       status: "error",
       message: adminText(locale, {
         uk: "Не вдалося оновити профіль.",
-        ru: "Не удалось обновить профиль.",
-        en: "Unable to update account.",
       }),
     };
   }
@@ -965,7 +910,7 @@ export async function updateSiteSettingsAction(
   _prevState: SiteSettingsFormState,
   formData: FormData,
 ): Promise<SiteSettingsFormState> {
-  const locale = (String(formData.get("defaultLocale") ?? "uk") as AppLocale) || "uk";
+  const locale = defaultLocale;
   await requireAdminOnlyAccess(locale);
 
   const parsed = siteSettingsSchema.safeParse({
@@ -982,7 +927,9 @@ export async function updateSiteSettingsAction(
     youtubeUrl: normalizeOptionalText(formData.get("youtubeUrl")),
     metaTitle: normalizeOptionalText(formData.get("metaTitle")),
     metaDescription: normalizeOptionalText(formData.get("metaDescription")),
-    defaultCurrency: String(formData.get("defaultCurrency") ?? "USD").trim().toUpperCase(),
+    defaultCurrency: String(formData.get("defaultCurrency") ?? STOREFRONT_CURRENCY_CODE)
+      .trim()
+      .toUpperCase(),
     defaultLocale: String(formData.get("defaultLocale") ?? "uk"),
     watermarkText: String(formData.get("watermarkText") ?? "").trim(),
     heroTitle: String(formData.get("heroTitle") ?? "").trim(),
@@ -996,8 +943,6 @@ export async function updateSiteSettingsAction(
       status: "error",
       message: adminText(locale, {
         uk: "Перевірте обов'язкові поля налаштувань сайту перед збереженням.",
-        ru: "Проверьте обязательные поля настроек сайта перед сохранением.",
-        en: "Check the required site settings fields before saving.",
       }),
     };
   }
@@ -1062,8 +1007,6 @@ export async function updateSiteSettingsAction(
     status: "success",
     message: adminText(locale, {
       uk: "Налаштування сайту оновлено.",
-      ru: "Настройки сайта обновлены.",
-      en: "Site settings updated.",
     }),
   };
 }
@@ -1090,8 +1033,6 @@ export async function createBannerAction(
       status: "error",
       message: adminText(locale, {
         uk: "Перевірте поля банера перед збереженням.",
-        ru: "Проверьте поля баннера перед сохранением.",
-        en: "Check banner fields before saving.",
       }),
     };
   }
@@ -1118,7 +1059,7 @@ export async function createBannerAction(
       },
     });
 
-    redirect(`/${parsed.data.locale}/admin/banners/${banner.id}/edit?created=1`);
+    redirect(`/admin/banners/${banner.id}/edit?created=1`);
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
@@ -1128,8 +1069,6 @@ export async function createBannerAction(
         status: "error",
         message: adminText(locale, {
           uk: "Ключ банера має бути унікальним.",
-          ru: "Ключ баннера должен быть уникальным.",
-          en: "Banner key must be unique.",
         }),
       };
     }
@@ -1138,8 +1077,6 @@ export async function createBannerAction(
       status: "error",
       message: adminText(locale, {
         uk: "Не вдалося створити банер.",
-        ru: "Не удалось создать баннер.",
-        en: "Unable to create banner.",
       }),
     };
   }
@@ -1168,8 +1105,6 @@ export async function updateBannerAction(
       status: "error",
       message: adminText(locale, {
         uk: "Перевірте поля банера перед збереженням.",
-        ru: "Проверьте поля баннера перед сохранением.",
-        en: "Check banner fields before saving.",
       }),
     };
   }
@@ -1203,7 +1138,7 @@ export async function updateBannerAction(
       },
     });
 
-    redirect(`/${parsed.data.locale}/admin/banners/${bannerId}/edit?saved=1`);
+    redirect(`/admin/banners/${bannerId}/edit?saved=1`);
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
@@ -1213,8 +1148,6 @@ export async function updateBannerAction(
         status: "error",
         message: adminText(locale, {
           uk: "Ключ банера має бути унікальним.",
-          ru: "Ключ баннера должен быть уникальным.",
-          en: "Banner key must be unique.",
         }),
       };
     }
@@ -1223,8 +1156,6 @@ export async function updateBannerAction(
       status: "error",
       message: adminText(locale, {
         uk: "Не вдалося оновити банер.",
-        ru: "Не удалось обновить баннер.",
-        en: "Unable to update banner.",
       }),
     };
   }
@@ -1236,7 +1167,7 @@ export async function deleteBannerAction(formData: FormData) {
   const bannerId = String(formData.get("bannerId") ?? "").trim();
 
   if (!bannerId) {
-    redirect(`/${locale}/admin/banners`);
+    redirect(`/admin/banners`);
   }
 
   const banner = await db.banner.findUnique({
@@ -1257,7 +1188,7 @@ export async function deleteBannerAction(formData: FormData) {
     await safeDeleteManagedAsset(banner.image);
   }
 
-  redirect(`/${locale}/admin/banners?deleted=1`);
+  redirect(`/admin/banners?deleted=1`);
 }
 
 export async function createCategoryAction(
@@ -1273,8 +1204,6 @@ export async function createCategoryAction(
       status: "error",
       message: adminText(locale, {
         uk: "Перевірте назви категорії (мінімум 2 символи хоча б для однієї мови).",
-        ru: "Проверьте названия категории (минимум 2 символа хотя бы для одного языка).",
-        en: "Enter a category name (at least 2 characters in one language).",
       }),
     };
   }
@@ -1293,8 +1222,6 @@ export async function createCategoryAction(
       status: "error",
       message: adminText(locale, {
         uk: "Перевірте slug (мінімум 2 символи) або назву для автогенерації slug.",
-        ru: "Проверьте slug (минимум 2 символа) или название для автогенерации.",
-        en: "Check slug (min 2 characters) or name to auto-generate slug.",
       }),
     };
   }
@@ -1312,7 +1239,7 @@ export async function createCategoryAction(
       },
     });
 
-    redirect(`/${baseParsed.data.locale}/admin/categories/${category.id}/edit?created=1`);
+    redirect(`/admin/categories/${category.id}/edit?created=1`);
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
@@ -1322,8 +1249,6 @@ export async function createCategoryAction(
         status: "error",
         message: adminText(locale, {
           uk: "Slug категорії має бути унікальним.",
-          ru: "Slug категории должен быть уникальным.",
-          en: "Category slug must be unique.",
         }),
       };
     }
@@ -1332,8 +1257,6 @@ export async function createCategoryAction(
       status: "error",
       message: adminText(locale, {
         uk: "Не вдалося створити категорію.",
-        ru: "Не удалось создать категорию.",
-        en: "Unable to create category.",
       }),
     };
   }
@@ -1353,8 +1276,6 @@ export async function updateCategoryAction(
       status: "error",
       message: adminText(locale, {
         uk: "Перевірте назви категорії (мінімум 2 символи хоча б для однієї мови).",
-        ru: "Проверьте названия категории (минимум 2 символа хотя бы для одного языка).",
-        en: "Enter a category name (at least 2 characters in one language).",
       }),
     };
   }
@@ -1373,8 +1294,6 @@ export async function updateCategoryAction(
       status: "error",
       message: adminText(locale, {
         uk: "Перевірте slug (мінімум 2 символи) або назву для автогенерації slug.",
-        ru: "Проверьте slug (минимум 2 символа) или название для автогенерации.",
-        en: "Check slug (min 2 characters) or name to auto-generate slug.",
       }),
     };
   }
@@ -1384,8 +1303,6 @@ export async function updateCategoryAction(
       status: "error",
       message: adminText(locale, {
         uk: "Категорія не може бути батьківською сама для себе.",
-        ru: "Категория не может быть родительской сама для себя.",
-        en: "A category cannot be its own parent.",
       }),
     };
   }
@@ -1395,8 +1312,6 @@ export async function updateCategoryAction(
       status: "error",
       message: adminText(locale, {
         uk: "Таке батьківське значення створить цикл у структурі категорій.",
-        ru: "Такой родитель создаст цикл в структуре категорий.",
-        en: "This parent selection would create a category loop.",
       }),
     };
   }
@@ -1418,7 +1333,7 @@ export async function updateCategoryAction(
       },
     });
 
-    redirect(`/${baseParsed.data.locale}/admin/categories/${categoryId}/edit?saved=1`);
+    redirect(`/admin/categories/${categoryId}/edit?saved=1`);
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
@@ -1428,8 +1343,6 @@ export async function updateCategoryAction(
         status: "error",
         message: adminText(locale, {
           uk: "Slug категорії має бути унікальним.",
-          ru: "Slug категории должен быть уникальным.",
-          en: "Category slug must be unique.",
         }),
       };
     }
@@ -1438,8 +1351,6 @@ export async function updateCategoryAction(
       status: "error",
       message: adminText(locale, {
         uk: "Не вдалося оновити категорію.",
-        ru: "Не удалось обновить категорию.",
-        en: "Unable to update category.",
       }),
     };
   }
@@ -1451,7 +1362,7 @@ export async function deleteCategoryAction(formData: FormData) {
   const categoryId = String(formData.get("categoryId") ?? "").trim();
 
   if (!categoryId) {
-    redirect(`/${locale}/admin/categories`);
+    redirect(`/admin/categories`);
   }
 
   const category = await db.category.findUnique({
@@ -1469,11 +1380,11 @@ export async function deleteCategoryAction(formData: FormData) {
   });
 
   if (!category) {
-    redirect(`/${locale}/admin/categories`);
+    redirect(`/admin/categories`);
   }
 
   if (category._count.products > 0 || category._count.children > 0) {
-    redirect(`/${locale}/admin/categories?error=category-in-use`);
+    redirect(`/admin/categories?error=category-in-use`);
   }
 
   await db.category.delete({
@@ -1482,5 +1393,5 @@ export async function deleteCategoryAction(formData: FormData) {
     },
   });
 
-  redirect(`/${locale}/admin/categories?deleted=1`);
+  redirect(`/admin/categories?deleted=1`);
 }

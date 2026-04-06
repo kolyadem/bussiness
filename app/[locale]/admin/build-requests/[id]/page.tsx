@@ -17,12 +17,13 @@ import {
 } from "@/lib/storefront/build-requests";
 import { getConfiguratorSlotLabel, isConfiguratorSlotKey } from "@/lib/storefront/configurator";
 import { mapProduct } from "@/lib/storefront/queries";
+import type { AppLocale } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
 
 export default async function AdminBuildRequestDetailPage({
   params,
 }: {
-  params: Promise<{ locale: "uk" | "ru" | "en"; id: string }>;
+  params: Promise<{ locale: AppLocale; id: string }>;
 }) {
   const { locale, id } = await params;
   const request = await getAdminBuildRequestById(id);
@@ -61,7 +62,7 @@ export default async function AdminBuildRequestDetailPage({
           href="/admin/build-requests"
           className="text-sm text-[color:var(--color-text-soft)] transition hover:text-[color:var(--color-text)]"
         >
-          {locale === "uk" ? "Назад до заявок" : locale === "ru" ? "Назад к заявкам" : "Back to requests"}
+          Назад до заявок
         </Link>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
@@ -79,24 +80,24 @@ export default async function AdminBuildRequestDetailPage({
         <div className="space-y-6">
           <article className="rounded-[1.8rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
             <h3 className="text-xl font-semibold text-[color:var(--color-text)]">
-              {locale === "uk" ? "Контакти" : locale === "ru" ? "Контакты" : "Contact details"}
+              Контакти
             </h3>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Клієнт" : locale === "ru" ? "Клиент" : "Client"}
+                  Клієнт
                 </p>
                 <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{request.customerName}</p>
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Контакт" : locale === "ru" ? "Контакт" : "Contact"}
+                  Контакт
                 </p>
                 <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{request.contact}</p>
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Телефон" : locale === "ru" ? "Телефон" : "Phone"}
+                  Телефон
                 </p>
                 <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{request.phone ?? "—"}</p>
               </div>
@@ -109,12 +110,12 @@ export default async function AdminBuildRequestDetailPage({
 
           <article className="rounded-[1.8rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
             <h3 className="text-xl font-semibold text-[color:var(--color-text)]">
-              {locale === "uk" ? "Бриф по запиту" : locale === "ru" ? "Бриф по запросу" : "Request brief"}
+              Бриф по запиту
             </h3>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Бюджет" : locale === "ru" ? "Бюджет" : "Budget"}
+                  Бюджет
                 </p>
                 <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">
                   {request.budget ? formatPrice(request.budget, locale, request.currency) : "—"}
@@ -122,13 +123,13 @@ export default async function AdminBuildRequestDetailPage({
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Місто" : locale === "ru" ? "Город" : "City"}
+                  Місто
                 </p>
                 <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{request.deliveryCity ?? "—"}</p>
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4 sm:col-span-2">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Для чого потрібен ПК" : locale === "ru" ? "Для чего нужен ПК" : "Use case"}
+                  Для чого потрібен ПК
                 </p>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[color:var(--color-text)]">
                   {request.useCase ?? "—"}
@@ -136,7 +137,7 @@ export default async function AdminBuildRequestDetailPage({
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4 sm:col-span-2">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Побажання" : locale === "ru" ? "Пожелания" : "Preferences"}
+                  Побажання
                 </p>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[color:var(--color-text)]">
                   {request.preferences ?? "—"}
@@ -147,12 +148,12 @@ export default async function AdminBuildRequestDetailPage({
 
           <article className="rounded-[1.8rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
             <h3 className="text-xl font-semibold text-[color:var(--color-text)]">
-              {locale === "uk" ? "Потреби клієнта" : locale === "ru" ? "Потребности клиента" : "Client needs"}
+              Потреби клієнта
             </h3>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Монітор" : locale === "ru" ? "Монитор" : "Monitor"}
+                  Монітор
                 </p>
                 <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">
                   {getBuildRequestBooleanLabel(request.needsMonitor, locale)}
@@ -160,7 +161,7 @@ export default async function AdminBuildRequestDetailPage({
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Периферія" : locale === "ru" ? "Периферия" : "Peripherals"}
+                  Периферія
                 </p>
                 <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">
                   {getBuildRequestBooleanLabel(request.needsPeripherals, locale)}
@@ -168,7 +169,7 @@ export default async function AdminBuildRequestDetailPage({
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Апгрейд" : locale === "ru" ? "Апгрейд" : "Upgrade"}
+                  Апгрейд
                 </p>
                 <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">
                   {getBuildRequestBooleanLabel(request.needsUpgrade, locale)}
@@ -179,7 +180,7 @@ export default async function AdminBuildRequestDetailPage({
             {request.comment ? (
               <div className="mt-3 rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Контекст / джерело" : locale === "ru" ? "Контекст / источник" : "Context / source"}
+                  Контекст / джерело
                 </p>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[color:var(--color-text)]">
                   {request.comment}
@@ -190,15 +191,11 @@ export default async function AdminBuildRequestDetailPage({
 
           <article className="rounded-[1.8rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
             <h3 className="text-xl font-semibold text-[color:var(--color-text)]">
-              {locale === "uk" ? "Конфігурація" : locale === "ru" ? "Конфигурация" : "Configuration"}
+              Конфігурація
             </h3>
             {items.length === 0 ? (
               <div className="mt-4 rounded-[1.4rem] border border-dashed border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4 text-sm leading-7 text-[color:var(--color-text-soft)]">
-                {locale === "uk"
-                  ? "Це швидка заявка без готової конфігурації. Менеджер працює з брифом і бюджетом."
-                  : locale === "ru"
-                    ? "Это быстрая заявка без готовой конфигурации. Менеджер работает с брифом и бюджетом."
-                    : "This is a quick inquiry without a predefined configuration. The manager works from the brief and budget."}
+                Це швидка заявка без готової конфігурації. Менеджер працює з брифом і бюджетом.
               </div>
             ) : (
               <div className="mt-4 grid gap-4">
@@ -238,7 +235,7 @@ export default async function AdminBuildRequestDetailPage({
         <aside className="space-y-6 xl:sticky xl:top-[calc(var(--header-offset)+0.75rem)] xl:self-start">
           <section className="rounded-[1.8rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] p-5 shadow-[var(--shadow-soft)]">
             <h3 className="text-xl font-semibold text-[color:var(--color-text)]">
-              {locale === "uk" ? "Статус заявки" : locale === "ru" ? "Статус заявки" : "Request status"}
+              Статус заявки
             </h3>
             <div className="mt-4">
               <BuildRequestStatusControl requestId={request.id} locale={locale} value={status} />
@@ -257,7 +254,7 @@ export default async function AdminBuildRequestDetailPage({
             <div className="grid gap-3">
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Бюджет / сума" : locale === "ru" ? "Бюджет / сумма" : "Budget / total"}
+                  Бюджет / сума
                 </p>
                 <p className="mt-2 text-2xl font-semibold text-[color:var(--color-text)]">
                   {formatPrice(
@@ -269,7 +266,7 @@ export default async function AdminBuildRequestDetailPage({
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Збірка" : locale === "ru" ? "Сборка" : "Build"}
+                  Збірка
                 </p>
                 <p className="mt-2 break-all text-sm font-medium text-[color:var(--color-text)]">
                   {request.build.name}
@@ -277,7 +274,7 @@ export default async function AdminBuildRequestDetailPage({
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Доставка" : locale === "ru" ? "Доставка" : "Delivery"}
+                  Доставка
                 </p>
                 <p className="mt-2 text-sm font-medium text-[color:var(--color-text)]">
                   {deliveryMethod ? getBuildRequestDeliveryMethodLabel(deliveryMethod, locale) : "—"}

@@ -1,7 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/lib/i18n/routing";
 import type { AppLocale } from "@/lib/constants";
-import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 import { MiniCart } from "@/components/layout/mini-cart";
 import { NavLinks } from "@/components/layout/nav-links";
 import { StorefrontLogo } from "@/components/layout/storefront-logo";
@@ -45,13 +44,7 @@ export async function Header({
   const catalogLabel =
     siteMode === SITE_MODES.pcBuild ? experience?.navCatalog ?? t("navCatalog") : t("navCatalog");
   const configuratorLabel =
-    siteMode === SITE_MODES.pcBuild
-      ? experience?.navConfigurator ?? "PC Configurator"
-      : locale === "uk"
-        ? "PC Configurator"
-        : locale === "ru"
-          ? "PC Configurator"
-          : "PC Configurator";
+    siteMode === SITE_MODES.pcBuild ? experience?.navConfigurator ?? "PC Configurator" : "PC Configurator";
 
   const navItems = [
     { href: "/", label: t("navHome") },
@@ -79,7 +72,6 @@ export async function Header({
             <MiniCart itemCount={cartCount} subtotal={cartSubtotal} items={cartItems} />
             <NavLinks items={[{ href: "/account", label: t("navAccount") }]} variant="account" />
             <ThemeToggle />
-            <LocaleSwitcher />
           </div>
         </div>
         <div className="flex gap-2 overflow-x-auto px-4 pb-4 lg:hidden sm:px-5 lg:px-6 xl:px-7">

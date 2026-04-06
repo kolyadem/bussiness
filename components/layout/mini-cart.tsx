@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/routing";
 import type { AppLocale } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
 type MiniCartItem = {
   id: string;
@@ -123,24 +123,12 @@ export function MiniCart({
     };
   }, [open]);
 
-  const subtitle =
-    locale === "uk"
-      ? `${itemCount} товарів у кошику`
-      : locale === "ru"
-        ? `${itemCount} товаров в корзине`
-        : `${itemCount} items in cart`;
+  const subtitle = `${itemCount} товарів у кошику`;
   const emptyDescription =
-    locale === "uk"
-      ? "Додайте товари з каталогу, щоб швидко повернутися до покупки."
-      : locale === "ru"
-        ? "Добавьте товары из каталога, чтобы быстро вернуться к покупке."
-        : "Add products from the catalog to keep your selection close at hand.";
-  const subtotalLabel =
-    locale === "uk" ? "Сума зараз" : locale === "ru" ? "Сумма сейчас" : "Current subtotal";
-  const openCartLabel =
-    locale === "uk" ? "Відкрити кошик" : locale === "ru" ? "Открыть корзину" : "Open cart";
-  const imageFallbackLabel =
-    locale === "uk" ? "Без фото" : locale === "ru" ? "Без фото" : "No image";
+    "Додайте товари з каталогу, щоб швидко повернутися до покупки.";
+  const subtotalLabel = "Сума зараз";
+  const openCartLabel = "Відкрити кошик";
+  const imageFallbackLabel = "Без фото";
 
   return (
     <div ref={rootRef} className={`relative ${open ? "z-[90]" : ""}`}>
@@ -235,7 +223,7 @@ export function MiniCart({
                     <div className="flex items-center justify-between gap-4">
                       <span className="text-sm text-[color:var(--color-text-soft)]">{subtotalLabel}</span>
                       <span className="font-heading text-xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)] sm:text-2xl">
-                        {formatPrice(subtotal, locale, items[0]?.currency ?? "USD")}
+                        {formatPrice(subtotal, locale, items[0]?.currency ?? STOREFRONT_CURRENCY_CODE)}
                       </span>
                     </div>
                   </div>

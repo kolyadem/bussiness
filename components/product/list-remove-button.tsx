@@ -2,7 +2,6 @@
 
 import { startTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
 import { LoaderCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { getActionErrorMessage, readApiPayload } from "@/components/product/client-feedback";
@@ -17,22 +16,11 @@ export function ListRemoveButton({
   compact?: boolean;
 }) {
   const router = useRouter();
-  const locale = useLocale();
   const [pending, setPending] = useState(false);
 
-  const label = locale === "uk" ? "Видалити" : locale === "ru" ? "Удалить" : "Remove";
+  const label = "Видалити";
   const successLabel =
-    endpoint === "/api/wishlist"
-      ? locale === "uk"
-        ? "Товар прибрано з обраного"
-        : locale === "ru"
-          ? "Товар убран из избранного"
-          : "Removed from wishlist"
-      : locale === "uk"
-        ? "Товар прибрано з порівняння"
-        : locale === "ru"
-          ? "Товар убран из сравнения"
-          : "Removed from compare";
+    endpoint === "/api/wishlist" ? "Товар прибрано з обраного" : "Товар прибрано з порівняння";
 
   return (
     <button
@@ -52,13 +40,13 @@ export function ListRemoveButton({
 
             if (!response.ok) {
               const payload = await readApiPayload(response);
-              throw new Error(payload.error || "Request failed");
+              throw new Error(payload.error || "Запит не вдався");
             }
 
             toast.success(successLabel);
             router.refresh();
           } catch {
-            toast.error(getActionErrorMessage(locale));
+            toast.error(getActionErrorMessage("uk"));
           } finally {
             setPending(false);
           }

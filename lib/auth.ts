@@ -261,17 +261,15 @@ async function resolveRequestLocale(locale?: string | null) {
   return defaultLocale;
 }
 
-async function getAuthRedirectTargets(locale?: string | null) {
-  const resolvedLocale = await resolveRequestLocale(locale);
-
+async function getAuthRedirectTargets(_locale?: string | null) {
   return {
-    loginHref: `/${resolvedLocale}/login`,
-    fallbackHref: `/${resolvedLocale}`,
+    loginHref: "/login",
+    fallbackHref: "/",
   };
 }
 
-export function getPostLoginPath(locale: AppLocale, role: string | null | undefined) {
-  return hasRole(role, USER_ROLES.manager) ? `/${locale}/admin` : `/${locale}/account`;
+export function getPostLoginPath(_locale: AppLocale, role: string | null | undefined) {
+  return hasRole(role, USER_ROLES.manager) ? "/admin" : "/account";
 }
 
 export function hasRole(

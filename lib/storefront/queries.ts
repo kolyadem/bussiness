@@ -13,6 +13,7 @@ import { getSiteSettingsRecord } from "@/lib/site-config";
 import {
   displayPriceToStoredMinorUnits,
   parseJson,
+  STOREFRONT_CURRENCY_CODE,
   storedMinorUnitsToDisplayPrice,
 } from "@/lib/utils";
 import { getSessionId } from "@/lib/session";
@@ -460,9 +461,13 @@ export async function getCatalogData({
       ? collectDescendantCategoryIds(categories, selectedCategory.id)
       : null;
   const minPriceStored =
-    typeof params.minPrice === "number" ? displayPriceToStoredMinorUnits(params.minPrice) : null;
+    typeof params.minPrice === "number"
+      ? displayPriceToStoredMinorUnits(params.minPrice, STOREFRONT_CURRENCY_CODE)
+      : null;
   const maxPriceStored =
-    typeof params.maxPrice === "number" ? displayPriceToStoredMinorUnits(params.maxPrice) : null;
+    typeof params.maxPrice === "number"
+      ? displayPriceToStoredMinorUnits(params.maxPrice, STOREFRONT_CURRENCY_CODE)
+      : null;
   const priceFilter =
     minPriceStored !== null || maxPriceStored !== null
       ? {
@@ -896,6 +901,7 @@ export async function getAccountSurfaceData(locale: AppLocale) {
     name: build.name,
     slug: build.slug,
     updatedAt: build.updatedAt,
+    currency: build.items[0]?.product.currency ?? STOREFRONT_CURRENCY_CODE,
     totalPrice:
       build.totalPrice > 0
         ? build.totalPrice
@@ -935,6 +941,7 @@ export async function getAccountSurfaceData(locale: AppLocale) {
       number: `LM-${request.id.slice(-6).toUpperCase()}`,
       createdAt: request.createdAt,
       status: request.status,
+      currency: request.currency,
       total:
         request.totalPrice > 0
           ? request.totalPrice
@@ -949,6 +956,7 @@ export async function getAccountSurfaceData(locale: AppLocale) {
     createdAt: order.createdAt,
     status: normalizeOrderStatus(order.status),
     orderKind: getOrderKindFromItems(order.items),
+    currency: order.currency,
     total: order.totalPrice,
     deliveryCity: order.deliveryCity,
     deliveryMethod: order.deliveryMethod,
@@ -980,6 +988,7 @@ export async function getAccountSurfaceData(locale: AppLocale) {
     })),
     compareCount: compare.length,
     cartItemsCount: cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0,
+    cartCurrency: cart?.items[0]?.product.currency ?? STOREFRONT_CURRENCY_CODE,
     cartSubtotal:
       cart?.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) ?? 0,
     builds: buildSummaries,
@@ -995,6 +1004,7 @@ export async function getAccountSurfaceData(locale: AppLocale) {
         wishlist: [],
         compareCount: 0,
         cartItemsCount: 0,
+        cartCurrency: STOREFRONT_CURRENCY_CODE,
         cartSubtotal: 0,
         builds: [],
         orders: [],
@@ -1045,9 +1055,8 @@ export function mapProduct(product: ProductRecord & { _avgRating?: number }, loc
     currency: product.currency,
     inventoryStatus: product.inventoryStatus,
     inventoryLabel:
-      inventoryLabels[
-        product.inventoryStatus as keyof typeof inventoryLabels
-      ]?.[locale] ?? product.inventoryStatus,
+      inventoryLabels[product.inventoryStatus as keyof typeof inventoryLabels] ??
+      product.inventoryStatus,
     category: {
       name: categoryTranslation.name,
       slug: product.category.slug,

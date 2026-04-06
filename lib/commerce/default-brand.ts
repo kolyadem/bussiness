@@ -18,11 +18,7 @@ export async function getDefaultBrandId(): Promise<string> {
       slug: DEFAULT_BRAND_SLUG,
       sortOrder: 0,
       translations: {
-        create: [
-          { locale: "uk", name: "Каталог" },
-          { locale: "ru", name: "Каталог" },
-          { locale: "en", name: "Catalog" },
-        ],
+        create: [{ locale: "uk", name: "Каталог" }],
       },
     },
     select: { id: true },

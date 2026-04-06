@@ -10,7 +10,7 @@ const patchSchema = z.object({
 function jsonAuthError(status: 401 | 403) {
   return NextResponse.json(
     {
-      error: status === 401 ? "Authentication required" : "Insufficient permissions",
+      error: status === 401 ? "Потрібна автентифікація" : "Недостатньо прав",
     },
     { status },
   );
@@ -45,7 +45,7 @@ export async function PATCH(
   const parsed = patchSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
   }
 
   try {
@@ -59,6 +59,6 @@ export async function PATCH(
       alert,
     });
   } catch {
-    return NextResponse.json({ error: "Could not update alert" }, { status: 400 });
+    return NextResponse.json({ error: "Не вдалося оновити сигнал" }, { status: 400 });
   }
 }

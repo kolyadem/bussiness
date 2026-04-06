@@ -33,7 +33,7 @@ async function main() {
       metaDescription:
         "Підбір збірки ПК, комплектуючі та периферія: конфігуратор сумісності та каталог для апгрейду.",
       faviconPath: "/favicon.ico",
-      defaultCurrency: "USD",
+      defaultCurrency: "UAH",
       defaultLocale: "uk",
       watermarkText: "LUMINA",
       heroTitle: "Збірка ПК під ваші задачі",

@@ -12,7 +12,7 @@ import { Link } from "@/lib/i18n/routing";
 import type { AppLocale } from "@/lib/constants";
 import { getConfiguratorSlotView, getSharedConfiguratorBuild } from "@/lib/storefront/configurator-data";
 import { pageMetadata } from "@/lib/storefront/seo";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
 export async function generateMetadata({
   params,
@@ -25,22 +25,10 @@ export async function generateMetadata({
   return pageMetadata(
     locale,
     "homeSeoTitle",
-    build
-      ? build.name
-      : locale === "uk"
-        ? "Поділена збірка ПК"
-        : locale === "ru"
-          ? "Поделённая сборка ПК"
-          : "Shared PC build",
+    build ? build.name : "Поділена збірка ПК",
     `/configurator/share/${token}`,
     {
-      title: build
-        ? build.name
-        : locale === "uk"
-          ? "Поділена збірка ПК"
-          : locale === "ru"
-            ? "Поделенная сборка ПК"
-            : "Shared PC build",
+      title: build ? build.name : "Поділена збірка ПК",
       indexable: false,
     },
   );
@@ -75,16 +63,12 @@ export default async function SharedConfiguratorPage({
           {build.name}
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--color-text-soft)] sm:text-base">
-          {locale === "uk"
-            ? "Це поділена конфігурація. Вона відображається як публічна вітрина збірки, а зібрати власну версію можна в configurator."
-            : locale === "ru"
-              ? "Это поделённая конфигурация. Она отображается как публичная витрина сборки, а собрать свою версию можно в configurator."
-              : "This is a shared configuration. It works as a public build showcase, and you can assemble your own version in the configurator."}
+          Це поділена конфігурація. Вона відображається як публічна вітрина збірки, а зібрати власну версію можна в configurator.
         </p>
         <div className="mt-6">
           <Link href="/configurator">
             <Button>
-              {locale === "uk" ? "Відкрити configurator" : locale === "ru" ? "Открыть configurator" : "Open configurator"}
+              Відкрити configurator
             </Button>
           </Link>
         </div>
@@ -116,19 +100,19 @@ export default async function SharedConfiguratorPage({
 
         <aside className="h-fit rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)] lg:sticky lg:top-[calc(var(--header-offset)+0.75rem)]">
           <p className="text-sm uppercase tracking-[0.24em] text-[color:var(--color-accent-strong)]">
-            {locale === "uk" ? "Підсумок" : locale === "ru" ? "Сводка" : "Summary"}
+            Підсумок
           </p>
           <div className="mt-5 space-y-4">
             <div className="flex items-center justify-between gap-4 text-sm text-[color:var(--color-text-soft)]">
-              <span>{locale === "uk" ? "Позицій" : locale === "ru" ? "Позиций" : "Items"}</span>
+              <span>Позицій</span>
               <span className="font-medium text-[color:var(--color-text)]">{build.itemCount}</span>
             </div>
             <div className="flex items-center justify-between gap-4">
               <span className="text-sm text-[color:var(--color-text-soft)]">
-                {locale === "uk" ? "Сума" : locale === "ru" ? "Сумма" : "Total"}
+                Сума
               </span>
               <span className="font-heading text-3xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
-                {formatPrice(build.totalPrice, locale, items[0]?.item?.product.currency ?? "USD")}
+                {formatPrice(build.totalPrice, locale, items[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE)}
               </span>
             </div>
             <div
@@ -151,22 +135,10 @@ export default async function SharedConfiguratorPage({
                   </p>
                   <p className="hidden text-sm font-medium">
                     {build.compatibility.status === "pass"
-                      ? locale === "uk"
-                        ? "Сумісна конфігурація"
-                        : locale === "ru"
-                          ? "Совместимая конфигурация"
-                          : "Compatible configuration"
+                      ? "Сумісна конфігурація"
                       : build.compatibility.status === "warning"
-                        ? locale === "uk"
-                          ? "Є попередження"
-                          : locale === "ru"
-                            ? "Есть предупреждения"
-                            : "Compatibility warnings"
-                        : locale === "uk"
-                          ? "Є несумісності"
-                          : locale === "ru"
-                            ? "Есть несовместимости"
-                            : "Compatibility issues"}
+                        ? "Є попередження"
+                        : "Є несумісності"}
                   </p>
                   {build.compatibility.errors[0] ? (
                     <p className="mt-2 text-sm leading-6">{build.compatibility.errors[0].message}</p>

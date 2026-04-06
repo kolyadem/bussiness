@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const parsed = createSchema.safeParse(body);
 
   if (!parsed.success || !assertLocale(parsed.data.locale)) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
   }
 
   const build = await createConfiguratorBuild({

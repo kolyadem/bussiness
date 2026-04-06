@@ -10,24 +10,9 @@ export default async function AdminLayout({
 }) {
   const { locale } = await params;
   const user = await requireAdminAccess(locale);
-  const title =
-    locale === "uk"
-      ? "Керування магазином"
-      : locale === "ru"
-        ? "Управление магазином"
-        : "Store management";
+  const title = "Керування магазином";
   const roleLabel =
-    user.role === "ADMIN"
-      ? locale === "uk"
-        ? "Власник"
-        : locale === "ru"
-          ? "Владелец"
-          : "Owner"
-      : locale === "uk"
-        ? "Менеджер"
-        : locale === "ru"
-          ? "Менеджер"
-          : "Manager";
+    user.role === "ADMIN" ? "Власник" : "Менеджер";
 
   return (
     <main className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10">

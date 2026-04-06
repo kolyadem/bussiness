@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { messages } from "@/lib/i18n/messages";
-import { defaultLocale, locales, type AppLocale } from "@/lib/constants";
+import { messages, type MessageKey } from "@/lib/i18n/messages";
+import { defaultLocale, type AppLocale } from "@/lib/constants";
 
 const fallbackSiteName = "Lumina Tech";
 
@@ -16,7 +16,8 @@ function normalizePathname(pathname: string) {
   return pathname.startsWith("/") ? pathname : `/${pathname}`;
 }
 
-export function resolveLocaleFromPathname(pathname: string | null | undefined) {
+/** Legacy paths like `/uk/catalog` — first segment was a locale. Unprefixed routes return null. */
+export function resolveLocaleFromPathname(pathname: string | null | undefined): AppLocale | null {
   if (!pathname) {
     return null;
   }
@@ -26,7 +27,11 @@ export function resolveLocaleFromPathname(pathname: string | null | undefined) {
     : pathname;
   const [segment] = normalizedPathname.split("/").filter(Boolean);
 
-  return locales.includes(segment as AppLocale) ? (segment as AppLocale) : null;
+  if (segment === "uk") {
+    return defaultLocale;
+  }
+
+  return null;
 }
 
 export function getSiteUrl() {
@@ -42,48 +47,34 @@ export function getMetadataBase() {
   return new URL(getSiteUrl());
 }
 
-export function getLocalizedPath(locale: AppLocale, pathname: string) {
-  const normalizedPathname = normalizePathname(pathname);
-  return normalizedPathname ? `/${locale}${normalizedPathname}` : `/${locale}`;
+/** Public URL path without locale prefix (Ukrainian-only site). */
+export function getLocalizedPath(_locale: AppLocale, pathname: string) {
+  return normalizePathname(pathname);
 }
 
 export function getAbsoluteUrl(pathname: string) {
   return new URL(pathname, getMetadataBase()).toString();
 }
 
-export function getAbsoluteLocalizedUrl(locale: AppLocale, pathname: string) {
-  return getAbsoluteUrl(getLocalizedPath(locale, pathname));
+export function getAbsoluteLocalizedUrl(_locale: AppLocale, pathname: string) {
+  return getAbsoluteUrl(getLocalizedPath(defaultLocale, pathname));
 }
 
-export function getOpenGraphLocale(locale: AppLocale) {
-  switch (locale) {
-    case "uk":
-      return "uk_UA";
-    case "ru":
-      return "ru_RU";
-    case "en":
-    default:
-      return "en_US";
-  }
+export function getOpenGraphLocale(_locale: AppLocale) {
+  return "uk_UA";
 }
 
 export function getAlternateLanguageUrls(pathname: string) {
-  return Object.fromEntries(
-    locales.map((supportedLocale) => [
-      supportedLocale,
-      getAbsoluteLocalizedUrl(supportedLocale, pathname),
-    ]),
-  ) as Record<AppLocale, string>;
+  return {
+    uk: getAbsoluteLocalizedUrl(defaultLocale, pathname),
+  } as const;
 }
 
-export function buildAlternates(pathname: string, locale: AppLocale): Metadata["alternates"] {
-  const languages = getAlternateLanguageUrls(pathname);
-
+export function buildAlternates(pathname: string, _locale: AppLocale): Metadata["alternates"] {
   return {
-    canonical: getAbsoluteLocalizedUrl(locale, pathname),
+    canonical: getAbsoluteLocalizedUrl(defaultLocale, pathname),
     languages: {
-      ...languages,
-      "x-default": getAbsoluteLocalizedUrl(defaultLocale, pathname),
+      uk: getAbsoluteLocalizedUrl(defaultLocale, pathname),
     },
   };
 }
@@ -105,7 +96,7 @@ export function buildRobots(indexable = true): Metadata["robots"] {
 
 export function pageMetadata(
   locale: AppLocale,
-  titleKey: keyof (typeof messages)["en"],
+  titleKey: MessageKey,
   description: string,
   pathname: string,
   options?: {
@@ -116,7 +107,7 @@ export function pageMetadata(
     siteName?: string;
   },
 ): Metadata {
-  const title = options?.title ?? messages[locale][titleKey];
+  const title = options?.title ?? messages[titleKey];
   const siteName = options?.siteName ?? fallbackSiteName;
   const pageUrl = getAbsoluteLocalizedUrl(locale, pathname);
   const images = options?.images?.map((image) =>

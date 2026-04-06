@@ -15,7 +15,7 @@ export async function PATCH(
   try {
     await requireAdminAccess();
   } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Потрібна автентифікація" }, { status: 401 });
   }
 
   const { id } = await context.params;
@@ -23,7 +23,7 @@ export async function PATCH(
   const parsed = updateSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
   }
 
   try {
@@ -36,7 +36,7 @@ export async function PATCH(
     return NextResponse.json({ ok: true, order: updated });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Could not update order" },
+      { error: error instanceof Error ? error.message : "Не вдалося оновити замовлення" },
       { status: 400 },
     );
   }

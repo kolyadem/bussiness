@@ -17,19 +17,10 @@ export async function generateMetadata({
   return pageMetadata(
     locale,
     "homeSeoTitle",
-    locale === "uk"
-      ? "Запит на підбір ПК під бюджет і задачі."
-      : locale === "ru"
-        ? "Запрос на подбор ПК под бюджет и задачи."
-        : "Request a PC build recommendation for your budget and goals.",
+    "Запит на підбір ПК під бюджет і задачі.",
     "/build-request",
     {
-      title:
-        locale === "uk"
-          ? "Запит на підбір ПК"
-          : locale === "ru"
-            ? "Запрос на подбор ПК"
-            : "PC build inquiry",
+      title: "Запит на підбір ПК",
       indexable: false,
     },
   );

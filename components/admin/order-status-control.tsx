@@ -66,26 +66,14 @@ export function OrderStatusControl({
 
                 if (!response.ok) {
                   const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-                  throw new Error(payload?.error || "Unable to update order");
+                  throw new Error(payload?.error || "Не вдалося оновити замовлення");
                 }
 
-                toast.success(
-                  locale === "uk"
-                    ? "Замовлення оновлено"
-                    : locale === "ru"
-                      ? "Заказ обновлён"
-                      : "Order updated",
-                );
+                toast.success("Замовлення оновлено");
                 router.refresh();
               } catch (error) {
                 toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : locale === "uk"
-                      ? "Не вдалося оновити замовлення"
-                      : locale === "ru"
-                        ? "Не удалось обновить заказ"
-                        : "Could not update order",
+                  error instanceof Error ? error.message : "Не вдалося оновити замовлення",
                 );
               } finally {
                 setPending(false);
@@ -95,27 +83,21 @@ export function OrderStatusControl({
           className={compact ? "w-full" : undefined}
         >
           {pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-          <span>{locale === "uk" ? "Зберегти" : locale === "ru" ? "Сохранить" : "Save"}</span>
+          <span>Зберегти</span>
         </Button>
       </div>
 
       {showNote ? (
         <label className="grid gap-2">
           <span className="text-sm text-[color:var(--color-text-soft)]">
-            {locale === "uk" ? "Нотатка менеджера" : locale === "ru" ? "Заметка менеджера" : "Manager note"}
+            Нотатка менеджера
           </span>
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
             rows={5}
             disabled={pending}
-            placeholder={
-              locale === "uk"
-                ? "Внутрішня примітка по замовленню"
-                : locale === "ru"
-                  ? "Внутренняя заметка по заказу"
-                  : "Internal handling note"
-            }
+            placeholder="Внутрішня примітка по замовленню"
             className="rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
           />
         </label>

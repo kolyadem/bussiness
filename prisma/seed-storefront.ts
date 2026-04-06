@@ -6,7 +6,9 @@ import {
   getAllTechnicalAttributeDefinitions,
   getTechnicalAttributeLabel,
 } from "@/lib/configurator/technical-attributes";
-const locales = ["uk", "ru", "en"] as const;
+import { defaultLocale } from "@/lib/constants";
+
+const locales = ["uk"] as const;
 
 const brands = [
   {
@@ -14,8 +16,6 @@ const brands = [
     website: "https://www.amd.com",
     translations: {
       uk: { name: "AMD", summary: "Процесори та платформи для ігор і роботи." },
-      ru: { name: "AMD", summary: "Процессоры и платформы для игр и работы." },
-      en: { name: "AMD", summary: "Processors and platforms for gaming and work." },
     },
   },
   {
@@ -23,8 +23,6 @@ const brands = [
     website: "https://www.asus.com",
     translations: {
       uk: { name: "ASUS", summary: "Материнські плати, відеокарти, ноутбуки та монітори." },
-      ru: { name: "ASUS", summary: "Материнские платы, видеокарты, ноутбуки и мониторы." },
-      en: { name: "ASUS", summary: "Motherboards, graphics cards, laptops and displays." },
     },
   },
   {
@@ -32,8 +30,6 @@ const brands = [
     website: "https://www.corsair.com",
     translations: {
       uk: { name: "Corsair", summary: "Памʼять, корпуси, охолодження та блоки живлення." },
-      ru: { name: "Corsair", summary: "Память, корпуса, охлаждение и блоки питания." },
-      en: { name: "Corsair", summary: "Memory, cases, cooling and power supplies." },
     },
   },
   {
@@ -41,8 +37,6 @@ const brands = [
     website: "https://www.logitech.com",
     translations: {
       uk: { name: "Logitech", summary: "Преміальна периферія для продуктивності та ігор." },
-      ru: { name: "Logitech", summary: "Премиальная периферия для продуктивности и игр." },
-      en: { name: "Logitech", summary: "Premium peripherals for productivity and gaming." },
     },
   },
   {
@@ -50,8 +44,6 @@ const brands = [
     website: "https://www.samsung.com",
     translations: {
       uk: { name: "Samsung", summary: "Швидкі накопичувачі та premium дисплеї." },
-      ru: { name: "Samsung", summary: "Быстрые накопители и premium дисплеи." },
-      en: { name: "Samsung", summary: "Fast storage and premium displays." },
     },
   },
 ];
@@ -62,8 +54,6 @@ const categories = [
     image: "/products/ready-pc.svg",
     translations: {
       uk: { name: "Готові ПК", description: "Збалансовані premium-системи." },
-      ru: { name: "Готовые ПК", description: "Сбалансированные premium-системы." },
-      en: { name: "Ready PCs", description: "Balanced premium systems." },
     },
   },
   {
@@ -71,8 +61,6 @@ const categories = [
     image: "/products/cpu.svg",
     translations: {
       uk: { name: "Процесори", description: "Сучасні CPU для ігор та роботи." },
-      ru: { name: "Процессоры", description: "Современные CPU для игр и работы." },
-      en: { name: "Processors", description: "Modern CPUs for gaming and work." },
     },
   },
   {
@@ -80,8 +68,6 @@ const categories = [
     image: "/products/motherboard.svg",
     translations: {
       uk: { name: "Материнські плати", description: "Основа збалансованої збірки." },
-      ru: { name: "Материнские платы", description: "Основа сбалансированной сборки." },
-      en: { name: "Motherboards", description: "The core of a balanced build." },
     },
   },
   {
@@ -89,8 +75,6 @@ const categories = [
     image: "/products/ram.svg",
     translations: {
       uk: { name: "Оперативна памʼять", description: "Швидкі DDR5-комплекти." },
-      ru: { name: "Оперативная память", description: "Быстрые DDR5-комплекты." },
-      en: { name: "Memory", description: "Fast DDR5 kits." },
     },
   },
   {
@@ -98,8 +82,6 @@ const categories = [
     image: "/products/gpu.svg",
     translations: {
       uk: { name: "Відеокарти", description: "GPU для AAA-ігор і creator-задач." },
-      ru: { name: "Видеокарты", description: "GPU для AAA-игр и creator-задач." },
-      en: { name: "Graphics cards", description: "GPUs for AAA gaming and creator workloads." },
     },
   },
   {
@@ -107,8 +89,6 @@ const categories = [
     image: "/products/storage.svg",
     translations: {
       uk: { name: "SSD / HDD", description: "Накопичувачі для системи та бібліотеки." },
-      ru: { name: "SSD / HDD", description: "Накопители для системы и библиотеки." },
-      en: { name: "SSD / HDD", description: "Storage for OS and game libraries." },
     },
   },
   {
@@ -116,8 +96,6 @@ const categories = [
     image: "/products/psu.svg",
     translations: {
       uk: { name: "Блоки живлення", description: "Надійне живлення із запасом по потужності." },
-      ru: { name: "Блоки питания", description: "Надежное питание с запасом по мощности." },
-      en: { name: "Power supplies", description: "Stable power delivery with room to grow." },
     },
   },
   {
@@ -125,8 +103,6 @@ const categories = [
     image: "/products/cooler.svg",
     translations: {
       uk: { name: "Охолодження", description: "Кулери для тихої та стабільної роботи системи." },
-      ru: { name: "Охлаждение", description: "Кулеры для тихой и стабильной работы системы." },
-      en: { name: "Cooling", description: "Cooling solutions for quiet, stable builds." },
     },
   },
   {
@@ -134,8 +110,6 @@ const categories = [
     image: "/products/case.svg",
     translations: {
       uk: { name: "Корпуси", description: "Корпуси з підтримкою сучасних high-end компонентів." },
-      ru: { name: "Корпуса", description: "Корпуса с поддержкой современных high-end компонентов." },
-      en: { name: "Cases", description: "Cases built for modern premium components." },
     },
   },
   {
@@ -143,8 +117,6 @@ const categories = [
     image: "/products/monitor.svg",
     translations: {
       uk: { name: "Монітори", description: "Ігрові та creator-дисплеї." },
-      ru: { name: "Мониторы", description: "Игровые и creator-дисплеи." },
-      en: { name: "Monitors", description: "Gaming and creator displays." },
     },
   },
   {
@@ -152,8 +124,6 @@ const categories = [
     image: "/products/peripheral.svg",
     translations: {
       uk: { name: "Периферія", description: "Клавіатури, мишки та гарнітури." },
-      ru: { name: "Периферия", description: "Клавиатуры, мышки и гарнитуры." },
-      en: { name: "Peripherals", description: "Keyboards, mice and headsets." },
     },
   },
   {
@@ -161,8 +131,6 @@ const categories = [
     image: "/products/laptop.svg",
     translations: {
       uk: { name: "Ноутбуки", description: "Преміальні мобільні станції." },
-      ru: { name: "Ноутбуки", description: "Премиальные мобильные станции." },
-      en: { name: "Laptops", description: "Premium mobile workstations." },
     },
   },
 ];
@@ -190,16 +158,6 @@ const products = [
         name: "AMD Ryzen 7 7800X3D",
         shortDescription: "Флагманський геймерський процесор для сучасних AM5-збірок.",
         description: "Один з найкращих CPU для high-end gaming з акцентом на FPS та енергоефективність.",
-      },
-      ru: {
-        name: "AMD Ryzen 7 7800X3D",
-        shortDescription: "Флагманский игровой процессор для современных AM5-сборок.",
-        description: "Один из лучших CPU для high-end gaming с акцентом на FPS и энергоэффективность.",
-      },
-      en: {
-        name: "AMD Ryzen 7 7800X3D",
-        shortDescription: "Flagship gaming processor for modern AM5 builds.",
-        description: "One of the strongest CPUs for high-end gaming with elite frame-rate efficiency.",
       },
     },
     reviews: [
@@ -231,16 +189,6 @@ const products = [
         shortDescription: "Преміальна материнська плата AM5 з Wi‑Fi 6E.",
         description: "Сильна основа для Ryzen 7000/8000 із сучасним I/O, надійним VRM і clean white build aesthetic.",
       },
-      ru: {
-        name: "ASUS ROG Strix B650E-E Gaming WiFi",
-        shortDescription: "Премиальная материнская плата AM5 с Wi‑Fi 6E.",
-        description: "Сильная база для Ryzen 7000/8000 с современным I/O, надежным VRM и clean white build aesthetic.",
-      },
-      en: {
-        name: "ASUS ROG Strix B650E-E Gaming WiFi",
-        shortDescription: "Premium AM5 motherboard with Wi‑Fi 6E.",
-        description: "A polished AM5 board with strong power delivery, fast connectivity and premium design language.",
-      },
     },
     reviews: [],
   },
@@ -268,16 +216,6 @@ const products = [
         shortDescription: "Швидкий DDR5-комплект для сучасних платформ.",
         description: "Збалансований комплект для ігор, стримінгу та роботи з помітним RGB-акцентом.",
       },
-      ru: {
-        name: "Corsair Vengeance RGB 32GB DDR5-6000",
-        shortDescription: "Быстрый DDR5-комплект для современных платформ.",
-        description: "Сбалансированный комплект для игр, стриминга и работы с заметным RGB-акцентом.",
-      },
-      en: {
-        name: "Corsair Vengeance RGB 32GB DDR5-6000",
-        shortDescription: "Fast DDR5 kit for modern platforms.",
-        description: "A balanced memory kit for gaming, streaming and work with tasteful RGB styling.",
-      },
     },
     reviews: [],
   },
@@ -304,16 +242,6 @@ const products = [
         name: "ASUS ProArt GeForce RTX 4070 Ti Super",
         shortDescription: "Тиха відеокарта для 1440p/4K і creator-сценаріїв.",
         description: "Потужна та стильна модель для преміальних збірок, де важливі і FPS, і візуальна акуратність.",
-      },
-      ru: {
-        name: "ASUS ProArt GeForce RTX 4070 Ti Super",
-        shortDescription: "Тихая видеокарта для 1440p/4K и creator-сценариев.",
-        description: "Мощная и стильная модель для премиальных сборок, где важны и FPS, и визуальная аккуратность.",
-      },
-      en: {
-        name: "ASUS ProArt GeForce RTX 4070 Ti Super",
-        shortDescription: "Quiet GPU for 1440p/4K and creator workflows.",
-        description: "A strong, refined graphics card for premium systems where performance and aesthetics both matter.",
       },
     },
     reviews: [
@@ -343,16 +271,6 @@ const products = [
         shortDescription: "Преміальний NVMe SSD для системи, ігор і робочих файлів.",
         description: "Один із найшвидших накопичувачів для high-end конфігурацій з відмінною стабільністю.",
       },
-      ru: {
-        name: "Samsung 990 PRO 2TB",
-        shortDescription: "Премиальный NVMe SSD для системы, игр и рабочих файлов.",
-        description: "Один из самых быстрых накопителей для high-end конфигураций с отличной стабильностью.",
-      },
-      en: {
-        name: "Samsung 990 PRO 2TB",
-        shortDescription: "Premium NVMe SSD for OS, games and work files.",
-        description: "One of the fastest SSDs for high-end systems with strong sustained performance.",
-      },
     },
     reviews: [
       { author: "Mia L.", rating: 4, title: "Швидкий та стабільний", body: "Система запускається майже миттєво, а великі проєкти відкриваються без пауз." },
@@ -379,16 +297,6 @@ const products = [
         name: "Corsair RM850e",
         shortDescription: "Тихий 850W блок живлення для сучасних high-end збірок.",
         description: "Надійний 80+ Gold PSU із запасом по потужності для систем з продуктивною відеокартою.",
-      },
-      ru: {
-        name: "Corsair RM850e",
-        shortDescription: "Тихий 850W блок питания для современных high-end сборок.",
-        description: "Надежный 80+ Gold PSU с запасом по мощности для систем с производительной видеокартой.",
-      },
-      en: {
-        name: "Corsair RM850e",
-        shortDescription: "Quiet 850W PSU for modern high-end builds.",
-        description: "A dependable 80+ Gold PSU with enough headroom for premium gaming systems.",
       },
     },
     reviews: [],
@@ -423,16 +331,6 @@ const products = [
         shortDescription: "Продуваний корпус для чистих та потужних збірок.",
         description: "Корпус із підтримкою ATX-плат, довгих відеокарт і високих повітряних кулерів.",
       },
-      ru: {
-        name: "Corsair 4000D Airflow",
-        shortDescription: "Продуваемый корпус для чистых и мощных сборок.",
-        description: "Корпус с поддержкой ATX-плат, длинных видеокарт и высоких воздушных кулеров.",
-      },
-      en: {
-        name: "Corsair 4000D Airflow",
-        shortDescription: "Airflow-focused case for clean, powerful systems.",
-        description: "A case with room for ATX boards, long GPUs, and tall air coolers.",
-      },
     },
     reviews: [],
   },
@@ -464,16 +362,6 @@ const products = [
         shortDescription: "Потужний повітряний кулер для сучасних сокетів.",
         description: "Великий баштовий кулер з підтримкою AM5 та достатнім запасом для ігрових систем.",
       },
-      ru: {
-        name: "Corsair A115",
-        shortDescription: "Мощный воздушный кулер для современных сокетов.",
-        description: "Крупный башенный кулер с поддержкой AM5 и запасом для игровых систем.",
-      },
-      en: {
-        name: "Corsair A115",
-        shortDescription: "High-performance air cooler for modern sockets.",
-        description: "A large dual-tower air cooler with AM5 support for premium gaming builds.",
-      },
     },
     reviews: [],
   },
@@ -495,16 +383,6 @@ const products = [
         name: "Samsung Odyssey OLED G8 34\"",
         shortDescription: "Ультраширокий OLED-монітор для premium desk setup.",
         description: "Глибокий контраст, швидка матриця та елегантний дизайн для ігор і multitasking.",
-      },
-      ru: {
-        name: "Samsung Odyssey OLED G8 34\"",
-        shortDescription: "Ультраширокий OLED-монитор для premium desk setup.",
-        description: "Глубокий контраст, быстрая матрица и элегантный дизайн для игр и multitasking.",
-      },
-      en: {
-        name: "Samsung Odyssey OLED G8 34\"",
-        shortDescription: "Ultrawide OLED monitor for a premium desk setup.",
-        description: "Deep contrast, a fast panel and an elegant industrial design for gaming and multitasking.",
       },
     },
     reviews: [],
@@ -528,16 +406,6 @@ const products = [
         shortDescription: "Бездротова low-profile клавіатура з premium відчуттям.",
         description: "Легка, тиха й акуратна модель для геймінгу та повсякденної роботи.",
       },
-      ru: {
-        name: "Logitech G915 X Lightspeed TKL",
-        shortDescription: "Беспроводная low-profile клавиатура с premium ощущением.",
-        description: "Легкая, тихая и аккуратная модель для гейминга и повседневной работы.",
-      },
-      en: {
-        name: "Logitech G915 X Lightspeed TKL",
-        shortDescription: "Wireless low-profile keyboard with a premium feel.",
-        description: "A slim, polished keyboard for gaming and everyday work with strong battery life.",
-      },
     },
     reviews: [],
   },
@@ -559,16 +427,6 @@ const products = [
         name: "Logitech G Pro X Superlight 2",
         shortDescription: "Легка кіберспортивна мишка з топовим сенсором.",
         description: "Один із найкращих варіантів для тих, хто хоче швидкість, точність і мінімальну вагу.",
-      },
-      ru: {
-        name: "Logitech G Pro X Superlight 2",
-        shortDescription: "Легкая киберспортивная мышка с топовым сенсором.",
-        description: "Один из лучших вариантов для тех, кто хочет скорость, точность и минимальный вес.",
-      },
-      en: {
-        name: "Logitech G Pro X Superlight 2",
-        shortDescription: "Ultra-light esports mouse with a flagship sensor.",
-        description: "A top-tier wireless mouse built for speed, precision and ultra-low weight.",
       },
     },
     reviews: [],
@@ -592,16 +450,6 @@ const products = [
         shortDescription: "Тонкий premium-ноутбук для creator і gaming-сценаріїв.",
         description: "Потужний ноутбук з красивим OLED-дисплеєм, якісним корпусом та відмінним балансом мобільності й продуктивності.",
       },
-      ru: {
-        name: "ASUS ROG Zephyrus G16",
-        shortDescription: "Тонкий premium-ноутбук для creator и gaming-сценариев.",
-        description: "Мощный ноутбук с красивым OLED-дисплеем, качественным корпусом и отличным балансом мобильности и производительности.",
-      },
-      en: {
-        name: "ASUS ROG Zephyrus G16",
-        shortDescription: "Slim premium laptop for creator and gaming workflows.",
-        description: "A refined laptop with an OLED display, strong performance and premium portability.",
-      },
     },
     reviews: [],
   },
@@ -624,16 +472,6 @@ const products = [
         shortDescription: "Готовий premium gaming PC з акцентом на FPS і тишу.",
         description: "Збалансована флагманська збірка для тих, хто хоче стильний корпус, високий FPS і мінімум компромісів.",
       },
-      ru: {
-        name: "Lumina Aurora X3D",
-        shortDescription: "Готовый premium gaming PC с акцентом на FPS и тишину.",
-        description: "Сбалансированная флагманская сборка для тех, кто хочет стильный корпус, высокий FPS и минимум компромиссов.",
-      },
-      en: {
-        name: "Lumina Aurora X3D",
-        shortDescription: "Ready-made premium gaming PC focused on FPS and low noise.",
-        description: "A flagship prebuilt with a refined case, high-end parts and a polished premium profile.",
-      },
     },
     reviews: [
       { author: "Artem K.", rating: 5, title: "Ідеальний ready-to-go", body: "Дуже акуратна збірка, тихий корпус і відчуття повністю готового premium продукту." },
@@ -653,16 +491,6 @@ const banners = [
         subtitle: "Преміальний каталог компонентів, готових ПК і периферії з реальними даними, локалізаціями та clean UX.",
         ctaLabel: "Перейти до каталогу",
       },
-      ru: {
-        title: "Техника, собранная без случайных компромиссов",
-        subtitle: "Премиальный каталог компонентов, готовых ПК и периферии с реальными данными, локализациями и clean UX.",
-        ctaLabel: "Перейти в каталог",
-      },
-      en: {
-        title: "Tech assembled without accidental compromises",
-        subtitle: "A premium catalog of components, prebuilt PCs and peripherals powered by real Prisma data and clean UX.",
-        ctaLabel: "Browse catalog",
-      },
     },
   },
 ];
@@ -679,12 +507,12 @@ async function syncProductTechnicalAttributes(
           code: definition.code,
         },
         update: {
-          label: getTechnicalAttributeLabel(definition, "en"),
+          label: getTechnicalAttributeLabel(definition, defaultLocale),
           unit: definition.unit ?? null,
         },
         create: {
           code: definition.code,
-          label: getTechnicalAttributeLabel(definition, "en"),
+          label: getTechnicalAttributeLabel(definition, defaultLocale),
           unit: definition.unit ?? null,
         },
         select: {
@@ -969,7 +797,7 @@ async function main() {
       metaDescription:
         "Конфігуратор ПК, сумісність компонентів, каталог комплектуючих та готових систем.",
       faviconPath: "/favicon.ico",
-      defaultCurrency: "USD",
+      defaultCurrency: "UAH",
       defaultLocale: "uk",
       watermarkText: "LUMINA",
       heroTitle: "Збірка ПК під ваші задачі",

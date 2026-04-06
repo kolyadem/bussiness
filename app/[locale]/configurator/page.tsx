@@ -18,19 +18,10 @@ export async function generateMetadata({
   return pageMetadata(
     locale,
     "homeSeoTitle",
-    locale === "uk"
-      ? "Конфігуратор ПК для поетапного складання системи."
-      : locale === "ru"
-        ? "Конфигуратор ПК для пошаговой сборки системы."
-        : "PC Configurator for building a system step by step.",
+    "Конфігуратор ПК для поетапного складання системи.",
     "/configurator",
     {
-      title:
-        locale === "uk"
-          ? "Конфігуратор ПК"
-          : locale === "ru"
-            ? "Конфигуратор ПК"
-            : "PC Configurator",
+      title: "Конфігуратор ПК",
     },
   );
 }

@@ -5,8 +5,7 @@ import { defaultLocale, locales } from "@/lib/constants";
 export const routing = defineRouting({
   locales: [...locales],
   defaultLocale,
-  localePrefix: "always",
-  /** Do not use Accept-Language / locale cookie to pick locale — root `/` and unprefixed entry should use Ukrainian (`/uk`). */
+  localePrefix: "never",
   localeDetection: false,
 });
 

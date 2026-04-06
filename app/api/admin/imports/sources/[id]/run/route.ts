@@ -5,7 +5,7 @@ import { executeImportSourceConfig } from "@/lib/admin/imports/scheduler";
 function jsonAuthError(status: 401 | 403) {
   return NextResponse.json(
     {
-      error: status === 401 ? "Authentication required" : "Insufficient permissions",
+      error: status === 401 ? "Потрібна автентифікація" : "Недостатньо прав",
     },
     { status },
   );

@@ -8,7 +8,7 @@ import { normalizeProductIngestPayload } from "@/lib/admin/product-ingest";
 function jsonAuthError(status: 401 | 403) {
   return NextResponse.json(
     {
-      error: status === 401 ? "Authentication required" : "Insufficient permissions",
+      error: status === 401 ? "Потрібна автентифікація" : "Недостатньо прав",
     },
     { status },
   );
@@ -57,7 +57,7 @@ export async function PUT(
   });
 
   if (!existing) {
-    return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    return NextResponse.json({ error: "Товар не знайдено" }, { status: 404 });
   }
 
   const body = await request.json();
@@ -66,7 +66,7 @@ export async function PUT(
   if (!normalized.success) {
     return NextResponse.json(
       {
-        error: "Invalid product payload",
+        error: "Некоректні дані товару",
         issues: formatValidationIssues(normalized.error.issues),
       },
       { status: 400 },
@@ -93,8 +93,8 @@ export async function PUT(
   if (!relations.categoryExists) {
     return NextResponse.json(
       {
-        error: "Category was not found",
-        issues: [{ path: "categoryId", message: "Category not found" }],
+        error: "Категорію не знайдено",
+        issues: [{ path: "categoryId", message: "Категорію не знайдено" }],
       },
       { status: 404 },
     );
@@ -114,7 +114,7 @@ export async function PUT(
     if (isUniqueConstraintError(error)) {
       return NextResponse.json(
         {
-          error: "Slug or SKU must be unique",
+          error: "Slug або SKU мають бути унікальними",
         },
         { status: 409 },
       );
@@ -122,7 +122,7 @@ export async function PUT(
 
     return NextResponse.json(
       {
-        error: "Unable to update product",
+        error: "Не вдалося оновити товар",
       },
       { status: 500 },
     );

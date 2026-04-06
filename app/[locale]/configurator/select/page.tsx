@@ -125,52 +125,26 @@ function getMemoryTypeChoices(slot: string) {
   ];
 }
 
-function getSortLabel(sort: ConfiguratorSelectionSort, locale: AppLocale) {
+function getSortLabel(sort: ConfiguratorSelectionSort, _locale: AppLocale) {
   switch (sort) {
     case "price-asc":
-      return locale === "uk"
-        ? "Ціна: від дешевших"
-        : locale === "ru"
-          ? "Цена: сначала дешевле"
-          : "Price: low to high";
+      return "Ціна: від дешевших";
     case "price-desc":
-      return locale === "uk"
-        ? "Ціна: від дорожчих"
-        : locale === "ru"
-          ? "Цена: сначала дороже"
-          : "Price: high to low";
+      return "Ціна: від дорожчих";
     case "rating":
-      return locale === "uk" ? "За рейтингом" : locale === "ru" ? "По рейтингу" : "Top rated";
+      return "За рейтингом";
     case "featured":
     default:
-      return locale === "uk" ? "Рекомендовані" : locale === "ru" ? "Рекомендуемые" : "Featured";
+      return "Рекомендовані";
   }
 }
 
 function getCompatibilityBadgeCopy(status: "pass" | "warning" | "fail", locale: AppLocale) {
   return getCompatibilityStatusBadgeLabel(status, locale);
-  if (status === "pass") {
-    return locale === "uk" ? "Сумісно" : locale === "ru" ? "Совместимо" : "Compatible";
-  }
-
-  if (status === "warning") {
-    return locale === "uk" ? "Є попередження" : locale === "ru" ? "Есть предупреждение" : "Warning";
-  }
-
-  return locale === "uk" ? "Несумісно" : locale === "ru" ? "Несовместимо" : "Incompatible";
 }
 
 function getCompatibilityTone(status: "pass" | "warning" | "fail") {
   return getCompatibilityStatusTone(status);
-  if (status === "pass") {
-    return "border-emerald-500/20 bg-emerald-500/10 text-emerald-600";
-  }
-
-  if (status === "warning") {
-    return "border-amber-400/20 bg-amber-400/10 text-amber-600";
-  }
-
-  return "border-rose-500/20 bg-rose-500/10 text-rose-600";
 }
 
 function getCompatibilityIcon(status: "pass" | "warning" | "fail") {
@@ -195,19 +169,10 @@ export async function generateMetadata({
   return pageMetadata(
     locale,
     "catalogSeoTitle",
-    locale === "uk"
-      ? "Вибір компонента для PC Configurator."
-      : locale === "ru"
-        ? "Выбор компонента для PC Configurator."
-        : "Choose a component for the PC Configurator.",
+    "Вибір компонента для PC Configurator.",
     "/configurator/select",
     {
-      title:
-        locale === "uk"
-          ? "PC Configurator: component selection"
-          : locale === "ru"
-            ? "PC Configurator: выбор компонента"
-            : "PC Configurator: component selection",
+      title: "PC Configurator: вибір компонента",
       indexable: false,
     },
   );
@@ -269,11 +234,7 @@ export default async function ConfiguratorSelectPage({
               href={backHref}
               className="text-sm text-[color:var(--color-text-soft)] transition hover:text-[color:var(--color-text)]"
             >
-              {locale === "uk"
-                ? "Повернутися до configurator"
-                : locale === "ru"
-                  ? "Вернуться в configurator"
-                  : "Back to configurator"}
+              Повернутися до configurator
             </Link>
             <h1 className="mt-4 font-heading text-4xl font-semibold tracking-[-0.05em] text-[color:var(--color-text)] sm:text-5xl">
               {slotView.label}
@@ -297,17 +258,11 @@ export default async function ConfiguratorSelectPage({
               <input
                 name="q"
                 defaultValue={search}
-                placeholder={
-                  locale === "uk"
-                    ? "Пошук за назвою або SKU"
-                    : locale === "ru"
-                      ? "Поиск по названию или SKU"
-                      : "Search by product name or SKU"
-                }
+                placeholder="Пошук за назвою або SKU"
                 className="h-12 flex-1 rounded-[1.2rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
               />
               <Button type="submit" variant="secondary" className="sm:min-w-[132px]">
-                {locale === "uk" ? "Знайти" : locale === "ru" ? "Найти" : "Search"}
+                Знайти
               </Button>
             </div>
           </form>
@@ -347,11 +302,7 @@ export default async function ConfiguratorSelectPage({
               })}
               className={pillClassName(compatibleOnly)}
             >
-              {locale === "uk"
-                ? "Тільки сумісні"
-                : locale === "ru"
-                  ? "Только совместимые"
-                  : "Only compatible"}
+              Тільки сумісні
             </Link>
           ) : null}
 
@@ -372,11 +323,7 @@ export default async function ConfiguratorSelectPage({
 
         {currentSelection ? (
           <div className="mt-6 rounded-[1.6rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-5 py-4 text-sm text-[color:var(--color-text-soft)]">
-            {locale === "uk"
-              ? `Зараз у слоті: ${currentSelection.product.name}`
-              : locale === "ru"
-                ? `Сейчас в слоте: ${currentSelection.product.name}`
-                : `Currently selected: ${currentSelection.product.name}`}
+            {`Зараз у слоті: ${currentSelection.product.name}`}
           </div>
         ) : null}
       </section>
@@ -384,20 +331,8 @@ export default async function ConfiguratorSelectPage({
       <div className="mt-8">
         {products.length === 0 ? (
           <EmptyState
-            title={
-              locale === "uk"
-                ? "Нічого не знайдено для цього слота"
-                : locale === "ru"
-                  ? "Ничего не найдено для этого слота"
-                  : "Nothing matched this slot"
-            }
-            description={
-              locale === "uk"
-                ? "Спробуйте інший пошук або приберіть частину фільтрів, щоб побачити більше товарів."
-                : locale === "ru"
-                  ? "Попробуйте другой запрос или снимите часть фильтров, чтобы увидеть больше товаров."
-                  : "Try another search or remove some filters to see more products."
-            }
+            title="Нічого не знайдено для цього слота"
+            description="Спробуйте інший пошук або приберіть частину фільтрів, щоб побачити більше товарів."
             action={
               <Link
                 href={buildSelectHref(rawSearchParams, {
@@ -409,7 +344,7 @@ export default async function ConfiguratorSelectPage({
                 })}
               >
                 <Button variant="secondary">
-                  {locale === "uk" ? "Скинути фільтри" : locale === "ru" ? "Сбросить фильтры" : "Reset filters"}
+                  Скинути фільтри
                 </Button>
               </Link>
             }

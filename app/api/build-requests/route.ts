@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     if (!limit.allowed) {
       return NextResponse.json(
-        { error: "Too many build requests. Please try again a bit later." },
+        { error: "Забагато заявок за короткий час. Спробуйте пізніше." },
         {
           status: 429,
           headers: {
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const parsed = createRequestSchema.safeParse(body);
 
     if (!parsed.success || !assertLocale(parsed.data.locale)) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
     }
 
     const result = await createQuickBuildRequest({
@@ -66,12 +66,12 @@ export async function POST(request: Request) {
 
     if (!result.ok) {
       const status =
-        result.error === "Too many duplicate requests"
+        result.error === "Забагато схожих заявок за короткий час"
           ? 429
-          : result.error === "Budget is invalid" ||
-              result.error === "Contact is invalid" ||
-              result.error === "Request contains unsupported content" ||
-              result.error === "Spam detected"
+          : result.error === "Некоректний бюджет" ||
+              result.error === "Некоректний контакт" ||
+              result.error === "Запит містить непідтримуваний вміст" ||
+              result.error === "Виявлено спам"
             ? 400
             : 400;
       return NextResponse.json({ error: result.error }, { status });
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      { error: "Could not submit the build request right now. Please try again." },
+      { error: "Не вдалося надіслати заявку. Спробуйте ще раз пізніше." },
       { status: 500 },
     );
   }

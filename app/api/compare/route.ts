@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   const parsed = payloadSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
   }
 
   const product = await db.product.findFirst({
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   });
 
   if (!product) {
-    return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    return NextResponse.json({ error: "Товар не знайдено" }, { status: 404 });
   }
 
   const owner = await resolveStorefrontOwner({ ensureSession: true });
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   });
 
   if (!result) {
-    return NextResponse.json({ error: "Could not resolve compare owner" }, { status: 400 });
+    return NextResponse.json({ error: "Не вдалося визначити власника списку порівняння" }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true, count: result.count, created: result.created });
@@ -52,7 +52,7 @@ export async function DELETE(request: Request) {
   const parsed = payloadSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
   }
 
   const owner = await resolveStorefrontOwner();

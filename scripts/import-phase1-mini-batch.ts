@@ -109,22 +109,14 @@ async function ensureBrands() {
         website: brand.website,
         translations: {
           deleteMany: {},
-          create: [
-            { locale: "uk", name: brand.name, summary: brand.summaryUk },
-            { locale: "ru", name: brand.name, summary: brand.summaryRu },
-            { locale: "en", name: brand.name, summary: brand.summaryEn },
-          ],
+          create: [{ locale: "uk", name: brand.name, summary: brand.summaryUk }],
         },
       },
       create: {
         slug: brand.slug,
         website: brand.website,
         translations: {
-          create: [
-            { locale: "uk", name: brand.name, summary: brand.summaryUk },
-            { locale: "ru", name: brand.name, summary: brand.summaryRu },
-            { locale: "en", name: brand.name, summary: brand.summaryEn },
-          ],
+          create: [{ locale: "uk", name: brand.name, summary: brand.summaryUk }],
         },
       },
     });
@@ -180,7 +172,7 @@ function buildRows(items: Phase1JsonItem[]) {
       status: "PUBLISHED",
       price: item.price,
       oldPrice: null,
-      currency: "USD",
+      currency: "UAH",
       inventoryStatus: item.stock <= 3 ? ("LOW_STOCK" as const) : ("IN_STOCK" as const),
       stock: item.stock,
       heroImage: item.imagePrimaryUrl,
@@ -189,9 +181,14 @@ function buildRows(items: Phase1JsonItem[]) {
       metadata,
       technicalAttributes: item.technicalAttributes ?? {},
       translations: [
-        { locale: "uk", name: item.name, shortDescription: item.shortUk, description: description.uk, seoTitle: item.name, seoDescription: item.shortUk },
-        { locale: "ru", name: item.name, shortDescription: item.shortRu, description: description.ru, seoTitle: item.name, seoDescription: item.shortRu },
-        { locale: "en", name: item.name, shortDescription: item.shortEn, description: description.en, seoTitle: item.name, seoDescription: item.shortEn },
+        {
+          locale: "uk",
+          name: item.name,
+          shortDescription: item.shortUk,
+          description: description.uk,
+          seoTitle: item.name,
+          seoDescription: item.shortUk,
+        },
       ],
     };
   });

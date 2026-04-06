@@ -38,7 +38,7 @@ async function mutate(
 
   if (!response.ok) {
     const payload = await readApiPayload(response);
-    throw new Error(payload.error || "Request failed");
+    throw new Error(payload.error || "Запит не вдався");
   }
 
   return readApiPayload(response);
@@ -67,21 +67,11 @@ export function ProductActions({
   const requestSource =
     context === "catalog" ? "catalog-product-card" : "product-page";
   const primaryHref = configuratorSlot
-    ? `/${locale}/configurator/select?slot=${encodeURIComponent(configuratorSlot)}`
-    : `/${locale}/build-request?source=${encodeURIComponent(requestSource)}`;
+    ? `/configurator/select?slot=${encodeURIComponent(configuratorSlot)}`
+    : `/build-request?source=${encodeURIComponent(requestSource)}`;
 
-  const wishlistAddedMessage =
-    locale === "uk"
-      ? "Товар збережено в обраному"
-      : locale === "ru"
-        ? "Товар сохранён в избранном"
-        : "Saved to wishlist";
-  const compareAddedMessage =
-    locale === "uk"
-      ? "Товар додано до порівняння"
-      : locale === "ru"
-        ? "Товар добавлен к сравнению"
-        : "Added to compare";
+  const wishlistAddedMessage = "Товар збережено в обраному";
+  const compareAddedMessage = "Товар додано до порівняння";
 
   const run = (action: ActionType) => {
     setPendingAction(action);
@@ -125,24 +115,12 @@ export function ProductActions({
     });
   };
 
-  const addedLabel = locale === "uk" ? "Додано" : locale === "ru" ? "Добавлено" : "Added";
+  const addedLabel = "Додано";
   const pcBuildPrimaryLabel = configuratorSlot
-    ? locale === "uk"
-      ? "Додати у збірку"
-      : locale === "ru"
-        ? "Добавить в сборку"
-        : "Add to build"
+    ? "Додати у збірку"
     : context === "catalog"
-      ? locale === "uk"
-        ? "Обговорити збірку"
-        : locale === "ru"
-          ? "Обсудить сборку"
-          : "Discuss build"
-      : locale === "uk"
-        ? "Обговорити конфігурацію"
-        : locale === "ru"
-          ? "Обсудить конфигурацию"
-          : "Discuss configuration";
+      ? "Обговорити збірку"
+      : "Обговорити конфігурацію";
 
   return (
     <div className={`flex ${compact ? "gap-2" : "flex-col gap-3 sm:flex-row"}`}>

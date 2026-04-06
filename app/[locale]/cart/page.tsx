@@ -14,39 +14,24 @@ import { getSiteMode } from "@/lib/site-config";
 import { getCartUpsellProducts } from "@/lib/storefront/conversion";
 import { getOrderItemConfigurationLabel } from "@/lib/storefront/orders";
 import { pageMetadata } from "@/lib/storefront/seo";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 import { getCart, mapProduct } from "@/lib/storefront/queries";
 
 type CartUpsellProduct = Awaited<ReturnType<typeof getCartUpsellProducts>>[number];
 
-function getCartCopy(locale: AppLocale) {
+function getCartCopy(_locale: AppLocale) {
   return {
-    summaryLabel:
-      locale === "uk" ? "Ваше замовлення" : locale === "ru" ? "Ваш заказ" : "Your selection",
+    summaryLabel: "Ваше замовлення",
     summaryNote:
-      locale === "uk"
-        ? "Усе готово для швидкого повернення до покупки: змінюйте кількість, прибирайте позиції та переходьте далі без зайвого шуму."
-        : locale === "ru"
-          ? "Здесь можно быстро скорректировать состав корзины: изменить количество, убрать позицию и продолжить выбор."
-          : "Everything is ready for a smooth return to shopping: update quantities, remove items, and keep moving.",
+      "Усе готово для швидкого повернення до покупки: змінюйте кількість, прибирайте позиції та переходьте далі без зайвого шуму.",
     emptyDescription:
-      locale === "uk"
-        ? "Додайте кілька товарів із каталогу, щоб зібрати кошик і швидко повернутися до нього пізніше."
-        : locale === "ru"
-          ? "Добавьте несколько товаров из каталога, чтобы собрать корзину и вернуться к ней позже."
-          : "Add a few products from the catalog to build a cart you can return to at any time.",
-    totalLabel: locale === "uk" ? "До сплати зараз" : locale === "ru" ? "Итого сейчас" : "Total now",
-    checkoutLabel:
-      locale === "uk" ? "Оформити замовлення" : locale === "ru" ? "Оформить заказ" : "Checkout",
-    itemLabel: locale === "uk" ? "позицій" : locale === "ru" ? "позиций" : "items",
-    upsellTitle:
-      locale === "uk" ? "Можна додати ще" : locale === "ru" ? "Можно добавить еще" : "You may also want",
+      "Додайте кілька товарів із каталогу, щоб зібрати кошик і швидко повернутися до нього пізніше.",
+    totalLabel: "До сплати зараз",
+    checkoutLabel: "Оформити замовлення",
+    itemLabel: "позицій",
+    upsellTitle: "Можна додати ще",
     upsellText:
-      locale === "uk"
-        ? "Кілька доречних доповнень або сильніших варіантів поруч із поточним кошиком."
-        : locale === "ru"
-          ? "Несколько уместных дополнений или более сильных вариантов рядом с текущей корзиной."
-          : "A few relevant add-ons or stronger alternatives next to the current cart.",
+      "Кілька доречних доповнень або сильніших варіантів поруч із поточним кошиком.",
   };
 }
 
@@ -115,11 +100,7 @@ export async function generateMetadata({
   return pageMetadata(
     locale,
     "cartSeoTitle",
-    locale === "uk"
-      ? "РљРѕС€РёРє С–Р· РІРёР±СЂР°РЅРёРјРё С‚РѕРІР°СЂР°РјРё С‚Р° С€РІРёРґРєРёРј РґРѕСЃС‚СѓРїРѕРј РґРѕ Р·РјС–РЅРё РєС–Р»СЊРєРѕСЃС‚С–."
-      : locale === "ru"
-        ? "РљРѕСЂР·РёРЅР° СЃ РІС‹Р±СЂР°РЅРЅС‹РјРё С‚РѕРІР°СЂР°РјРё Рё Р±С‹СЃС‚СЂС‹Рј СѓРїСЂР°РІР»РµРЅРёРµРј РєРѕР»РёС‡РµСЃС‚РІРѕРј."
-        : "Cart with selected products and quick quantity controls.",
+    "Кошик з обраними товарами та швидким доступом до зміни кількості.",
     "/cart",
     { indexable: false },
   );
@@ -140,7 +121,7 @@ export default async function CartPage({
   const itemCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
   const subtotal =
     cart?.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) ?? 0;
-  const currency = cart?.items[0]?.product.currency ?? "USD";
+  const currency = cart?.items[0]?.product.currency ?? STOREFRONT_CURRENCY_CODE;
 
   return (
     <main className="storefront-shell mx-auto w-full px-4 py-8 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">

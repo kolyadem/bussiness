@@ -17,7 +17,7 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Rollback failed";
+    const msg = e instanceof Error ? e.message : "Не вдалося відкотити";
     return NextResponse.json({ ok: false, error: msg }, { status: 400 });
   }
 }

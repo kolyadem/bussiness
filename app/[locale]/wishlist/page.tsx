@@ -23,11 +23,7 @@ export async function generateMetadata({
   return pageMetadata(
     locale,
     "wishlistSeoTitle",
-    locale === "uk"
-      ? "Обране для швидкого повернення до моделей, які вже сподобалися."
-      : locale === "ru"
-        ? "Избранное для быстрого возвращения к товарам, которые уже заинтересовали."
-        : "Wishlist for quick access to products worth coming back to.",
+    "Обране для швидкого повернення до моделей, які вже сподобалися.",
     "/wishlist",
     { indexable: false },
   );
@@ -43,24 +39,12 @@ export default async function WishlistPage({
   const [items, siteMode] = await Promise.all([getWishlistItems(), getSiteMode()]);
   const experience = getSiteExperienceCopy(locale, siteMode);
   const description =
-    locale === "uk"
-      ? "Зберігайте цікаві моделі окремо, щоб повернутися до них пізніше, порівняти або додати в кошик без зайвого пошуку."
-      : locale === "ru"
-        ? "Сохраняйте интересные модели отдельно, чтобы позже вернуться к ним, сравнить и быстро добавить в корзину."
-        : "Keep promising products in one place so you can revisit, compare, or add them to cart without searching again.";
+    "Зберігайте цікаві моделі окремо, щоб повернутися до них пізніше, порівняти або додати в кошик без зайвого пошуку.";
   const emptyDescription =
     siteMode === SITE_MODES.pcBuild
       ? experience?.emptyWishlist ??
-        (locale === "uk"
-          ? "Зберігайте цікаві комплектуючі та ідеї для майбутньої збірки в одному місці."
-          : locale === "ru"
-            ? "Сохраняйте интересные комплектующие и идеи для будущей сборки в одном месте."
-            : "Save promising components and ideas for the build you want to shape next.")
-      : locale === "uk"
-        ? "Додайте товари з каталогу в обране, щоб зібрати персональну добірку перед покупкою."
-        : locale === "ru"
-          ? "Добавьте товары из каталога в избранное, чтобы собрать личную подборку перед покупкой."
-          : "Save products from the catalog to build a shortlist before you decide.";
+        "Зберігайте цікаві комплектуючі та ідеї для майбутньої збірки в одному місці."
+      : "Додайте товари з каталогу в обране, щоб зібрати персональну добірку перед покупкою.";
 
   return (
     <main className="storefront-shell mx-auto w-full px-4 py-8 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
@@ -78,7 +62,7 @@ export default async function WishlistPage({
             </p>
           </div>
           <div className="rounded-full border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-2 text-sm font-medium text-[color:var(--color-text)]">
-            {items.length} {locale === "uk" ? "збережено" : locale === "ru" ? "сохранено" : "saved"}
+            {items.length} збережено
           </div>
         </div>
       </section>

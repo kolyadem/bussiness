@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   if (!configuredSecret) {
     return NextResponse.json(
       {
-        error: "IMPORT_SCHEDULER_SECRET is not configured",
+        error: "Змінна IMPORT_SCHEDULER_SECRET не налаштована",
       },
       { status: 503 },
     );
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const providedSecret = readProvidedSchedulerSecret(request);
 
   if (!providedSecret || providedSecret !== configuredSecret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Потрібна автентифікація" }, { status: 401 });
   }
 
   const body = (await request.json().catch(() => null)) as { limit?: number } | null;

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  CircleDollarSign,
+  Banknote,
   FolderTree,
   Image as ImageIcon,
   LayoutGrid,
@@ -25,26 +25,14 @@ const icons = {
   banners: ImageIcon,
   orders: PackageCheck,
   imports: Workflow,
-  priceUpdates: CircleDollarSign,
+  priceUpdates: Banknote,
   requests: ReceiptText,
   settings: SlidersHorizontal,
   account: Settings,
   users: ShieldCheck,
 } as const;
 
-function sidebarText(
-  locale: string,
-  copy: {
-    uk: string;
-    ru: string;
-    en: string;
-  },
-) {
-  return copy[locale as "uk" | "ru" | "en"] ?? copy.en;
-}
-
 export function AdminSidebar({
-  locale,
   role,
   canAccessPriceUpdates = false,
 }: {
@@ -58,113 +46,69 @@ export function AdminSidebar({
     {
       href: "/admin",
       key: "dashboard",
-      label: sidebarText(locale, {
-        uk: "Робоча панель",
-        ru: "Рабочая панель",
-        en: "Dashboard",
-      }),
+      label: "Робоча панель",
     },
     {
       href: "/admin/products",
       key: "products",
-      label: sidebarText(locale, {
-        uk: "Товари",
-        ru: "Товары",
-        en: "Products",
-      }),
+      label: "Товари",
     },
     capabilities.canManageCatalogTaxonomy
       ? {
           href: "/admin/categories",
           key: "categories",
-          label: sidebarText(locale, {
-            uk: "Категорії",
-            ru: "Категории",
-            en: "Categories",
-          }),
+          label: "Категорії",
         }
       : null,
     capabilities.canManageBanners
       ? {
           href: "/admin/banners",
           key: "banners",
-          label: sidebarText(locale, {
-            uk: "Банери",
-            ru: "Баннеры",
-            en: "Banners",
-          }),
+          label: "Банери",
         }
       : null,
     {
       href: "/admin/orders",
       key: "orders",
-      label: sidebarText(locale, {
-        uk: "Замовлення",
-        ru: "Заказы",
-        en: "Orders",
-      }),
+      label: "Замовлення",
     },
     capabilities.canManageImports
       ? {
           href: "/admin/imports",
           key: "imports",
-          label: sidebarText(locale, {
-            uk: "Імпорт",
-            ru: "Импорт",
-            en: "Imports",
-          }),
+          label: "Імпорт",
         }
       : null,
     capabilities.canManagePriceUpdates
       ? {
           href: "/admin/price-updates",
           key: "priceUpdates",
-          label: sidebarText(locale, {
-            uk: "Оновлення цін",
-            ru: "Обновление цен",
-            en: "Price updates",
-          }),
+          label: "Оновлення цін",
         }
       : null,
     {
       href: "/admin/build-requests",
       key: "requests",
-      label: sidebarText(locale, {
-        uk: "Заявки",
-        ru: "Заявки",
-        en: "Requests",
-      }),
+      label: "Заявки",
     },
     capabilities.canManageSettings
       ? {
           href: "/admin/settings",
           key: "settings",
-          label: sidebarText(locale, {
-            uk: "Сайт",
-            ru: "Сайт",
-            en: "Site",
-          }),
+          label: "Сайт",
         }
       : null,
     capabilities.canManageUsers
       ? {
           href: "/admin/users",
           key: "users",
-          label: sidebarText(locale, {
-            uk: "Користувачі та ролі",
-            ru: "Пользователи и роли",
-            en: "Users and roles",
-          }),
+          label: "Користувачі та ролі",
         }
       : null,
     {
       href: "/admin/account",
       key: "account",
-      label: sidebarText(locale, {
-        uk: "Акаунт",
-        ru: "Аккаунт",
-        en: "Account",
-      }),
+      label: "Акаунт",
     },
   ].filter(Boolean) as Array<{
     href: string;
@@ -177,15 +121,14 @@ export function AdminSidebar({
       <div className="grid gap-2">
         {items.map((item) => {
           const Icon = icons[item.key];
-          const localizedHref = `/${locale}${item.href}`;
-          const isActive = pathname === localizedHref || pathname.startsWith(`${localizedHref}/`);
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-[1.2rem] px-4 py-3 text-sm font-medium transition",
+                "flex gap-3 rounded-[1.2rem] px-4 py-3 text-sm font-medium transition",
                 isActive
                   ? "border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(24,184,255,0.12)]"
                   : "border border-transparent text-[color:var(--color-text-soft)] hover:border-[color:var(--color-line-strong)] hover:bg-[color:var(--color-surface-elevated)] hover:text-[color:var(--color-text)]",

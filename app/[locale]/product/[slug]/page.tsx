@@ -54,7 +54,7 @@ export async function generateMetadata({
       title,
       description,
       type: "article",
-      url: getAbsoluteUrl(`/${locale}/product/${slug}`),
+      url: getAbsoluteUrl(`/product/${slug}`),
       locale: getOpenGraphLocale(locale),
       images,
     },
@@ -127,7 +127,7 @@ export default async function ProductPage({
       availability: `https://schema.org/${
         mapped.inventoryStatus === "OUT_OF_STOCK" ? "OutOfStock" : "InStock"
       }`,
-      url: getAbsoluteUrl(`/${locale}/product/${mapped.slug}`),
+      url: getAbsoluteUrl(`/product/${mapped.slug}`),
       itemCondition: "https://schema.org/NewCondition",
     },
     ...(mapped.reviews.length > 0
@@ -147,59 +147,44 @@ export default async function ProductPage({
       {
         "@type": "ListItem",
         position: 1,
-        name: locale === "uk" ? "Головна" : locale === "ru" ? "Главная" : "Home",
-        item: getAbsoluteUrl(`/${locale}`),
+        name: "Головна",
+        item: getAbsoluteUrl("/"),
       },
       {
         "@type": "ListItem",
         position: 2,
-        name: locale === "uk" ? "Каталог" : locale === "ru" ? "Каталог" : "Catalog",
-        item: getAbsoluteUrl(`/${locale}/catalog`),
+        name: "Каталог",
+        item: getAbsoluteUrl("/catalog"),
       },
       {
         "@type": "ListItem",
         position: 3,
         name: mapped.category.name,
-        item: getAbsoluteUrl(`/${locale}/catalog?category=${mapped.category.slug}`),
+        item: getAbsoluteUrl(`/catalog?category=${mapped.category.slug}`),
       },
       {
         "@type": "ListItem",
         position: 4,
         name: mapped.name,
-        item: getAbsoluteUrl(`/${locale}/product/${mapped.slug}`),
+        item: getAbsoluteUrl(`/product/${mapped.slug}`),
       },
     ],
   };
 
   const assuranceItems = [
     {
-      title: locale === "uk" ? "Швидке оформлення" : locale === "ru" ? "Быстрое оформление" : "Fast order flow",
-      body:
-        locale === "uk"
-          ? "Додайте товар у кошик або збережіть у вибране, щоб повернутися до нього пізніше."
-          : locale === "ru"
-            ? "Добавьте товар в корзину или сохраните в избранное, чтобы вернуться позже."
-            : "Add to cart now or save it for later without losing momentum.",
+      title: "Швидке оформлення",
+      body: "Додайте товар у кошик або збережіть у вибране, щоб повернутися до нього пізніше.",
       icon: Sparkles,
     },
     {
-      title: locale === "uk" ? "Надійна доставка" : locale === "ru" ? "Надёжная доставка" : "Safe delivery",
-      body:
-        locale === "uk"
-          ? "Акуратне пакування та швидке підтвердження замовлення після оформлення."
-          : locale === "ru"
-            ? "Аккуратная упаковка и быстрое подтверждение заказа после оформления."
-            : "Careful packaging and quick confirmation after checkout.",
+      title: "Надійна доставка",
+      body: "Акуратне пакування та швидке підтвердження замовлення після оформлення.",
       icon: Truck,
     },
     {
-      title: locale === "uk" ? "Перевірений товар" : locale === "ru" ? "Проверенный товар" : "Trusted product",
-      body:
-        locale === "uk"
-          ? "Основні характеристики вже зібрані нижче, щоб рішення приймалося без зайвого шуму."
-          : locale === "ru"
-            ? "Ключевые характеристики уже собраны ниже, чтобы выбирать было проще."
-            : "Core specs are already summarized below so the choice feels simple.",
+      title: "Перевірений товар",
+      body: "Основні характеристики вже зібрані нижче, щоб рішення приймалося без зайвого шуму.",
       icon: ShieldCheck,
     },
   ];
@@ -276,7 +261,7 @@ export default async function ProductPage({
             <div className="mt-8 grid gap-4 sm:grid-cols-[1.1fr_0.9fr]">
               <div className="rounded-[1.8rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] p-5 backdrop-blur-xl">
                 <p className="text-[11px] uppercase tracking-[0.22em] text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Ціна зараз" : locale === "ru" ? "Цена сейчас" : "Price now"}
+                  Ціна зараз
                 </p>
                 <div className="mt-3 flex flex-wrap items-end gap-3">
                   <p className="font-heading text-4xl font-semibold tracking-[-0.05em] text-[color:var(--color-text)]">
@@ -290,11 +275,7 @@ export default async function ProductPage({
                 </div>
                 {savings ? (
                   <p className="mt-3 text-sm text-[color:var(--color-accent-strong)]">
-                    {locale === "uk"
-                      ? `Економія ${formatPrice(savings, locale, mapped.currency)}`
-                      : locale === "ru"
-                        ? `Экономия ${formatPrice(savings, locale, mapped.currency)}`
-                        : `Save ${formatPrice(savings, locale, mapped.currency)}`}
+                    {`Економія ${formatPrice(savings, locale, mapped.currency)}`}
                   </p>
                 ) : null}
               </div>
@@ -302,7 +283,7 @@ export default async function ProductPage({
               <div className="grid gap-4">
                 <div className="rounded-[1.6rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-4 py-4">
                   <p className="text-[11px] uppercase tracking-[0.22em] text-[color:var(--color-text-soft)]">
-                    {locale === "uk" ? "Наявність" : locale === "ru" ? "Наличие" : "Availability"}
+                    Наявність
                   </p>
                   <p className="mt-2 text-sm font-medium text-[color:var(--color-text)]">
                     {mapped.inventoryLabel}
@@ -310,7 +291,7 @@ export default async function ProductPage({
                 </div>
                 <div className="rounded-[1.6rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-4 py-4">
                   <p className="text-[11px] uppercase tracking-[0.22em] text-[color:var(--color-text-soft)]">
-                    {locale === "uk" ? "Рейтинг" : locale === "ru" ? "Рейтинг" : "Rating"}
+                    Рейтинг
                   </p>
                   <p className="mt-2 text-sm font-medium text-[color:var(--color-text)]">
                     {mapped.reviews.length > 0 ? `${reviewAverage.toFixed(1)} / 5` : t("productReviews")}
@@ -322,27 +303,14 @@ export default async function ProductPage({
             <div className="mt-8 rounded-[1.9rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] p-5">
               <p className="text-[11px] uppercase tracking-[0.22em] text-[color:var(--color-text-soft)]">
                 {isPcBuild
-                  ? experience?.productActionPanelTitle ??
-                    (locale === "uk" ? "Наступний крок" : locale === "ru" ? "Следующий шаг" : "Next step")
-                  : locale === "uk"
-                    ? "Дія"
-                    : locale === "ru"
-                      ? "Действие"
-                      : "Action"}
+                  ? experience?.productActionPanelTitle ?? "Наступний крок"
+                  : "Дія"}
               </p>
               <p className="mt-2 text-sm leading-7 text-[color:var(--color-text-soft)]">
                 {isPcBuild
                   ? experience?.productActionPanelBody ??
-                    (locale === "uk"
-                      ? "Додайте компонент у сценарій збірки або перейдіть до configurator, щоб зібрати ПК під свої задачі."
-                      : locale === "ru"
-                        ? "Добавьте компонент в сценарий сборки или перейдите в configurator, чтобы собрать ПК под свои задачи."
-                        : "Add this component into a build flow or jump into the configurator to shape a PC around your goals.")
-                  : locale === "uk"
-                    ? "Додайте товар у кошик, збережіть у вибране або порівняйте з іншими моделями."
-                    : locale === "ru"
-                      ? "Добавьте товар в корзину, сохраните в избранное или сравните с другими моделями."
-                      : "Add it to cart, save it, or compare it with other models."}
+                    "Додайте компонент у сценарій збірки або перейдіть до configurator, щоб зібрати ПК під свої задачі."
+                  : "Додайте товар у кошик, збережіть у вибране або порівняйте з іншими моделями."}
               </p>
               <div className="mt-5">
                 <ProductActions
@@ -363,11 +331,7 @@ export default async function ProductPage({
                     {t("productSpecs")}
                   </h2>
                   <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-                    {locale === "uk"
-                      ? "Ключові характеристики зібрані в одному місці."
-                      : locale === "ru"
-                        ? "Ключевые характеристики собраны в одном месте."
-                        : "The most important specs are collected in one place."}
+                    Ключові характеристики зібрані в одному місці.
                   </p>
                 </div>
               </div>
@@ -405,11 +369,7 @@ export default async function ProductPage({
               <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
                 {mapped.reviews.length > 0
                   ? `${reviewAverage.toFixed(1)} / 5 · ${mapped.reviews.length}`
-                  : locale === "uk"
-                    ? "Поки без відгуків"
-                    : locale === "ru"
-                      ? "Пока без отзывов"
-                      : "No reviews yet"}
+                  : "Поки без відгуків"}
               </p>
             </div>
           </div>
@@ -431,11 +391,7 @@ export default async function ProductPage({
               ))
             ) : (
               <div className="rounded-[1.5rem] border border-dashed border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-5 text-sm text-[color:var(--color-text-soft)]">
-                {locale === "uk"
-                  ? "Для цього товару ще немає опублікованих відгуків."
-                  : locale === "ru"
-                    ? "Для этого товара пока нет опубликованных отзывов."
-                    : "There are no published reviews for this product yet."}
+                Для цього товару ще немає опублікованих відгуків.
               </div>
             )}
           </div>
@@ -447,14 +403,10 @@ export default async function ProductPage({
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
-                {locale === "uk" ? "Нещодавно переглянуті" : locale === "ru" ? "Недавно просмотренные" : "Recently Viewed"}
+                Нещодавно переглянуті
               </h2>
               <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-                {locale === "uk"
-                  ? "Швидкий шлях назад до моделей, які вже привернули увагу."
-                  : locale === "ru"
-                    ? "Быстрый путь назад к моделям, которые уже привлекли внимание."
-                    : "A quick way back to products that already caught attention."}
+                Швидкий шлях назад до моделей, які вже привернули увагу.
               </p>
             </div>
           </div>
@@ -476,14 +428,10 @@ export default async function ProductPage({
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
-                {locale === "uk" ? "Схожі товари" : locale === "ru" ? "Похожие товары" : "Similar products"}
+                Схожі товари
               </h2>
               <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-                {locale === "uk"
-                  ? "Схожі товари з тієї ж категорії, які легко порівняти між собою."
-                  : locale === "ru"
-                    ? "Похожие товары из той же категории, которые удобно сравнивать."
-                    : "Similar products from the same category for fast comparison."}
+                Схожі товари з тієї ж категорії, які легко порівняти між собою.
               </p>
             </div>
           </div>
@@ -499,14 +447,10 @@ export default async function ProductPage({
         <section className="mt-12">
           <div className="mb-6">
             <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
-              {locale === "uk" ? "Розумний вибір" : locale === "ru" ? "Умный выбор" : "Smart picks"}
+              Розумний вибір
             </h2>
             <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-              {locale === "uk"
-                ? "Два короткі сценарії, якщо хочеться сильніший або більш зібраний варіант."
-                : locale === "ru"
-                  ? "Два коротких сценария, если хочется более сильный или более собранный вариант."
-                  : "Two focused paths if you want either a stronger step-up or a smarter value pick."}
+              Два короткі сценарії, якщо хочеться сильніший або більш зібраний варіант.
             </p>
           </div>
           <div className="grid gap-6 lg:grid-cols-2">
@@ -514,14 +458,10 @@ export default async function ProductPage({
               <div>
                 <div className="mb-4">
                   <h3 className="text-xl font-semibold text-[color:var(--color-text)]">
-                    {locale === "uk" ? "Кращий варіант" : locale === "ru" ? "Лучше вариант" : "Better variant"}
+                    Кращий варіант
                   </h3>
                   <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-                    {locale === "uk"
-                      ? "М’який апгрейд у тому ж класі, коли хочеться більше запасу."
-                      : locale === "ru"
-                        ? "Мягкий апгрейд в том же классе, когда хочется больше запаса."
-                        : "A gentle step-up in the same class when you want a bit more headroom."}
+                    М’який апгрейд у тому ж класі, коли хочеться більше запасу.
                   </p>
                 </div>
                 <ProductCard product={recommendations.betterVariant} locale={locale} siteMode={siteMode} />
@@ -532,14 +472,10 @@ export default async function ProductPage({
               <div>
                 <div className="mb-4">
                   <h3 className="text-xl font-semibold text-[color:var(--color-text)]">
-                    {locale === "uk" ? "Вигідний вибір" : locale === "ru" ? "Выгодный выбор" : "Great value"}
+                    Вигідний вибір
                   </h3>
                   <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-                    {locale === "uk"
-                      ? "Ближча до бюджету альтернатива з хорошим балансом ціни та класу."
-                      : locale === "ru"
-                        ? "Более бюджетная альтернатива с хорошим балансом цены и класса."
-                        : "A tighter price point with a strong value-to-class balance."}
+                    Ближча до бюджету альтернатива з хорошим балансом ціни та класу.
                   </p>
                 </div>
                 <ProductCard product={recommendations.valueChoice} locale={locale} siteMode={siteMode} />

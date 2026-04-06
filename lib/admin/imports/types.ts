@@ -1,3 +1,5 @@
+import type { AppLocale } from "@/lib/constants";
+
 export const IMPORT_SOURCE_TYPES = ["API_JSON", "FEED_URL", "UPLOAD_JSON", "UPLOAD_CSV", "UPLOAD_XML"] as const;
 
 export type ImportSourceType = (typeof IMPORT_SOURCE_TYPES)[number];
@@ -55,54 +57,42 @@ export function isImportSourceType(value: string): value is ImportSourceType {
 }
 
 function importText(
-  locale: "uk" | "ru" | "en",
+  _locale: AppLocale,
   copy: {
     uk: string;
-    ru: string;
-    en: string;
   },
 ) {
-  return copy[locale] ?? copy.en;
+  return copy.uk;
 }
 
-export function getImportModeLabel(mode: ImportMode, locale: "uk" | "ru" | "en") {
+export function getImportModeLabel(mode: ImportMode, locale: AppLocale) {
   switch (mode) {
     case "CREATE_ONLY":
       return importText(locale, {
         uk: "Лише створення",
-        ru: "Только создание",
-        en: "Create only",
       });
     case "UPDATE_EXISTING":
       return importText(locale, {
         uk: "Лише оновлення",
-        ru: "Только обновление",
-        en: "Update existing",
       });
     case "UPSERT":
       return importText(locale, {
         uk: "Створити або оновити",
-        ru: "Создать или обновить",
-        en: "Upsert",
       });
     case "DISABLE_MISSING":
       return importText(locale, {
         uk: "Вимкнути відсутні",
-        ru: "Отключить отсутствующие",
-        en: "Disable missing",
       });
     case "MARK_MISSING_AS_DRAFT":
       return importText(locale, {
         uk: "Відсутні у чернетку",
-        ru: "Отсутствующие в черновик",
-        en: "Mark missing as draft",
       });
   }
 }
 
 export function getImportSourceTypeLabel(
   sourceType: ImportSourceType,
-  locale: "uk" | "ru" | "en",
+  locale: AppLocale,
 ) {
   switch (sourceType) {
     case "API_JSON":
@@ -110,8 +100,6 @@ export function getImportSourceTypeLabel(
     case "FEED_URL":
       return importText(locale, {
         uk: "Feed URL",
-        ru: "Feed URL",
-        en: "Feed URL",
       });
     case "UPLOAD_JSON":
       return "JSON file";
@@ -124,38 +112,28 @@ export function getImportSourceTypeLabel(
 
 export function getImportJobStatusLabel(
   status: ImportJobStatus,
-  locale: "uk" | "ru" | "en",
+  locale: AppLocale,
 ) {
   switch (status) {
     case "QUEUED":
       return importText(locale, {
         uk: "У черзі",
-        ru: "В очереди",
-        en: "Queued",
       });
     case "RUNNING":
       return importText(locale, {
         uk: "Виконується",
-        ru: "Выполняется",
-        en: "Running",
       });
     case "SUCCESS":
       return importText(locale, {
         uk: "Успішно",
-        ru: "Успешно",
-        en: "Success",
       });
     case "PARTIAL_SUCCESS":
       return importText(locale, {
         uk: "Частково успішно",
-        ru: "Частично успешно",
-        en: "Partial success",
       });
     case "FAILED":
       return importText(locale, {
         uk: "Помилка",
-        ru: "Ошибка",
-        en: "Failed",
       });
   }
 }
@@ -177,18 +155,14 @@ export function getImportJobStatusTone(status: ImportJobStatus) {
 
 export function getImportIssueSeverityLabel(
   severity: ImportIssueSeverity,
-  locale: "uk" | "ru" | "en",
+  locale: AppLocale,
 ) {
   return severity === "ERROR"
     ? importText(locale, {
         uk: "Помилка",
-        ru: "Ошибка",
-        en: "Error",
       })
     : importText(locale, {
         uk: "Попередження",
-        ru: "Предупреждение",
-        en: "Warning",
       });
 }
 

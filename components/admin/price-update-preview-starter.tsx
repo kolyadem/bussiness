@@ -32,7 +32,7 @@ export function PriceUpdatePreviewStarter({ locale }: { locale: string }) {
         return;
       }
       toast.success(priceUpdatesTFormat(locale, "toastPreviewOk", String(data.lineCount ?? 0)));
-      router.push(`/${locale}/admin/price-updates/${data.runId}`);
+      router.push(`/admin/price-updates/${data.runId}`);
       router.refresh();
     } catch {
       toast.error(priceUpdatesT(locale, "toastNetwork"));

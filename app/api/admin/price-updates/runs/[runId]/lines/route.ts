@@ -20,22 +20,22 @@ export async function PATCH(request: Request, context: { params: Promise<{ runId
   });
 
   if (!run) {
-    return NextResponse.json({ error: "Run not found" }, { status: 404 });
+    return NextResponse.json({ error: "Перевірку не знайдено" }, { status: 404 });
   }
   if (run.status !== "PREVIEW_READY") {
-    return NextResponse.json({ error: "Run is not editable" }, { status: 400 });
+    return NextResponse.json({ error: "Перевірку не можна редагувати" }, { status: 400 });
   }
 
   let body: Body;
   try {
     body = (await request.json()) as Body;
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректний JSON" }, { status: 400 });
   }
 
   const lines = Array.isArray(body.lines) ? body.lines : [];
   if (lines.length === 0) {
-    return NextResponse.json({ error: "No lines" }, { status: 400 });
+    return NextResponse.json({ error: "Немає рядків" }, { status: 400 });
   }
 
   for (const row of lines) {

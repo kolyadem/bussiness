@@ -42,11 +42,7 @@ export async function generateMetadata({
   return pageMetadata(
     locale,
     "catalogSeoTitle",
-    locale === "uk"
-      ? "Каталог комплектуючих, ноутбуків, моніторів і периферії."
-      : locale === "ru"
-        ? "Каталог комплектующих, ноутбуков, мониторов и периферии."
-        : "Catalog of components, laptops, displays and peripherals.",
+    "Каталог комплектуючих, ноутбуків, моніторів і периферії.",
     "/catalog",
     { indexable: shouldIndex },
   );
@@ -91,27 +87,13 @@ export default async function CatalogPage({
     ? pickByLocale(data.selectedSubcategory.translations, locale).name
     : null;
 
-  const resultWord = locale === "uk" ? "товарів" : locale === "ru" ? "товаров" : "items";
+  const resultWord = "товарів";
   const totalCountLabel = `${data.pagination.totalItems} ${resultWord}`;
   const emptyDescription = isPcBuild
-    ? locale === "uk"
-      ? "Спробуйте іншу категорію комплектуючих, приберіть частину фільтрів або перейдіть до configurator для поетапного підбору."
-      : locale === "ru"
-        ? "Попробуйте другую категорию комплектующих, снимите часть фильтров или перейдите в configurator для пошагового подбора."
-        : "Try another component category, remove a few filters, or jump into the configurator for guided selection."
-    : locale === "uk"
-      ? "Спробуйте змінити категорію, прибрати частину фільтрів або повернутися до всього каталогу."
-      : locale === "ru"
-        ? "Попробуйте сменить категорию, убрать часть фильтров или вернуться ко всему каталогу."
-        : "Try another category, remove a few filters, or return to the full catalog.";
+    ? "Спробуйте іншу категорію комплектуючих, приберіть частину фільтрів або перейдіть до configurator для поетапного підбору."
+    : "Спробуйте змінити категорію, прибрати частину фільтрів або повернутися до всього каталогу.";
   const featuredLabel =
-    selectedSubcategoryName ??
-    selectedCategoryName ??
-    (locale === "uk"
-      ? "Підібрані товари"
-      : locale === "ru"
-        ? "Подобранные товары"
-        : "Selected products");
+    selectedSubcategoryName ?? selectedCategoryName ?? "Підібрані товари";
 
   return (
     <main className="storefront-shell mx-auto w-full px-4 py-8 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
@@ -149,12 +131,7 @@ export default async function CatalogPage({
               isPcBuild ? (
                 <Link href="/configurator">
                   <Button variant="secondary">
-                    {experience?.heroSecondary ??
-                      (locale === "uk"
-                        ? "Відкрити configurator"
-                        : locale === "ru"
-                          ? "Открыть configurator"
-                          : "Open configurator")}
+                    {experience?.heroSecondary ?? "Відкрити configurator"}
                   </Button>
                 </Link>
               ) : (

@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { displayPriceToStoredMinorUnits, parseJson, slugify } from "@/lib/utils";
+import {
+  displayPriceToStoredMinorUnits,
+  parseJson,
+  slugify,
+  STOREFRONT_CURRENCY_CODE,
+} from "@/lib/utils";
 import { locales } from "@/lib/constants";
 
 export const inventoryStatuses = ["IN_STOCK", "LOW_STOCK", "OUT_OF_STOCK", "PREORDER"] as const;
@@ -181,7 +186,7 @@ export const productIngestPayloadSchema = z.object({
   price: z.coerce.number().finite().nonnegative(),
   purchasePrice: z.coerce.number().finite().nonnegative().nullish(),
   oldPrice: z.coerce.number().finite().nonnegative().nullable().optional(),
-  currency: z.string().trim().min(3).max(3).default("USD"),
+  currency: z.string().trim().min(3).max(3).default(STOREFRONT_CURRENCY_CODE),
   inventoryStatus: z.enum(inventoryStatuses),
   stock: z.coerce.number().int().nonnegative(),
   heroImage: z.string().trim().min(1),
@@ -189,7 +194,7 @@ export const productIngestPayloadSchema = z.object({
   specs: z.record(z.string().trim().min(1), ingestSpecValueSchema).default({}),
   metadata: z.record(z.string().trim().min(1), metadataValueSchema).default({}),
   technicalAttributes: z.record(z.string().trim().min(1), z.string().trim().min(1)).default({}),
-  translations: z.array(ingestTranslationInputSchema).length(locales.length),
+  translations: z.array(ingestTranslationInputSchema).length(1),
 });
 
 export type ProductIngestPayload = z.infer<typeof productIngestPayloadSchema>;
@@ -277,14 +282,23 @@ export function normalizeProductIngestPayload(input: unknown) {
       ...buildProductPersistenceInput({
         base: {
           ...baseResult.data,
-          price: displayPriceToStoredMinorUnits(baseResult.data.price),
+          price: displayPriceToStoredMinorUnits(
+            baseResult.data.price,
+            baseResult.data.currency,
+          ),
           purchasePrice:
             typeof baseResult.data.purchasePrice === "number"
-              ? displayPriceToStoredMinorUnits(baseResult.data.purchasePrice)
+              ? displayPriceToStoredMinorUnits(
+                  baseResult.data.purchasePrice,
+                  baseResult.data.currency,
+                )
               : null,
           oldPrice:
             typeof baseResult.data.oldPrice === "number"
-              ? displayPriceToStoredMinorUnits(baseResult.data.oldPrice)
+              ? displayPriceToStoredMinorUnits(
+                  baseResult.data.oldPrice,
+                  baseResult.data.currency,
+                )
               : null,
         },
         assets: {

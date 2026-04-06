@@ -17,17 +17,17 @@ export default async function AdminBannersPage({
   const banners = await getAdminBanners();
   const deleted = (Array.isArray(query.deleted) ? query.deleted[0] : query.deleted) === "1";
   const copy = {
-    title: locale === "uk" ? "Банери" : locale === "ru" ? "Баннеры" : "Banners",
-    type: locale === "uk" ? "Тип" : locale === "ru" ? "Тип" : "Type",
-    status: locale === "uk" ? "Статус" : locale === "ru" ? "Статус" : "Status",
-    order: locale === "uk" ? "Порядок" : locale === "ru" ? "Порядок" : "Order",
-    actions: locale === "uk" ? "Дії" : locale === "ru" ? "Действия" : "Actions",
-    add: locale === "uk" ? "Додати банер" : locale === "ru" ? "Добавить баннер" : "New banner",
-    edit: locale === "uk" ? "Редагувати" : locale === "ru" ? "Редактировать" : "Edit",
-    remove: locale === "uk" ? "Видалити" : locale === "ru" ? "Удалить" : "Delete",
-    active: locale === "uk" ? "Активний" : locale === "ru" ? "Активен" : "Active",
-    inactive: locale === "uk" ? "Неактивний" : locale === "ru" ? "Неактивен" : "Inactive",
-    deleted: locale === "uk" ? "Банер видалено." : locale === "ru" ? "Баннер удалён." : "Banner deleted.",
+    title: "Банери",
+    type: "Тип",
+    status: "Статус",
+    order: "Порядок",
+    actions: "Дії",
+    add: "Додати банер",
+    edit: "Редагувати",
+    remove: "Видалити",
+    active: "Активний",
+    inactive: "Неактивний",
+    deleted: "Банер видалено.",
   };
 
   return (

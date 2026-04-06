@@ -34,7 +34,7 @@ export async function POST(
 
     if (!limit.allowed) {
       return NextResponse.json(
-        { error: "Too many build requests. Please try again a bit later." },
+        { error: "Забагато заявок за короткий час. Спробуйте пізніше." },
         {
           status: 429,
           headers: {
@@ -52,7 +52,7 @@ export async function POST(
       !assertLocale(parsed.data.locale) ||
       !isBuildRequestDeliveryMethod(parsed.data.deliveryMethod)
     ) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
     }
 
     const result = await createBuildRequestForBuild({
@@ -70,11 +70,11 @@ export async function POST(
 
     if (!result.ok) {
       const status =
-        result.error === "Build not found"
+        result.error === "Збірку не знайдено"
           ? 404
-          : result.error === "Build is empty"
+          : result.error === "Збірка порожня"
             ? 409
-            : result.error === "Too many duplicate requests"
+            : result.error === "Забагато схожих заявок за короткий час"
               ? 429
               : 400;
       return NextResponse.json({ error: result.error }, { status });
@@ -100,7 +100,7 @@ export async function POST(
     });
 
     return NextResponse.json(
-      { error: "Could not submit the build request right now. Please try again." },
+      { error: "Не вдалося надіслати заявку на збірку. Спробуйте ще раз пізніше." },
       { status: 500 },
     );
   }

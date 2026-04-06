@@ -135,7 +135,7 @@ model Product {
   price            Int
   purchasePrice    Int?
   oldPrice         Int?
-  currency         String                 @default("USD")
+  currency         String                 @default("UAH")
   inventoryStatus  String                 @default("IN_STOCK")
   stock            Int                    @default(0)
   heroImage        String
@@ -369,7 +369,7 @@ model Order {
   totalPrice     Int         @default(0)
   totalCost      Int?
   grossProfit    Int?
-  currency       String      @default("USD")
+  currency       String      @default("UAH")
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -383,7 +383,7 @@ model OrderItem {
   quantity      Int     @default(1)
   unitPrice     Int
   unitCost      Int?
-  currency      String  @default("USD")
+  currency      String  @default("UAH")
   productName   String
   productSlug   String?
   heroImage     String?
@@ -443,7 +443,7 @@ model PcBuildRequest {
   deliveryMethod String?
   status       String             @default("NEW")
   totalPrice   Int                @default(0)
-  currency     String             @default("USD")
+  currency     String             @default("UAH")
   itemsSnapshot String            @default("[]")
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
@@ -493,7 +493,7 @@ model SiteSettings {
   metaTitle       String
   metaDescription String
   faviconPath     String?
-  defaultCurrency String   @default("USD")
+  defaultCurrency String   @default("UAH")
   defaultLocale   String   @default("uk")
   watermarkText   String   @default("Lumina")
   heroTitle       String

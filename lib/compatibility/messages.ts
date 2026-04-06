@@ -7,8 +7,6 @@ type CompatibilityFallbackKind = "candidate_incompatible" | "build_incompatible"
 
 const localeMap: Record<AppLocale, string> = {
   uk: "uk-UA",
-  ru: "ru-RU",
-  en: "en-US",
 };
 
 const fallbackMessages: Record<AppLocale, Record<CompatibilityFallbackKind, string>> = {
@@ -16,16 +14,6 @@ const fallbackMessages: Record<AppLocale, Record<CompatibilityFallbackKind, stri
     candidate_incompatible: "Вибраний компонент несумісний з поточною конфігурацією.",
     build_incompatible: "У збірці є несумісні компоненти.",
     check_failed: "Перевірка сумісності не пройдена.",
-  },
-  ru: {
-    candidate_incompatible: "Выбранный компонент несовместим с текущей конфигурацией.",
-    build_incompatible: "В сборке есть несовместимые компоненты.",
-    check_failed: "Проверка совместимости не пройдена.",
-  },
-  en: {
-    candidate_incompatible: "The selected component is incompatible with the current configuration.",
-    build_incompatible: "The build contains incompatible components.",
-    check_failed: "Compatibility check failed.",
   },
 };
 
@@ -97,94 +85,6 @@ const compatibilityMessages: CompatibilityMessageCatalog = {
       const source = formatValue(details.sourceValue ?? details.actualValue, locale);
       const target = formatValue(details.targetValue ?? details.requiredValue, locale);
       return `Параметр компонента нижчий за потрібний поріг: ${source} < ${target}.`;
-    },
-  },
-  ru: {
-    cpu_motherboard_socket_mismatch: () =>
-      "Процессор и материнская плата несовместимы: отличается сокет.",
-    motherboard_ram_memory_type_mismatch: () =>
-      "Материнская плата не поддерживает выбранный тип памяти.",
-    cooler_socket_unsupported: () =>
-      "Кулер несовместим с сокетом выбранного процессора.",
-    gpu_case_length_exceeded: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `Видеокарта не помещается в корпус: требуется ${source} мм, доступно ${target} мм.`;
-    },
-    motherboard_case_form_factor_unsupported: () =>
-      "Корпус не поддерживает форм-фактор выбранной материнской платы.",
-    cooler_case_height_exceeded: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `Высота кулера превышает допустимую для корпуса: требуется ${source} мм, доступно ${target} мм.`;
-    },
-    psu_capacity_warning: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const threshold = formatValue(details.thresholdValue, locale);
-      return `Мощности блока питания может не хватить: ориентировочно нужно ${threshold} Вт, выбран ${source} Вт.`;
-    },
-    attribute_equals_mismatch: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `Параметры не совпадают: ${source} и ${target}.`;
-    },
-    attribute_list_missing: (details, locale) => {
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `Требуемое значение не поддерживается: ${target}.`;
-    },
-    attribute_numeric_lte_failed: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `Компонент превышает допустимое ограничение: ${source} > ${target}.`;
-    },
-    attribute_numeric_gte_failed: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `Параметр компонента ниже требуемого порога: ${source} < ${target}.`;
-    },
-  },
-  en: {
-    cpu_motherboard_socket_mismatch: () =>
-      "CPU and motherboard are incompatible: the socket does not match.",
-    motherboard_ram_memory_type_mismatch: () =>
-      "The motherboard does not support the selected memory type.",
-    cooler_socket_unsupported: () =>
-      "The cooler is incompatible with the selected CPU socket.",
-    gpu_case_length_exceeded: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `The graphics card does not fit the case: ${source} mm required, ${target} mm available.`;
-    },
-    motherboard_case_form_factor_unsupported: () =>
-      "The case does not support the selected motherboard form factor.",
-    cooler_case_height_exceeded: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `The cooler height exceeds the case limit: ${source} mm required, ${target} mm available.`;
-    },
-    psu_capacity_warning: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const threshold = formatValue(details.thresholdValue, locale);
-      return `The power supply may be insufficient: about ${threshold} W is recommended, while ${source} W is selected.`;
-    },
-    attribute_equals_mismatch: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `The required attributes do not match: ${source} vs ${target}.`;
-    },
-    attribute_list_missing: (details, locale) => {
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `The required value is not supported: ${target}.`;
-    },
-    attribute_numeric_lte_failed: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `The component exceeds the supported limit: ${source} > ${target}.`;
-    },
-    attribute_numeric_gte_failed: (details, locale) => {
-      const source = formatValue(details.sourceValue ?? details.actualValue, locale);
-      const target = formatValue(details.targetValue ?? details.requiredValue, locale);
-      return `The component is below the required threshold: ${source} < ${target}.`;
     },
   },
 };

@@ -5,6 +5,7 @@ import type { AppLocale } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { canViewAdminFinancials } from "@/lib/admin/permissions";
 import { getOrderKindFromItems, normalizeOrderStatus, type OrderStatus } from "@/lib/storefront/orders";
+import { storedMinorUnitsToUahKopecks } from "@/lib/utils";
 
 type DashboardOrderRecord = {
   id: string;
@@ -20,6 +21,7 @@ type DashboardOrderRecord = {
     quantity: number;
     unitPrice: number;
     unitCost: number | null;
+    currency: string;
     productName: string;
     productSlug: string | null;
     heroImage: string | null;
@@ -45,15 +47,8 @@ type ProductPerformance = {
   hasCompleteCostBasis: boolean;
 };
 
-function toIntlLocale(locale: AppLocale) {
-  switch (locale) {
-    case "uk":
-      return "uk-UA";
-    case "ru":
-      return "ru-RU";
-    default:
-      return "en-US";
-  }
+function toIntlLocale(_locale: AppLocale) {
+  return "uk-UA";
 }
 
 function isFinancialOrder(status: string) {
@@ -64,7 +59,11 @@ function sumProfit(orders: DashboardOrderRecord[]) {
   const completeOrders = orders.filter((order) => typeof order.grossProfit === "number");
 
   return {
-    value: completeOrders.reduce((sum, order) => sum + (order.grossProfit ?? 0), 0),
+    value: completeOrders.reduce(
+      (sum, order) =>
+        sum + storedMinorUnitsToUahKopecks(order.grossProfit ?? 0, order.currency),
+      0,
+    ),
     hasCompleteCostBasis: completeOrders.length === orders.length,
   };
 }
@@ -86,7 +85,10 @@ function buildDailyTrend(orders: DashboardOrderRecord[], locale: AppLocale): Tre
     return {
       label: formatter.format(date),
       orders: bucketOrders.length,
-      revenue: financialOrders.reduce((sum, order) => sum + order.totalPrice, 0),
+      revenue: financialOrders.reduce(
+        (sum, order) => sum + storedMinorUnitsToUahKopecks(order.totalPrice, order.currency),
+        0,
+      ),
       profit: profits.hasCompleteCostBasis ? profits.value : profits.value,
     };
   });
@@ -114,7 +116,10 @@ function buildWeeklyTrend(orders: DashboardOrderRecord[], locale: AppLocale): Tr
     return {
       label: `${formatter.format(start)} - ${formatter.format(end)}`,
       orders: bucketOrders.length,
-      revenue: financialOrders.reduce((sum, order) => sum + order.totalPrice, 0),
+      revenue: financialOrders.reduce(
+        (sum, order) => sum + storedMinorUnitsToUahKopecks(order.totalPrice, order.currency),
+        0,
+      ),
       profit: profits.value,
     };
   });
@@ -140,7 +145,10 @@ function buildMonthlyTrend(orders: DashboardOrderRecord[], locale: AppLocale): T
     return {
       label: formatter.format(monthDate),
       orders: bucketOrders.length,
-      revenue: financialOrders.reduce((sum, order) => sum + order.totalPrice, 0),
+      revenue: financialOrders.reduce(
+        (sum, order) => sum + storedMinorUnitsToUahKopecks(order.totalPrice, order.currency),
+        0,
+      ),
       profit: profits.value,
     };
   });
@@ -156,9 +164,15 @@ function buildProductPerformance(orders: DashboardOrderRecord[]) {
 
     for (const item of order.items) {
       const key = item.productSlug ?? item.productName;
-      const lineRevenue = item.unitPrice * item.quantity;
-      const lineProfit =
-        typeof item.unitCost === "number" ? lineRevenue - item.unitCost * item.quantity : null;
+      const lineRevenue = storedMinorUnitsToUahKopecks(
+        item.unitPrice * item.quantity,
+        item.currency,
+      );
+      const lineCostUah =
+        typeof item.unitCost === "number"
+          ? storedMinorUnitsToUahKopecks(item.unitCost * item.quantity, item.currency)
+          : null;
+      const lineProfit = lineCostUah != null ? lineRevenue - lineCostUah : null;
       const current = map.get(key);
 
       if (current) {
@@ -264,7 +278,10 @@ export async function getRoleAwareDashboardData({
   const canViewFinancials = canViewAdminFinancials(viewerRole);
   const statusCounts = buildStatusCounts(orders);
   const activeOrders = orders.filter((order) => isFinancialOrder(order.status));
-  const totalRevenue = activeOrders.reduce((sum, order) => sum + order.totalPrice, 0);
+  const totalRevenue = activeOrders.reduce(
+    (sum, order) => sum + storedMinorUnitsToUahKopecks(order.totalPrice, order.currency),
+    0,
+  );
   const totalProfit = sumProfit(activeOrders);
   const productPerformance = buildProductPerformance(orders);
   const inventorySummary = {

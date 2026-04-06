@@ -30,7 +30,7 @@ import {
   getBuildRequestDeliveryMethodLabel,
   type BuildRequestDeliveryMethod,
 } from "@/lib/storefront/build-requests";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
 function trackAnalytics(payload: Record<string, unknown>) {
   void fetch("/api/analytics", {
@@ -108,144 +108,50 @@ type ConfiguratorSuggestion = {
   body: string;
 };
 
-function getCopy(locale: AppLocale) {
-  if (locale === "uk") {
-    return {
-      title: "Конфігуратор ПК",
-      intro: "Збирайте систему поетапно, а фінальні дії залишайте у правому блоці, коли конфігурація буде готова.",
-      coreTitle: "Основне",
-      extrasTitle: "Додатково",
-      choose: "Обрати",
-      replace: "Замінити",
-      remove: "Прибрати",
-      buildName: "Назва збірки",
-      buildNamePlaceholder: "Моя збірка ПК",
-      save: "Зберегти збірку",
-      share: "Поділитися",
-      addToCart: "Додати збірку в кошик",
-      orderBuild: "Замовити збірку",
-      closeRequest: "Сховати форму",
-      currentTotal: "Поточна сума",
-      openSummary: "Підсумок збірки",
-      itemCount: "Позицій",
-      summaryTitle: "Ваша збірка",
-      summaryEmpty: "Коли додасте перші компоненти, тут з'явиться короткий підсумок.",
-      requestTitle: "Заявка на збірку",
-      requestHint: "Ми збережемо вашу конфігурацію, контакти й доставку та відправимо заявку менеджеру.",
-      fullName: "ПІБ",
-      phone: "Номер телефону",
-      email: "Email",
-      comment: "Коментар",
-      city: "Місто доставки",
-      deliveryMethod: "Спосіб доставки",
-      submitRequest: "Надіслати заявку",
-      requestSuccessTitle: "Заявку на збірку відправлено",
-      requestSuccessText: "Менеджер уже отримав конфігурацію та контакти. Ви можете зберегти або продовжити доповнювати збірку.",
-      requestNumber: "Номер заявки",
-      requestAutofill: "Дані з акаунта вже підставлені, за потреби їх можна змінити перед відправкою.",
-      emptySlot: "Слот порожній. Оберіть компонент, щоб продовжити збірку.",
-      unavailableSlot: "Для цього слота товари ще не додані, але він вже готовий до наступного етапу.",
-      shareCopied: "Посилання скопійовано",
-      buildSaved: "Збірку оновлено",
-      componentRemoved: "Компонент прибрано",
-      buildAdded: "Збірку додано в кошик",
-      requestCreated: "Заявку створено",
-      noImage: "Без фото",
-      suggestionTitle: "М’які підказки",
-      suggestionAction: "Покращити",
-    };
-  }
-
-  if (locale === "ru") {
-    return {
-      title: "Конфигуратор ПК",
-      intro: "Собирайте систему поэтапно, а финальные действия держите справа, когда конфигурация будет готова.",
-      coreTitle: "Основное",
-      extrasTitle: "Дополнительно",
-      choose: "Выбрать",
-      replace: "Заменить",
-      remove: "Убрать",
-      buildName: "Название сборки",
-      buildNamePlaceholder: "Моя сборка ПК",
-      save: "Сохранить сборку",
-      share: "Поделиться",
-      addToCart: "Добавить сборку в корзину",
-      orderBuild: "Заказать сборку",
-      closeRequest: "Скрыть форму",
-      currentTotal: "Текущая сумма",
-      openSummary: "Итог сборки",
-      itemCount: "Позиций",
-      summaryTitle: "Ваша сборка",
-      summaryEmpty: "Когда добавите первые компоненты, здесь появится краткое резюме.",
-      requestTitle: "Заявка на сборку",
-      requestHint: "Мы сохраним вашу конфигурацию, контакты и доставку и сразу передадим заявку менеджеру.",
-      fullName: "ФИО",
-      phone: "Номер телефона",
-      email: "Email",
-      comment: "Комментарий",
-      city: "Город доставки",
-      deliveryMethod: "Способ доставки",
-      submitRequest: "Отправить заявку",
-      requestSuccessTitle: "Заявка на сборку отправлена",
-      requestSuccessText: "Менеджер уже получил конфигурацию и контакты. Вы можете сохранить или продолжить дополнять сборку.",
-      requestNumber: "Номер заявки",
-      requestAutofill: "Данные аккаунта уже подставлены, при необходимости их можно изменить перед отправкой.",
-      emptySlot: "Слот пуст. Выберите компонент, чтобы продолжить сборку.",
-      unavailableSlot: "Для этого слота товары ещё не добавлены, но он уже готов к следующему этапу.",
-      shareCopied: "Ссылка скопирована",
-      buildSaved: "Сборка обновлена",
-      componentRemoved: "Компонент удалён",
-      buildAdded: "Сборка добавлена в корзину",
-      requestCreated: "Заявка создана",
-      noImage: "Без фото",
-      suggestionTitle: "Мягкие подсказки",
-      suggestionAction: "Усилить",
-    };
-  }
-
+function getCopy(_locale: AppLocale) {
   return {
-    title: "PC Configurator",
-    intro: "Build the system step by step and keep the final actions in the right summary block until the configuration is ready.",
-    coreTitle: "Core components",
-    extrasTitle: "Extras",
-    choose: "Choose",
-    replace: "Replace",
-    remove: "Remove",
-    buildName: "Build name",
-    buildNamePlaceholder: "My PC build",
-    save: "Save build",
-    share: "Share",
-    addToCart: "Add build to cart",
-    orderBuild: "Request build",
-    closeRequest: "Hide form",
-    currentTotal: "Current total",
-    openSummary: "Build summary",
-    itemCount: "Items",
-    summaryTitle: "Your build",
-    summaryEmpty: "Once you add the first components, a short summary will appear here.",
-    requestTitle: "Build request",
-    requestHint: "We will save your configuration, contact details, and delivery choice and forward the request to the manager.",
-    fullName: "Full name",
-    phone: "Phone number",
+    title: "Конфігуратор ПК",
+    intro: "Збирайте систему поетапно, а фінальні дії залишайте у правому блоці, коли конфігурація буде готова.",
+    coreTitle: "Основне",
+    extrasTitle: "Додатково",
+    choose: "Обрати",
+    replace: "Замінити",
+    remove: "Прибрати",
+    buildName: "Назва збірки",
+    buildNamePlaceholder: "Моя збірка ПК",
+    save: "Зберегти збірку",
+    share: "Поділитися",
+    addToCart: "Додати збірку в кошик",
+    orderBuild: "Замовити збірку",
+    closeRequest: "Сховати форму",
+    currentTotal: "Поточна сума",
+    openSummary: "Підсумок збірки",
+    itemCount: "Позицій",
+    summaryTitle: "Ваша збірка",
+    summaryEmpty: "Коли додасте перші компоненти, тут з'явиться короткий підсумок.",
+    requestTitle: "Заявка на збірку",
+    requestHint: "Ми збережемо вашу конфігурацію, контакти й доставку та відправимо заявку менеджеру.",
+    fullName: "ПІБ",
+    phone: "Номер телефону",
     email: "Email",
-    comment: "Comment",
-    city: "Delivery city",
-    deliveryMethod: "Delivery method",
-    submitRequest: "Send request",
-    requestSuccessTitle: "Build request sent",
-    requestSuccessText: "The manager already has your configuration and contacts. You can keep refining or saving the build.",
-    requestNumber: "Request number",
-    requestAutofill: "Your account details were prefilled and can still be edited before submission.",
-    emptySlot: "This slot is empty. Choose a component to continue the build.",
-    unavailableSlot: "Products for this slot are not available yet, but the structure is ready for the next step.",
-    shareCopied: "Link copied",
-    buildSaved: "Build updated",
-    componentRemoved: "Component removed",
-    buildAdded: "Build added to cart",
-    requestCreated: "Request created",
-    noImage: "No image",
-    suggestionTitle: "Gentle suggestions",
-    suggestionAction: "Improve",
+    comment: "Коментар",
+    city: "Місто доставки",
+    deliveryMethod: "Спосіб доставки",
+    submitRequest: "Надіслати заявку",
+    requestSuccessTitle: "Заявку на збірку відправлено",
+    requestSuccessText: "Менеджер уже отримав конфігурацію та контакти. Ви можете зберегти або продовжити доповнювати збірку.",
+    requestNumber: "Номер заявки",
+    requestAutofill: "Дані з акаунта вже підставлені, за потреби їх можна змінити перед відправкою.",
+    emptySlot: "Слот порожній. Оберіть компонент, щоб продовжити збірку.",
+    unavailableSlot: "Для цього слота товари ще не додані, але він вже готовий до наступного етапу.",
+    shareCopied: "Посилання скопійовано",
+    buildSaved: "Збірку оновлено",
+    componentRemoved: "Компонент прибрано",
+    buildAdded: "Збірку додано в кошик",
+    requestCreated: "Заявку створено",
+    noImage: "Без фото",
+    suggestionTitle: "М’які підказки",
+    suggestionAction: "Покращити",
   };
 }
 
@@ -261,7 +167,7 @@ function getNumericAttribute(product: ProductPreview | null | undefined, key: st
 }
 
 function buildConfiguratorSuggestions(
-  locale: AppLocale,
+  _locale: AppLocale,
   itemsBySlot: BuildData["itemsBySlot"],
 ): ConfiguratorSuggestion[] {
   const cpu = itemsBySlot.cpu?.product ?? null;
@@ -287,90 +193,45 @@ function buildConfiguratorSuggestions(
   if ((cpu || gpu) && !psu) {
     suggestions.push({
       slot: "psu",
-      title:
-        locale === "uk"
-          ? "Додайте блок живлення із запасом"
-          : locale === "ru"
-            ? "Добавьте блок питания с запасом"
-            : "Add a PSU with headroom",
+      title: "Додайте блок живлення із запасом",
       body:
-        locale === "uk"
-          ? "Коли CPU або GPU вже вибрані, хороший PSU найчастіше дає системі правильний запас стабільності."
-          : locale === "ru"
-            ? "Когда CPU или GPU уже выбраны, хороший PSU чаще всего дает системе правильный запас стабильности."
-            : "Once CPU or GPU is selected, a solid PSU is usually the safest upgrade for system stability.",
+        "Коли CPU або GPU вже вибрані, хороший PSU найчастіше дає системі правильний запас стабільності.",
     });
   }
 
   if (psuWattage && cpuTdp && gpuTdp && psuWattage < (cpuTdp + gpuTdp) * 1.6) {
     suggestions.push({
       slot: "psu",
-      title:
-        locale === "uk"
-          ? "БЖ майже без запасу"
-          : locale === "ru"
-            ? "БП почти без запаса"
-            : "PSU is running tight",
+      title: "БЖ майже без запасу",
       body:
-        locale === "uk"
-          ? "Можна глянути на потужніший блок живлення, щоб залишився спокійний запас під пікові навантаження."
-          : locale === "ru"
-            ? "Можно посмотреть на более мощный блок питания, чтобы остался спокойный запас под пиковые нагрузки."
-            : "A stronger PSU would leave some comfortable room for peak loads.",
+        "Можна глянути на потужніший блок живлення, щоб залишився спокійний запас під пікові навантаження.",
     });
   }
 
   if (cpu && !cooling) {
     suggestions.push({
       slot: "cooling",
-      title:
-        locale === "uk"
-          ? "Охолодження зробить збірку спокійнішою"
-          : locale === "ru"
-            ? "Охлаждение сделает сборку спокойнее"
-            : "Cooling can make the build calmer",
+      title: "Охолодження зробить збірку спокійнішою",
       body:
-        locale === "uk"
-          ? "Навіть базове охолодження часто дає тихішу роботу і кращий температурний режим."
-          : locale === "ru"
-            ? "Даже базовое охлаждение часто дает более тихую работу и лучший температурный режим."
-            : "Even a basic cooler often improves both temperatures and noise levels.",
+        "Навіть базове охолодження часто дає тихішу роботу і кращий температурний режим.",
     });
   }
 
   if (ramCapacity !== null && ramCapacity < 32) {
     suggestions.push({
       slot: "ram",
-      title:
-        locale === "uk"
-          ? "RAM можна підсилити до 32 ГБ"
-          : locale === "ru"
-            ? "RAM можно усилить до 32 ГБ"
-            : "RAM can be pushed to 32 GB",
+      title: "RAM можна підсилити до 32 ГБ",
       body:
-        locale === "uk"
-          ? "Для сучасних ігор, браузера і робочих задач 32 ГБ зазвичай відчуваються помітно спокійніше."
-          : locale === "ru"
-            ? "Для современных игр, браузера и рабочих задач 32 ГБ обычно ощущаются заметно спокойнее."
-            : "For modern games, browsers, and multitasking, 32 GB usually feels more comfortable.",
+        "Для сучасних ігор, браузера і робочих задач 32 ГБ зазвичай відчуваються помітно спокійніше.",
     });
   }
 
   if ((cpu || gpu) && !storage) {
     suggestions.push({
       slot: "storage",
-      title:
-        locale === "uk"
-          ? "Не забудьте про швидкий SSD"
-          : locale === "ru"
-            ? "Не забудьте про быстрый SSD"
-            : "Don’t forget a fast SSD",
+      title: "Не забудьте про швидкий SSD",
       body:
-        locale === "uk"
-          ? "Навіть один швидкий SSD робить готову збірку значно завершенішою вже на старті."
-          : locale === "ru"
-            ? "Даже один быстрый SSD делает готовую сборку заметно более законченной уже на старте."
-            : "Even one fast SSD makes the finished build feel much more complete from day one.",
+        "Навіть один швидкий SSD робить готову збірку значно завершенішою вже на старті.",
     });
   }
 
@@ -426,7 +287,7 @@ export function ConfiguratorBuilder({
   }, [requestPrefill]);
 
   const refreshToBuild = (slug: string) => {
-    router.push(`/${locale}/configurator?build=${slug}`);
+    router.push(`/configurator?build=${slug}`);
     router.refresh();
   };
 
@@ -452,7 +313,7 @@ export function ConfiguratorBuilder({
 
         if (!response.ok) {
           const payload = await readApiPayload(response);
-          throw new Error(payload.error || "Could not save build");
+          throw new Error(payload.error || "Не вдалося зберегти збірку");
         }
 
         const payload = (await response.json()) as { build?: { slug: string } };
@@ -526,12 +387,12 @@ export function ConfiguratorBuilder({
 
         if (!response.ok) {
           const payload = await readApiPayload(response);
-          throw new Error(payload.error || "Could not add build to cart");
+          throw new Error(payload.error || "Не вдалося додати збірку в кошик");
         }
 
         trackAnalytics({
           event: "add_to_cart",
-          pathname: `/${locale}/configurator`,
+          pathname: `/configurator`,
           locale,
           details: {
             buildSlug: build.slug,
@@ -576,7 +437,7 @@ export function ConfiguratorBuilder({
 
         if (!response.ok) {
           const payload = await readApiPayload(response);
-          throw new Error(payload.error || "Could not create build request");
+          throw new Error(payload.error || "Не вдалося створити заявку на збірку");
         }
 
         const payload = (await response.json()) as {
@@ -755,7 +616,7 @@ export function ConfiguratorBuilder({
             <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-4">
               <p className="text-sm text-[color:var(--color-text-soft)]">{copy.currentTotal}</p>
               <p className="mt-2 font-heading text-3xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
-                {formatPrice(build?.totalPrice ?? 0, locale, summaryItems[0]?.item?.product.currency ?? "USD")}
+                {formatPrice(build?.totalPrice ?? 0, locale, summaryItems[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE)}
               </p>
             </div>
             <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-4">
@@ -784,22 +645,10 @@ export function ConfiguratorBuilder({
                   <p className="font-medium">{getCompatibilityStatusTitle(compatibilityStatus, locale)}</p>
                   <p className="hidden font-medium">
                     {compatibilityStatus === "pass"
-                      ? locale === "uk"
-                        ? "Сборка совместима"
-                        : locale === "ru"
-                          ? "Сборка совместима"
-                          : "Build is compatible"
+                      ? "Збірка сумісна"
                       : compatibilityStatus === "warning"
-                        ? locale === "uk"
-                          ? "Есть предупреждения по совместимости"
-                          : locale === "ru"
-                            ? "Есть предупреждения по совместимости"
-                            : "Build has compatibility warnings"
-                        : locale === "uk"
-                          ? "Сборка несовместима"
-                          : locale === "ru"
-                            ? "Сборка несовместима"
-                            : "Build is incompatible"}
+                        ? "Є попередження щодо сумісності"
+                        : "Збірка несумісна"}
                   </p>
                   {firstCompatibilityMessage ? (
                     <p className="mt-2 text-sm leading-6">{firstCompatibilityMessage}</p>
@@ -828,7 +677,7 @@ export function ConfiguratorBuilder({
                     <p className="text-sm font-medium text-[color:var(--color-text)]">{suggestion.title}</p>
                     <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-soft)]">{suggestion.body}</p>
                     <Link
-                      href={`/${locale}/configurator/select?slot=${suggestion.slot}${build?.slug ? `&build=${build.slug}` : ""}`}
+                      href={`/configurator/select?slot=${suggestion.slot}${build?.slug ? `&build=${build.slug}` : ""}`}
                       className="mt-3 inline-flex text-xs font-medium uppercase tracking-[0.14em] text-[color:var(--color-accent-strong)]"
                     >
                       {copy.suggestionAction}
@@ -954,7 +803,7 @@ export function ConfiguratorBuilder({
 
                   <div className="grid gap-3">
                     <input
-                      list={`ukraine-cities-${locale}`}
+                      list="ukraine-cities"
                       value={requestForm.deliveryCity}
                       onChange={(event) =>
                         setRequestForm((current) => ({ ...current, deliveryCity: event.target.value }))
@@ -962,7 +811,7 @@ export function ConfiguratorBuilder({
                       placeholder={copy.city}
                       className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
                     />
-                    <datalist id={`ukraine-cities-${locale}`}>
+                    <datalist id="ukraine-cities">
                       {UKRAINE_CITY_OPTIONS.map((city) => (
                         <option key={city} value={city} />
                       ))}
@@ -1039,7 +888,7 @@ export function ConfiguratorBuilder({
             {copy.currentTotal}
           </p>
           <p className="mt-0.5 truncate font-heading text-xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
-            {formatPrice(build?.totalPrice ?? 0, locale, summaryItems[0]?.item?.product.currency ?? "USD")}
+            {formatPrice(build?.totalPrice ?? 0, locale, summaryItems[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE)}
           </p>
           <p className="mt-0.5 text-xs text-[color:var(--color-text-soft)]">
             {copy.itemCount}: <span className="font-medium text-[color:var(--color-text)]">{build?.itemCount ?? 0}</span>

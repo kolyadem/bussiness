@@ -50,9 +50,9 @@ export function CatalogPagination({
   }
 
   const pages = buildPageWindow(pagination.currentPage, pagination.totalPages);
-  const previousLabel = locale === "uk" ? "Назад" : locale === "ru" ? "Назад" : "Previous";
-  const nextLabel = locale === "uk" ? "Далі" : locale === "ru" ? "Далее" : "Next";
-  const pageLabel = locale === "uk" ? "Сторінка" : locale === "ru" ? "Страница" : "Page";
+  const previousLabel = "Назад";
+  const nextLabel = "Далі";
+  const pageLabel = "Сторінка";
 
   return (
     <nav className="flex flex-col items-center justify-between gap-4 rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-soft)] sm:flex-row">

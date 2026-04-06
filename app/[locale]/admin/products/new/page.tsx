@@ -14,7 +14,7 @@ export default async function NewAdminProductPage({
     <div className="space-y-6">
       <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-6">
         <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
-          {locale === "uk" ? "Новий товар" : locale === "ru" ? "Новый товар" : "New product"}
+          Новий товар
         </h2>
       </section>
       <AdminProductForm

@@ -414,34 +414,18 @@ export function getAdminLocaleFields(product: {
     seoDescription: string | null;
   }>;
 }) {
-  return Object.fromEntries(
-    locales.map((locale) => {
-      const translation =
-        product.translations.find((item) => item.locale === locale) ??
-        product.translations.find((item) => item.locale === defaultLocale) ??
-        null;
+  const translation =
+    product.translations.find((item) => item.locale === defaultLocale) ??
+    product.translations[0] ??
+    null;
 
-      return [
-        locale,
-        {
-          name: translation?.name ?? "",
-          shortDescription: translation?.shortDescription ?? "",
-          description: translation?.description ?? "",
-          seoTitle: translation?.seoTitle ?? "",
-          seoDescription: translation?.seoDescription ?? "",
-        },
-      ];
-    }),
-  ) as Record<
-    AppLocale,
-    {
-      name: string;
-      shortDescription: string;
-      description: string;
-      seoTitle: string;
-      seoDescription: string;
-    }
-  >;
+  return {
+    name: translation?.name ?? "",
+    shortDescription: translation?.shortDescription ?? "",
+    description: translation?.description ?? "",
+    seoTitle: translation?.seoTitle ?? "",
+    seoDescription: translation?.seoDescription ?? "",
+  };
 }
 
 export function getAdminCategoryLocaleFields(category: {
@@ -451,28 +435,15 @@ export function getAdminCategoryLocaleFields(category: {
     description: string | null;
   }>;
 }) {
-  return Object.fromEntries(
-    locales.map((locale) => {
-      const translation =
-        category.translations.find((item) => item.locale === locale) ??
-        category.translations.find((item) => item.locale === defaultLocale) ??
-        null;
+  const translation =
+    category.translations.find((item) => item.locale === defaultLocale) ??
+    category.translations[0] ??
+    null;
 
-      return [
-        locale,
-        {
-          name: translation?.name ?? "",
-          description: translation?.description ?? "",
-        },
-      ];
-    }),
-  ) as Record<
-    AppLocale,
-    {
-      name: string;
-      description: string;
-    }
-  >;
+  return {
+    name: translation?.name ?? "",
+    description: translation?.description ?? "",
+  };
 }
 
 export function getAdminBannerLocaleFields(banner: {
@@ -483,30 +454,16 @@ export function getAdminBannerLocaleFields(banner: {
     ctaLabel: string | null;
   }>;
 }) {
-  return Object.fromEntries(
-    locales.map((locale) => {
-      const translation =
-        banner.translations.find((item) => item.locale === locale) ??
-        banner.translations.find((item) => item.locale === defaultLocale) ??
-        null;
+  const translation =
+    banner.translations.find((item) => item.locale === defaultLocale) ??
+    banner.translations[0] ??
+    null;
 
-      return [
-        locale,
-        {
-          title: translation?.title ?? "",
-          subtitle: translation?.subtitle ?? "",
-          ctaLabel: translation?.ctaLabel ?? "",
-        },
-      ];
-    }),
-  ) as Record<
-    AppLocale,
-    {
-      title: string;
-      subtitle: string;
-      ctaLabel: string;
-    }
-  >;
+  return {
+    title: translation?.title ?? "",
+    subtitle: translation?.subtitle ?? "",
+    ctaLabel: translation?.ctaLabel ?? "",
+  };
 }
 
 export function getAdminSpecs(product: { specs: string }) {

@@ -26,13 +26,8 @@ export function ConfiguratorChooseButton({
   const locale = useLocale() as AppLocale;
   const [pending, setPending] = useState(false);
 
-  const chooseLabel = locale === "uk" ? "Обрати" : locale === "ru" ? "Выбрать" : "Choose";
-  const successLabel =
-    locale === "uk"
-      ? "Компонент додано до збірки"
-      : locale === "ru"
-        ? "Компонент добавлен в сборку"
-        : "Component added to the build";
+  const chooseLabel = "Обрати";
+  const successLabel = "Компонент додано до збірки";
 
   return (
     <Button
@@ -57,7 +52,7 @@ export function ConfiguratorChooseButton({
 
               if (!createResponse.ok) {
                 const payload = await readApiPayload(createResponse);
-                throw new Error(payload.error || "Could not create build");
+                throw new Error(payload.error || "Не вдалося створити збірку");
               }
 
               const payload = (await createResponse.json()) as {
@@ -84,11 +79,11 @@ export function ConfiguratorChooseButton({
 
             if (!response.ok) {
               const payload = await readApiPayload(response);
-              throw new Error(payload.error || "Could not choose component");
+              throw new Error(payload.error || "Не вдалося обрати компонент");
             }
 
             toast.success(successLabel);
-            router.push(`/${locale}/configurator?build=${resolvedBuildSlug}`);
+            router.push(`/configurator?build=${resolvedBuildSlug}`);
             router.refresh();
           } catch (error) {
             toast.error(

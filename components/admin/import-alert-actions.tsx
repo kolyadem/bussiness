@@ -4,15 +4,16 @@ import { startTransition, useState } from "react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import type { AppLocale } from "@/lib/constants";
 
 export function ImportAlertActions({
   alertId,
-  locale,
+  locale: _locale,
   status,
   disabled,
 }: {
   alertId: string;
-  locale: "uk" | "ru" | "en";
+  locale: AppLocale;
   status: "ACTIVE" | "ACKNOWLEDGED" | "RESOLVED";
   disabled?: boolean;
 }) {
@@ -39,19 +40,13 @@ export function ImportAlertActions({
             const payload = (await response.json().catch(() => null)) as { error?: string } | null;
 
             if (!response.ok) {
-              throw new Error(payload?.error || "Could not acknowledge alert");
+              throw new Error(payload?.error || "Не вдалося підтвердити сигнал");
             }
 
-            toast.success(
-              locale === "uk"
-                ? "Сигнал підтверджено"
-                : locale === "ru"
-                  ? "Сигнал подтверждён"
-                  : "Alert acknowledged",
-            );
+            toast.success("Сигнал підтверджено");
             window.location.reload();
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Could not acknowledge alert");
+            toast.error(error instanceof Error ? error.message : "Не вдалося підтвердити сигнал");
           } finally {
             setPending(false);
           }
@@ -60,17 +55,7 @@ export function ImportAlertActions({
     >
       {pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
       <span>
-        {alreadyAcknowledged
-          ? locale === "uk"
-            ? "Підтверджено"
-            : locale === "ru"
-              ? "Подтверждено"
-              : "Acknowledged"
-          : locale === "uk"
-            ? "Підтвердити"
-            : locale === "ru"
-              ? "Подтвердить"
-              : "Acknowledge"}
+        {alreadyAcknowledged ? "Підтверджено" : "Підтвердити"}
       </span>
     </Button>
   );

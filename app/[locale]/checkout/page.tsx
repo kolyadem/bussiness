@@ -10,7 +10,7 @@ import { getCheckoutPageData } from "@/lib/storefront/order-data";
 import { getOrderItemConfigurationLabel } from "@/lib/storefront/orders";
 import { mapProduct } from "@/lib/storefront/queries";
 import { pageMetadata } from "@/lib/storefront/seo";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
 export async function generateMetadata({
   params,
@@ -22,10 +22,10 @@ export async function generateMetadata({
   return pageMetadata(
     locale,
     "cartSeoTitle",
-    locale === "uk" ? "Оформлення замовлення" : locale === "ru" ? "Оформление заказа" : "Checkout",
+    "Оформлення замовлення",
     "/checkout",
     {
-      title: locale === "uk" ? "Оформлення замовлення" : locale === "ru" ? "Оформление заказа" : "Checkout",
+      title: "Оформлення замовлення",
       indexable: false,
     },
   );
@@ -41,26 +41,22 @@ export default async function CheckoutPage({
   const { cart, prefill } = await getCheckoutPageData(locale);
 
   if (!cart || cart.items.length === 0) {
-    redirect(`/${locale}/cart`);
+    redirect(`/cart`);
   }
 
   const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-  const currency = cart.items[0]?.product.currency ?? "USD";
+  const currency = cart.items[0]?.product.currency ?? STOREFRONT_CURRENCY_CODE;
 
   return (
     <main className="storefront-shell mx-auto w-full max-w-[1560px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
       <section className="rounded-[2.3rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)] sm:p-8">
         <div className="max-w-3xl">
           <h1 className="font-heading text-4xl font-semibold tracking-[-0.05em] text-[color:var(--color-text)] sm:text-5xl">
-            {locale === "uk" ? "Оформлення замовлення" : locale === "ru" ? "Оформление заказа" : "Checkout"}
+            Оформлення замовлення
           </h1>
           <p className="mt-3 text-sm leading-7 text-[color:var(--color-text-soft)] sm:text-base">
-            {locale === "uk"
-              ? "Перевірте склад кошика, залиште контакти та підтвердьте замовлення без зайвих кроків."
-              : locale === "ru"
-                ? "Проверьте состав корзины, оставьте контакты и подтвердите заказ без лишних шагов."
-                : "Review your cart, leave your details, and place the order without extra friction."}
+            Перевірте склад кошика, залиште контакти та підтвердьте замовлення без зайвих кроків.
           </p>
         </div>
       </section>
@@ -68,7 +64,7 @@ export default async function CheckoutPage({
       <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
           <h2 className="mb-5 font-heading text-3xl font-semibold text-[color:var(--color-text)]">
-            {locale === "uk" ? "Контактні дані" : locale === "ru" ? "Контактные данные" : "Contact details"}
+            Контактні дані
           </h2>
           <CheckoutForm locale={locale} prefill={prefill} />
         </section>
@@ -77,10 +73,10 @@ export default async function CheckoutPage({
           <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-heading text-2xl font-semibold text-[color:var(--color-text)]">
-                {locale === "uk" ? "Ваше замовлення" : locale === "ru" ? "Ваш заказ" : "Your order"}
+                Ваше замовлення
               </h2>
               <span className="rounded-full border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-3 py-1 text-xs text-[color:var(--color-text-soft)]">
-                {itemCount} {locale === "uk" ? "позицій" : locale === "ru" ? "позиций" : "items"}
+                {itemCount} позицій
               </span>
             </div>
             <div className="mt-5 grid gap-4">
@@ -142,7 +138,7 @@ export default async function CheckoutPage({
               <div className="border-t border-[color:var(--color-line)] pt-4">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-sm text-[color:var(--color-text-soft)]">
-                    {locale === "uk" ? "До сплати" : locale === "ru" ? "Итого" : "Total"}
+                    До сплати
                   </span>
                   <span className="font-heading text-3xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
                     {formatPrice(subtotal, locale, currency)}
@@ -152,7 +148,7 @@ export default async function CheckoutPage({
             </div>
             <Link href="/cart" className="mt-4 inline-flex w-full">
               <Button variant="secondary" className="w-full">
-                {locale === "uk" ? "Повернутися до кошика" : locale === "ru" ? "Вернуться в корзину" : "Back to cart"}
+                Повернутися до кошика
               </Button>
             </Link>
           </section>

@@ -20,135 +20,46 @@ type QuickBuildRequestPrefill = {
   website: string;
 };
 
-function getCopy(locale: AppLocale) {
-  if (locale === "uk") {
-    return {
-      title: "Запит на підбір ПК",
-      intro:
-        "Коротко опишіть бюджет і задачі. Менеджер отримає заявку, збереже контекст і повернеться з акуратною пропозицією без обов'язкового проходження повного configurator-сценарію.",
-      fullName: "Ім'я",
-      contact: "Контакт для зв'язку",
-      budget: "Бюджет",
-      useCase: "Для чого потрібен ПК",
-      preferences: "Побажання або коментар",
-      needsMonitor: "Потрібен монітор",
-      needsPeripherals: "Потрібна периферія",
-      needsUpgrade: "Потрібен апгрейд, а не новий ПК",
-      submit: "Надіслати заявку",
-      successTitle: "Заявку прийнято",
-      successBody:
-        "Ми зберегли ваш запит і передали його менеджеру. Найближчий крок — він зв'яжеться за вказаним контактом, щоб уточнити деталі або одразу запропонувати конфігурацію.",
-      requestNumber: "Номер заявки",
-      sourceLabel: "Контекст запиту",
-      sourceHint: "Поле можна відредагувати, якщо хочете уточнити, звідки саме прийшли.",
-      nextStepTitle: "Що можна зробити далі",
-      nextStepPrimary: "Почекати на зв'язок менеджера або одразу продовжити в configurator, якщо хочете точніше зібрати склад системи.",
-      continueToConfigurator: "Перейти в configurator",
-      contactHint: "Якщо питання термінове, можна скористатися прямим каналом зв'язку.",
-      contactTelegram: "Написати в Telegram",
-      contactPhone: "Зателефонувати",
-      contactEmail: "Написати на email",
-      placeholders: {
-        fullName: "Ваше ім'я",
-        contact: "Телефон, Telegram або email",
-        budget: "Наприклад: 50000",
-        useCase: "Ігри, робота, навчання, монтаж, стрімінг...",
-        preferences: "Тиша, компактний корпус, конкретний бренд, апгрейд поточної системи...",
-      },
-      errors: {
-        generic: "Не вдалося відправити заявку. Спробуйте ще раз.",
-        invalidBudget: "Вкажіть коректний бюджет у допустимому діапазоні.",
-        invalidContact: "Вкажіть коректний телефон, Telegram або email для зв'язку.",
-        duplicate: "Схожа заявка вже щойно була відправлена. Спробуйте трохи пізніше.",
-        unsupported: "Заявка містить некоректні або зайві дані. Уточніть текст і спробуйте ще раз.",
-      },
-    };
-  }
-
-  if (locale === "ru") {
-    return {
-      title: "Запрос на подбор ПК",
-      intro:
-        "Кратко опишите бюджет и задачи. Менеджер получит заявку, сохранит контекст и вернётся с аккуратным предложением без обязательного прохождения полного configurator-сценария.",
-      fullName: "Имя",
-      contact: "Контакт для связи",
-      budget: "Бюджет",
-      useCase: "Для чего нужен ПК",
-      preferences: "Пожелания или комментарий",
-      needsMonitor: "Нужен монитор",
-      needsPeripherals: "Нужна периферия",
-      needsUpgrade: "Нужен апгрейд, а не новый ПК",
-      submit: "Отправить заявку",
-      successTitle: "Заявка принята",
-      successBody:
-        "Мы сохранили ваш запрос и передали его менеджеру. Следующий шаг — он свяжется по указанному контакту, чтобы уточнить детали или сразу предложить конфигурацию.",
-      requestNumber: "Номер заявки",
-      sourceLabel: "Контекст запроса",
-      sourceHint: "Поле можно отредактировать, если хотите уточнить, откуда именно пришли.",
-      nextStepTitle: "Что можно сделать дальше",
-      nextStepPrimary: "Дождаться ответа менеджера или сразу перейти в configurator, если хотите точнее собрать систему.",
-      continueToConfigurator: "Перейти в configurator",
-      contactHint: "Если вопрос срочный, можно воспользоваться прямым каналом связи.",
-      contactTelegram: "Написать в Telegram",
-      contactPhone: "Позвонить",
-      contactEmail: "Написать на email",
-      placeholders: {
-        fullName: "Ваше имя",
-        contact: "Телефон, Telegram или email",
-        budget: "Например: 50000",
-        useCase: "Игры, работа, учёба, монтаж, стриминг...",
-        preferences: "Тишина, компактный корпус, конкретный бренд, апгрейд текущей системы...",
-      },
-      errors: {
-        generic: "Не удалось отправить заявку. Попробуйте ещё раз.",
-        invalidBudget: "Укажите корректный бюджет в допустимом диапазоне.",
-        invalidContact: "Укажите корректный телефон, Telegram или email для связи.",
-        duplicate: "Похожая заявка уже недавно была отправлена. Попробуйте чуть позже.",
-        unsupported: "Заявка содержит некорректные или лишние данные. Уточните текст и попробуйте ещё раз.",
-      },
-    };
-  }
-
+function getCopy(_locale: AppLocale) {
   return {
-    title: "PC build inquiry",
+    title: "Запит на підбір ПК",
     intro:
-      "Share your budget and goals in a few lines. The manager receives the request with its context and follows up with a curated recommendation without forcing you through the full configurator first.",
-    fullName: "Name",
-    contact: "Contact",
-    budget: "Budget",
-    useCase: "What the PC is for",
-    preferences: "Preferences or comment",
-    needsMonitor: "Need a monitor",
-    needsPeripherals: "Need peripherals",
-    needsUpgrade: "Need an upgrade instead of a new PC",
-    submit: "Send request",
-    successTitle: "Request received",
+      "Коротко опишіть бюджет і задачі. Менеджер отримає заявку, збереже контекст і повернеться з акуратною пропозицією без обов'язкового проходження повного configurator-сценарію.",
+    fullName: "Ім'я",
+    contact: "Контакт для зв'язку",
+    budget: "Бюджет",
+    useCase: "Для чого потрібен ПК",
+    preferences: "Побажання або коментар",
+    needsMonitor: "Потрібен монітор",
+    needsPeripherals: "Потрібна периферія",
+    needsUpgrade: "Потрібен апгрейд, а не новий ПК",
+    submit: "Надіслати заявку",
+    successTitle: "Заявку прийнято",
     successBody:
-      "We saved your inquiry and passed it to the manager. The next step is a follow-up on the contact you shared, either to clarify details or to present a first build direction.",
-    requestNumber: "Request number",
-    sourceLabel: "Request context",
-    sourceHint: "You can edit this field if you want to clarify where the request came from.",
-    nextStepTitle: "Next step",
-    nextStepPrimary:
-      "You can wait for the manager to reach out, or continue in the configurator right away if you want to shape the system more precisely.",
-    continueToConfigurator: "Open configurator",
-    contactHint: "If this is urgent, you can also use a direct contact channel.",
-    contactTelegram: "Message on Telegram",
-    contactPhone: "Call",
-    contactEmail: "Email",
+      "Ми зберегли ваш запит і передали його менеджеру. Найближчий крок — він зв'яжеться за вказаним контактом, щоб уточнити деталі або одразу запропонувати конфігурацію.",
+    requestNumber: "Номер заявки",
+    sourceLabel: "Контекст запиту",
+    sourceHint: "Поле можна відредагувати, якщо хочете уточнити, звідки саме прийшли.",
+    nextStepTitle: "Що можна зробити далі",
+    nextStepPrimary: "Почекати на зв'язок менеджера або одразу продовжити в configurator, якщо хочете точніше зібрати склад системи.",
+    continueToConfigurator: "Перейти в configurator",
+    contactHint: "Якщо питання термінове, можна скористатися прямим каналом зв'язку.",
+    contactTelegram: "Написати в Telegram",
+    contactPhone: "Зателефонувати",
+    contactEmail: "Написати на email",
     placeholders: {
-      fullName: "Your name",
-      contact: "Phone, Telegram, or email",
-      budget: "For example: 1500",
-      useCase: "Gaming, work, study, editing, streaming...",
-      preferences: "Quiet build, compact case, preferred brand, current system upgrade...",
+      fullName: "Ваше ім'я",
+      contact: "Телефон, Telegram або email",
+      budget: "Наприклад: 50000",
+      useCase: "Ігри, робота, навчання, монтаж, стрімінг...",
+      preferences: "Тиша, компактний корпус, конкретний бренд, апгрейд поточної системи...",
     },
     errors: {
-      generic: "Could not send the request. Please try again.",
-      invalidBudget: "Enter a valid budget within the allowed range.",
-      invalidContact: "Enter a valid phone number, Telegram handle, or email.",
-      duplicate: "A similar request was just submitted. Please try again a bit later.",
-      unsupported: "The request contains unsupported or noisy content. Please refine it and try again.",
+      generic: "Не вдалося відправити заявку. Спробуйте ще раз.",
+      invalidBudget: "Вкажіть коректний бюджет у допустимому діапазоні.",
+      invalidContact: "Вкажіть коректний телефон, Telegram або email для зв'язку.",
+      duplicate: "Схожа заявка вже щойно була відправлена. Спробуйте трохи пізніше.",
+      unsupported: "Заявка містить некоректні або зайві дані. Уточніть текст і спробуйте ще раз.",
     },
   };
 }
@@ -163,19 +74,27 @@ function translateServerError(
     unsupported: string;
   },
 ) {
-  if (message === "Budget is invalid") {
+  if (message === "Некоректний бюджет" || message === "Budget is invalid") {
     return errors.invalidBudget;
   }
 
-  if (message === "Contact is invalid") {
+  if (message === "Некоректний контакт" || message === "Contact is invalid") {
     return errors.invalidContact;
   }
 
-  if (message === "Too many duplicate requests") {
+  if (
+    message === "Забагато схожих заявок за короткий час" ||
+    message === "Too many duplicate requests"
+  ) {
     return errors.duplicate;
   }
 
-  if (message === "Request contains unsupported content" || message === "Spam detected") {
+  if (
+    message === "Запит містить непідтримуваний вміст" ||
+    message === "Request contains unsupported content" ||
+    message === "Виявлено спам" ||
+    message === "Spam detected"
+  ) {
     return errors.unsupported;
   }
 

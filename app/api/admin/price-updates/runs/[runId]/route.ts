@@ -20,7 +20,7 @@ export async function GET(_request: Request, context: { params: Promise<{ runId:
   });
 
   if (!run) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "Не знайдено" }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true, run });

@@ -35,8 +35,7 @@ export function CatalogFilters({
     [categories],
   );
   const activeCategory = categories.find((category) => category.slug === filters.category) ?? null;
-  const allCategoriesLabel =
-    locale === "uk" ? "Усі" : locale === "ru" ? "Все" : "All";
+  const allCategoriesLabel = "Усі";
 
   const update = (updater: (current: URLSearchParams) => void) => {
     const current = new URLSearchParams(params.toString());

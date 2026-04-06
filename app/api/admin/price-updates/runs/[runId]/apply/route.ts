@@ -18,7 +18,7 @@ export async function POST(_request: Request, context: { params: Promise<{ runId
 
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Apply failed";
+    const msg = e instanceof Error ? e.message : "Не вдалося застосувати";
     return NextResponse.json({ ok: false, error: msg }, { status: 400 });
   }
 }

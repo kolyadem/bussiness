@@ -1,14 +1,15 @@
 import {
   AlertTriangle,
   ArrowRight,
+  Banknote,
   Boxes,
   ClipboardList,
-  DollarSign,
   PackageCheck,
   ShieldCheck,
   TrendingUp,
   Workflow,
 } from "lucide-react";
+import type { AppLocale } from "@/lib/constants";
 import { AdminDashboardTrends } from "@/components/admin/admin-dashboard-trends";
 import {
   canViewAdminFinancials,
@@ -27,103 +28,55 @@ import {
   getOrderStatusLabel,
   getOrderStatusTone,
 } from "@/lib/storefront/orders";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
-function getCopy(locale: "uk" | "ru" | "en", isOwner: boolean) {
+function getCopy(isOwner: boolean) {
   return {
-    title: isOwner
-      ? locale === "uk"
-        ? "Панель власника"
-        : locale === "ru"
-          ? "Панель владельца"
-          : "Owner dashboard"
-      : locale === "uk"
-        ? "Операційний огляд"
-        : locale === "ru"
-          ? "Операционный обзор"
-          : "Operations overview",
+    title: isOwner ? "Панель власника" : "Операційний огляд",
     subtitle: isOwner
-      ? locale === "uk"
-        ? "Ключові гроші, замовлення, товарні сигнали та останні події магазину в одному чистому owner-view."
-        : locale === "ru"
-          ? "Ключевые деньги, заказы, товарные сигналы и последние события магазина в одном чистом owner-view."
-          : "Core money metrics, orders, product signals, and recent store activity in one owner-facing view."
-      : locale === "uk"
-        ? "Безпечний operational-зріз для менеджера: замовлення, статуси, товари й сигнали по залишках."
-        : locale === "ru"
-          ? "Безопасный operational-срез для менеджера: заказы, статусы, товары и сигналы по остаткам."
-          : "A safe operational view for managers with orders, statuses, products, and stock signals.",
-    orders: locale === "uk" ? "Усього замовлень" : locale === "ru" ? "Всего заказов" : "Total orders",
-    newOrders: locale === "uk" ? "Нові замовлення" : locale === "ru" ? "Новые заказы" : "New orders",
-    revenue: locale === "uk" ? "Виручка" : locale === "ru" ? "Выручка" : "Revenue",
-    grossProfit: locale === "uk" ? "Валовий прибуток" : locale === "ru" ? "Валовая прибыль" : "Gross profit",
-    averageOrderValue: locale === "uk" ? "Середній чек" : locale === "ru" ? "Средний чек" : "Average order value",
-    inStock: locale === "uk" ? "У наявності" : locale === "ru" ? "В наличии" : "In stock",
-    lowStock: locale === "uk" ? "Мало залишку" : locale === "ru" ? "Мало остатков" : "Low stock",
-    buildRequests: locale === "uk" ? "Заявки на збірку" : locale === "ru" ? "Заявки на сборку" : "Build requests",
-    trendsTitle: locale === "uk" ? "Динаміка виручки та прибутку" : locale === "ru" ? "Динамика выручки и прибыли" : "Revenue and profit trends",
-    trendsSubtitle: locale === "uk"
-      ? "Денні, тижневі та місячні зрізи без важкого BI-шуму."
-      : locale === "ru"
-        ? "Дневные, недельные и месячные срезы без тяжёлого BI-шума."
-        : "Daily, weekly, and monthly cuts without heavy BI clutter.",
-    day: locale === "uk" ? "Дні" : locale === "ru" ? "Дни" : "Days",
-    week: locale === "uk" ? "Тижні" : locale === "ru" ? "Недели" : "Weeks",
-    month: locale === "uk" ? "Місяці" : locale === "ru" ? "Месяцы" : "Months",
-    statuses: locale === "uk" ? "Статуси замовлень" : locale === "ru" ? "Статусы заказов" : "Order statuses",
-    statusesSubtitle: locale === "uk"
-      ? "Швидко видно, де саме зараз навантаження магазину."
-      : locale === "ru"
-        ? "Быстро видно, где именно сейчас нагрузка магазина."
-        : "A quick look at where the store workload sits right now.",
-    recentOrders: locale === "uk" ? "Останні замовлення" : locale === "ru" ? "Последние заказы" : "Recent orders",
-    recentOrdersSubtitle: locale === "uk"
-      ? "Живий потік нових і оновлених замовлень."
-      : locale === "ru"
-        ? "Живой поток новых и обновлённых заказов."
-        : "A live feed of newly placed and recently updated orders.",
-    topSelling: locale === "uk" ? "Топ продажів" : locale === "ru" ? "Топ продаж" : "Top selling products",
-    topSellingSubtitle: locale === "uk"
-      ? "Що найчастіше рухає замовлення."
-      : locale === "ru"
-        ? "Что чаще всего двигает заказы."
-        : "What moves the most orders.",
-    topProfitable: locale === "uk" ? "Топ по прибутку" : locale === "ru" ? "Топ по прибыли" : "Top profitable products",
-    topProfitableSubtitle: locale === "uk"
-      ? "Позиції, що реально формують gross profit."
-      : locale === "ru"
-        ? "Позиции, которые реально формируют gross profit."
-        : "Products that contribute the most gross profit.",
-    lowStockTitle: locale === "uk" ? "Слабкі залишки" : locale === "ru" ? "Слабые остатки" : "Low stock alerts",
-    lowStockSubtitle: locale === "uk"
-      ? "Товари, які скоро випадуть із продажу або вже на межі."
-      : locale === "ru"
-        ? "Товары, которые скоро выпадут из продажи или уже на грани."
-        : "Products that are near sell-out or already at risk.",
-    ownerTools: locale === "uk" ? "Інструменти власника" : locale === "ru" ? "Инструменты владельца" : "Owner tools",
-    managerTools: locale === "uk" ? "Робочі розділи" : locale === "ru" ? "Рабочие разделы" : "Operational sections",
-    users: locale === "uk" ? "Користувачі та ролі" : locale === "ru" ? "Пользователи и роли" : "Users and roles",
-    usersText: locale === "uk"
-      ? "Видача менеджерського доступу та контроль ролей без ризику для owner-account."
-      : locale === "ru"
-        ? "Выдача менеджерского доступа и контроль ролей без риска для owner-account."
-        : "Grant manager access and control roles without risking the owner account.",
-    ordersLink: locale === "uk" ? "Відкрити замовлення" : locale === "ru" ? "Открыть заказы" : "Open orders",
-    productsLink: locale === "uk" ? "Каталог товарів" : locale === "ru" ? "Каталог товаров" : "Product catalog",
-    importsLink: locale === "uk" ? "Центр імпорту" : locale === "ru" ? "Центр импорта" : "Import Center",
-    emptyList: locale === "uk" ? "Поки нічого показати." : locale === "ru" ? "Пока нечего показать." : "Nothing to show yet.",
-    qty: locale === "uk" ? "шт." : locale === "ru" ? "шт." : "pcs",
-    items: locale === "uk" ? "позицій" : locale === "ru" ? "позиций" : "items",
-    city: locale === "uk" ? "Місто" : locale === "ru" ? "Город" : "City",
-    incompleteProfit: locale === "uk"
-      ? "Частина замовлень ще без повного cost-basis, тому profit показує лише доступну базу."
-      : locale === "ru"
-        ? "Часть заказов ещё без полного cost-basis, поэтому profit показывает только доступную базу."
-        : "Some orders still have incomplete cost basis, so profit reflects only the known portion.",
-    importHealth: locale === "uk" ? "Стан імпортів" : locale === "ru" ? "Состояние импортов" : "Import health",
-    activeAlerts: locale === "uk" ? "Активні сповіщення" : locale === "ru" ? "Активные уведомления" : "Active alerts",
-    attentionSources: locale === "uk" ? "Проблемні джерела" : locale === "ru" ? "Проблемные источники" : "Sources needing attention",
-    syncingNow: locale === "uk" ? "Зараз синхронізуються" : locale === "ru" ? "Сейчас синхронизируются" : "Syncing now",
+      ? "Ключові гроші, замовлення, товарні сигнали та останні події магазину в одному чистому owner-view."
+      : "Безпечний operational-зріз для менеджера: замовлення, статуси, товари й сигнали по залишках.",
+    orders: "Усього замовлень",
+    newOrders: "Нові замовлення",
+    revenue: "Виручка",
+    grossProfit: "Валовий прибуток",
+    averageOrderValue: "Середній чек",
+    inStock: "У наявності",
+    lowStock: "Мало залишку",
+    buildRequests: "Заявки на збірку",
+    trendsTitle: "Динаміка виручки та прибутку",
+    trendsSubtitle: "Денні, тижневі та місячні зрізи без важкого BI-шуму.",
+    day: "Дні",
+    week: "Тижні",
+    month: "Місяці",
+    statuses: "Статуси замовлень",
+    statusesSubtitle: "Швидко видно, де саме зараз навантаження магазину.",
+    recentOrders: "Останні замовлення",
+    recentOrdersSubtitle: "Живий потік нових і оновлених замовлень.",
+    topSelling: "Топ продажів",
+    topSellingSubtitle: "Що найчастіше рухає замовлення.",
+    topProfitable: "Топ по прибутку",
+    topProfitableSubtitle: "Позиції, що реально формують gross profit.",
+    lowStockTitle: "Слабкі залишки",
+    lowStockSubtitle: "Товари, які скоро випадуть із продажу або вже на межі.",
+    ownerTools: "Інструменти власника",
+    managerTools: "Робочі розділи",
+    users: "Користувачі та ролі",
+    usersText:
+      "Видача менеджерського доступу та контроль ролей без ризику для owner-account.",
+    ordersLink: "Відкрити замовлення",
+    productsLink: "Каталог товарів",
+    importsLink: "Центр імпорту",
+    emptyList: "Поки нічого показати.",
+    qty: "шт.",
+    items: "позицій",
+    city: "Місто",
+    incompleteProfit:
+      "Частина замовлень ще без повного cost-basis, тому profit показує лише доступну базу.",
+    importHealth: "Стан імпортів",
+    activeAlerts: "Активні сповіщення",
+    attentionSources: "Проблемні джерела",
+    syncingNow: "Зараз синхронізуються",
   };
 }
 
@@ -138,7 +91,7 @@ function getStatusBarWidth(count: number, maxCount: number) {
 export default async function AdminDashboardPage({
   params,
 }: {
-  params: Promise<{ locale: "uk" | "ru" | "en" }>;
+  params: Promise<{ locale: AppLocale }>;
 }) {
   const { locale } = await params;
   const viewer = await requireAdminAccess(locale);
@@ -150,7 +103,7 @@ export default async function AdminDashboardPage({
     getAdminDashboardData({ locale, viewerRole: viewer.role }),
     capabilities.canManageImports ? getAdminDashboardImportHealth() : Promise.resolve(null),
   ]);
-  const copy = getCopy(locale, canSeeFinancials);
+  const copy = getCopy(canSeeFinancials);
   const maxStatusCount = Math.max(...dashboard.statusCounts.map((item) => item.count), 0);
 
   const kpis = [
@@ -160,17 +113,17 @@ export default async function AdminDashboardPage({
       ? [
           {
             label: copy.revenue,
-            value: formatPrice(dashboard.totals.revenue ?? 0, locale, "USD"),
-            icon: DollarSign,
+            value: formatPrice(dashboard.totals.revenue ?? 0, locale, STOREFRONT_CURRENCY_CODE),
+            icon: Banknote,
           },
           {
             label: copy.grossProfit,
-            value: formatPrice(dashboard.totals.grossProfit ?? 0, locale, "USD"),
+            value: formatPrice(dashboard.totals.grossProfit ?? 0, locale, STOREFRONT_CURRENCY_CODE),
             icon: TrendingUp,
           },
           {
             label: copy.averageOrderValue,
-            value: formatPrice(dashboard.totals.averageOrderValue ?? 0, locale, "USD"),
+            value: formatPrice(dashboard.totals.averageOrderValue ?? 0, locale, STOREFRONT_CURRENCY_CODE),
             icon: ArrowRight,
           },
         ]
@@ -330,7 +283,7 @@ export default async function AdminDashboardPage({
                     </div>
                     {canSeeFinancials ? (
                       <p className="text-sm font-medium text-[color:var(--color-text)]">
-                        {formatPrice(product.revenue, locale, "USD")}
+                        {formatPrice(product.revenue, locale, STOREFRONT_CURRENCY_CODE)}
                       </p>
                     ) : null}
                   </div>
@@ -361,7 +314,7 @@ export default async function AdminDashboardPage({
                         </p>
                       </div>
                       <p className="text-sm font-medium text-[color:var(--color-text)]">
-                        {formatPrice(product.grossProfit ?? 0, locale, "USD")}
+                        {formatPrice(product.grossProfit ?? 0, locale, STOREFRONT_CURRENCY_CODE)}
                       </p>
                     </div>
                   </div>
@@ -397,7 +350,7 @@ export default async function AdminDashboardPage({
                         {pickAdminTranslation(product.translations, locale).name}
                       </p>
                       <p className="mt-1 text-sm text-[color:var(--color-text-soft)]">
-                        {inventoryLabels[product.inventoryStatus as keyof typeof inventoryLabels]?.[locale] ?? product.inventoryStatus} • {product.stock}
+                        {inventoryLabels[product.inventoryStatus as keyof typeof inventoryLabels] ?? product.inventoryStatus} • {product.stock}
                       </p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-[color:var(--color-text-soft)]" />

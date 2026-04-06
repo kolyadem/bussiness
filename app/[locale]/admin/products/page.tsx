@@ -7,11 +7,12 @@ import {
   requireAdminAccess,
 } from "@/lib/admin";
 import { calculateUnitFinancials } from "@/lib/commerce/finance";
+import type { AppLocale } from "@/lib/constants";
 
 export default async function AdminProductsPage({
   params,
 }: {
-  params: Promise<{ locale: "uk" | "ru" | "en" }>;
+  params: Promise<{ locale: AppLocale }>;
 }) {
   const { locale } = await params;
   const viewer = await requireAdminAccess(locale);

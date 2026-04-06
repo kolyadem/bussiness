@@ -5,6 +5,7 @@ import { LoaderCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ProductImageFrame } from "@/components/ui/product-image-frame";
+import type { AppLocale } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
 
 type ProductRow = {
@@ -53,8 +54,8 @@ const BULK_ACTIONS: BulkAction[] = [
   "DELETE",
 ];
 
-function formatStableDate(value: string, locale: "uk" | "ru" | "en") {
-  return new Intl.DateTimeFormat(locale, {
+function formatStableDate(value: string) {
+  return new Intl.DateTimeFormat("uk-UA", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -62,26 +63,26 @@ function formatStableDate(value: string, locale: "uk" | "ru" | "en") {
   }).format(new Date(value));
 }
 
-function bulkActionLabel(action: BulkAction, locale: "uk" | "ru" | "en") {
+function bulkActionLabel(action: BulkAction) {
   switch (action) {
     case "PUBLISH":
-      return locale === "uk" ? "Опублікувати" : locale === "ru" ? "Опубликовать" : "Publish";
+      return "Опублікувати";
     case "UNPUBLISH":
-      return locale === "uk" ? "Зняти з публікації" : locale === "ru" ? "Снять с публикации" : "Unpublish";
+      return "Зняти з публікації";
     case "MOVE_TO_DRAFT":
-      return locale === "uk" ? "У чернетку" : locale === "ru" ? "В черновик" : "Move to draft";
+      return "У чернетку";
     case "ASSIGN_CATEGORY":
-      return locale === "uk" ? "Призначити категорію" : locale === "ru" ? "Назначить категорию" : "Assign category";
+      return "Призначити категорію";
     case "DELETE":
-      return locale === "uk" ? "Видалити" : locale === "ru" ? "Удалить" : "Delete";
+      return "Видалити";
     case "SET_PRICE":
-      return locale === "uk" ? "Встановити ціну" : locale === "ru" ? "Установить цену" : "Set price";
+      return "Встановити ціну";
     case "SET_STOCK":
-      return locale === "uk" ? "Встановити залишок" : locale === "ru" ? "Установить остаток" : "Set stock";
+      return "Встановити залишок";
     case "ADJUST_STOCK":
-      return locale === "uk" ? "Змінити залишок" : locale === "ru" ? "Изменить остаток" : "Adjust stock";
+      return "Змінити залишок";
     case "ADJUST_PRICE_PERCENT":
-      return locale === "uk" ? "Змінити ціну %" : locale === "ru" ? "Изменить цену %" : "Adjust price %";
+      return "Змінити ціну %";
   }
 }
 
@@ -91,7 +92,7 @@ export function AdminProductCatalogTable({
   products,
   categories,
 }: {
-  locale: "uk" | "ru" | "en";
+  locale: AppLocale;
   canViewFinancials: boolean;
   products: ProductRow[];
   categories: Option[];
@@ -137,7 +138,7 @@ export function AdminProductCatalogTable({
       | null;
 
     if (!response.ok) {
-      throw new Error(payload?.error || "Bulk action failed");
+      throw new Error(payload?.error || "Не вдалося виконати масову дію");
     }
 
     return payload;
@@ -145,13 +146,7 @@ export function AdminProductCatalogTable({
 
   function runBulk(productIds: string[]) {
     if (productIds.length === 0) {
-      toast.error(
-        locale === "uk"
-          ? "Оберіть товари"
-          : locale === "ru"
-            ? "Выберите товары"
-            : "Select products first",
-      );
+      toast.error("Оберіть товари");
       return;
     }
 
@@ -160,16 +155,10 @@ export function AdminProductCatalogTable({
     startTransition(async () => {
       try {
         const payload = await executeBulkAction(productIds);
-        toast.success(
-          locale === "uk"
-            ? `Оброблено: ${payload?.processedCount ?? productIds.length}`
-            : locale === "ru"
-              ? `Обработано: ${payload?.processedCount ?? productIds.length}`
-              : `Processed: ${payload?.processedCount ?? productIds.length}`,
-        );
+        toast.success(`Оброблено: ${payload?.processedCount ?? productIds.length}`);
         window.location.reload();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Bulk action failed");
+        toast.error(error instanceof Error ? error.message : "Не вдалося виконати масову дію");
       } finally {
         setPending(false);
       }
@@ -194,19 +183,13 @@ export function AdminProductCatalogTable({
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
 
         if (!response.ok) {
-          throw new Error(payload?.error || "Delete failed");
+          throw new Error(payload?.error || "Не вдалося видалити");
         }
 
-        toast.success(
-          locale === "uk"
-            ? "Товар видалено"
-            : locale === "ru"
-              ? "Товар удалён"
-              : "Product deleted",
-        );
+        toast.success("Товар видалено");
         window.location.reload();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Delete failed");
+        toast.error(error instanceof Error ? error.message : "Не вдалося видалити");
       } finally {
         setPending(false);
       }
@@ -214,31 +197,24 @@ export function AdminProductCatalogTable({
   }
 
   const copy = {
-    title: locale === "uk" ? "Каталог товарів" : locale === "ru" ? "Каталог товаров" : "Product catalog",
-    countLabel: locale === "uk" ? "товарів" : locale === "ru" ? "товаров" : "products",
-    add: locale === "uk" ? "Додати товар" : locale === "ru" ? "Добавить товар" : "New product",
-    selected:
-      locale === "uk" ? "Вибрано" : locale === "ru" ? "Выбрано" : "Selected",
-    runBulk:
-      locale === "uk" ? "Застосувати" : locale === "ru" ? "Применить" : "Apply",
-    product: locale === "uk" ? "Товар" : locale === "ru" ? "Товар" : "Product",
-    status: locale === "uk" ? "Статус" : locale === "ru" ? "Статус" : "Status",
-    price: locale === "uk" ? "Ціна" : locale === "ru" ? "Цена" : "Price",
-    financeCost: locale === "uk" ? "Закупівля" : locale === "ru" ? "Закупка" : "Cost",
-    financeProfit: locale === "uk" ? "Прибуток" : locale === "ru" ? "Прибыль" : "Profit",
-    financeMargin: locale === "uk" ? "Маржа" : locale === "ru" ? "Маржа" : "Margin",
-    stock: locale === "uk" ? "Залишок" : locale === "ru" ? "Остаток" : "Stock",
-    updated: locale === "uk" ? "Оновлено" : locale === "ru" ? "Обновлено" : "Updated",
-    actions: locale === "uk" ? "Дії" : locale === "ru" ? "Действия" : "Actions",
-    edit: locale === "uk" ? "Редагувати" : locale === "ru" ? "Редактировать" : "Edit",
-    remove: locale === "uk" ? "Видалити" : locale === "ru" ? "Удалить" : "Delete",
-    bulkTools:
-      locale === "uk"
-        ? "Bulk actions та quick updates"
-        : locale === "ru"
-          ? "Bulk actions и quick updates"
-          : "Bulk actions and quick updates",
-    value: locale === "uk" ? "Значення" : locale === "ru" ? "Значение" : "Value",
+    title: "Каталог товарів",
+    countLabel: "товарів",
+    add: "Додати товар",
+    selected: "Вибрано",
+    runBulk: "Застосувати",
+    product: "Товар",
+    status: "Статус",
+    price: "Ціна",
+    financeCost: "Закупівля",
+    financeProfit: "Прибуток",
+    financeMargin: "Маржа",
+    stock: "Залишок",
+    updated: "Оновлено",
+    actions: "Дії",
+    edit: "Редагувати",
+    remove: "Видалити",
+    bulkTools: "Масові дії та швидкі оновлення",
+    value: "Значення",
   };
 
   return (
@@ -253,7 +229,7 @@ export function AdminProductCatalogTable({
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <a href={`/${locale}/admin/products/new`}>
+          <a href={`/admin/products/new`}>
             <Button>{copy.add}</Button>
           </a>
         </div>
@@ -274,7 +250,7 @@ export function AdminProductCatalogTable({
           >
             {BULK_ACTIONS.map((action) => (
               <option key={action} value={action}>
-                {bulkActionLabel(action, locale)}
+                {bulkActionLabel(action)}
               </option>
             ))}
           </select>
@@ -391,11 +367,11 @@ export function AdminProductCatalogTable({
                   </td>
                   <td className="px-5 py-4 text-sm text-[color:var(--color-text)]">{product.stock}</td>
                   <td className="px-5 py-4 text-sm text-[color:var(--color-text-soft)]">
-                    {formatStableDate(product.updatedAt, locale)}
+                    {formatStableDate(product.updatedAt)}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-2">
-                      <a href={`/${locale}/admin/products/${product.id}/edit`}>
+                      <a href={`/admin/products/${product.id}/edit`}>
                         <Button variant="secondary">{copy.edit}</Button>
                       </a>
                       <Button

@@ -17,7 +17,7 @@ export async function PATCH(
   const parsed = updateSchema.safeParse(body);
 
   if (!parsed.success || !assertLocale(parsed.data.locale)) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
   }
 
   const build = await updateConfiguratorBuildName({
@@ -27,7 +27,7 @@ export async function PATCH(
   });
 
   if (!build) {
-    return NextResponse.json({ error: "Build not found" }, { status: 404 });
+    return NextResponse.json({ error: "Збірку не знайдено" }, { status: 404 });
   }
 
   return NextResponse.json({ ok: true, build });

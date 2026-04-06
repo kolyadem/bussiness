@@ -2,7 +2,6 @@
 
 import { startTransition, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
 import { LoaderCircle, Minus, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { getActionErrorMessage, readApiPayload } from "@/components/product/client-feedback";
@@ -18,7 +17,7 @@ async function request(method: "PATCH" | "DELETE", body: Record<string, unknown>
 
   if (!response.ok) {
     const payload = await readApiPayload(response);
-    throw new Error(payload.error || "Request failed");
+    throw new Error(payload.error || "Запит не вдався");
   }
 
   return readApiPayload(response);
@@ -32,11 +31,9 @@ export function CartQuantityControl({
   quantity: number;
 }) {
   const router = useRouter();
-  const locale = useLocale();
   const [pending, setPending] = useState(false);
   const [displayQuantity, setDisplayQuantity] = useState(quantity);
-  const removedMessage =
-    locale === "uk" ? "Товар прибрано з кошика" : locale === "ru" ? "Товар убран из корзины" : "Removed from cart";
+  const removedMessage = "Товар прибрано з кошика";
 
   useEffect(() => {
     setDisplayQuantity(quantity);
@@ -62,7 +59,7 @@ export function CartQuantityControl({
         router.refresh();
       } catch {
         setDisplayQuantity(quantity);
-        toast.error(getActionErrorMessage(locale));
+        toast.error(getActionErrorMessage("uk"));
       } finally {
         setPending(false);
       }

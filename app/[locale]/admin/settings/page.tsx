@@ -7,7 +7,7 @@ import {
   requireAdminOnlyAccess,
 } from "@/lib/admin";
 import { normalizeSiteMode } from "@/lib/site-mode";
-import { parseJson } from "@/lib/utils";
+import { parseJson, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
 export default async function AdminSettingsPage({
   params,
@@ -26,11 +26,7 @@ export default async function AdminSettingsPage({
     <div className="space-y-6">
       <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-6">
         <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
-          {locale === "uk"
-            ? "Налаштування сайту"
-            : locale === "ru"
-              ? "Настройки сайта"
-              : "Site settings"}
+          Налаштування сайту
         </h2>
       </section>
       <AdminSiteSettingsForm
@@ -54,7 +50,7 @@ export default async function AdminSettingsPage({
           metaTitle: settings?.metaTitle ?? "",
           metaDescription: settings?.metaDescription ?? "",
           faviconPath: settings?.faviconPath ?? "",
-          defaultCurrency: settings?.defaultCurrency ?? "USD",
+          defaultCurrency: settings?.defaultCurrency ?? STOREFRONT_CURRENCY_CODE,
           defaultLocale: settings?.defaultLocale ?? "uk",
           watermarkText: settings?.watermarkText ?? "LUMINA",
           heroTitle: settings?.heroTitle ?? "",

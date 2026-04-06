@@ -17,15 +17,12 @@ import {
 } from "@/lib/storefront/orders";
 import { formatPrice } from "@/lib/utils";
 
-function formatDate(value: Date, locale: AppLocale) {
-  return new Intl.DateTimeFormat(
-    locale === "uk" ? "uk-UA" : locale === "ru" ? "ru-RU" : "en-US",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    },
-  ).format(value);
+function formatDate(value: Date) {
+  return new Intl.DateTimeFormat("uk-UA", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(value);
 }
 
 export default async function AccountOrderDetailPage({
@@ -52,7 +49,7 @@ export default async function AccountOrderDetailPage({
           href="/account"
           className="text-sm text-[color:var(--color-text-soft)] transition hover:text-[color:var(--color-text)]"
         >
-          {locale === "uk" ? "Назад до акаунта" : locale === "ru" ? "Назад в аккаунт" : "Back to account"}
+          Назад до акаунта
         </Link>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <h1 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
@@ -71,7 +68,7 @@ export default async function AccountOrderDetailPage({
         <div className="space-y-6">
           <article className="rounded-[1.8rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
             <h2 className="text-xl font-semibold text-[color:var(--color-text)]">
-              {locale === "uk" ? "Склад замовлення" : locale === "ru" ? "Состав заказа" : "Order items"}
+              Склад замовлення
             </h2>
             <div className="mt-4 grid gap-4">
               {order.items.map((item) => (
@@ -122,13 +119,13 @@ export default async function AccountOrderDetailPage({
             <div className="grid gap-3">
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Дата" : locale === "ru" ? "Дата" : "Date"}
+                  Дата
                 </p>
-                <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{formatDate(order.createdAt, locale)}</p>
+                <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{formatDate(order.createdAt)}</p>
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Доставка" : locale === "ru" ? "Доставка" : "Delivery"}
+                  Доставка
                 </p>
                 <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">
                   {deliveryMethod ? getOrderDeliveryMethodLabel(deliveryMethod, locale) : "—"}
@@ -139,13 +136,13 @@ export default async function AccountOrderDetailPage({
                 ) : null}
                 {order.deliveryBranch ? (
                   <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
-                    {locale === "uk" ? "Відділення" : locale === "ru" ? "Отделение" : "Branch"}: {order.deliveryBranch}
+                    Відділення: {order.deliveryBranch}
                   </p>
                 ) : null}
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
-                  {locale === "uk" ? "Підсумок" : locale === "ru" ? "Итого" : "Total"}
+                  Підсумок
                 </p>
                 <p className="mt-2 text-2xl font-semibold text-[color:var(--color-text)]">
                   {formatPrice(order.totalPrice, locale, order.currency)}

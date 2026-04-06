@@ -8,16 +8,21 @@ export function cn(...inputs: ClassValue[]) {
 const STOREFRONT_CURRENCY = "UAH";
 const USD_TO_UAH_RATE = 41;
 
+/** User-facing and default catalog currency (ISO 4217). */
 export const STOREFRONT_CURRENCY_CODE = STOREFRONT_CURRENCY;
+/** Used when interpreting legacy rows stored as USD minor units (e.g. cents). */
 export const STOREFRONT_USD_TO_UAH_RATE = USD_TO_UAH_RATE;
 
+/**
+ * Formats a stored integer amount for display in UAH (₴).
+ * `value` is in minor units of `currency`: UAH = kopiyky; legacy USD = cents (converted for display).
+ */
 export function formatPrice(
   value: number,
   locale: string,
-  currency: string = "USD",
+  currency: string = STOREFRONT_CURRENCY,
 ) {
-  const normalizedLocale =
-    locale === "uk" ? "uk-UA" : locale === "ru" ? "ru-RU" : "en-US";
+  const normalizedLocale = "uk-UA";
   const amount =
     currency === STOREFRONT_CURRENCY
       ? value / 100
@@ -31,12 +36,35 @@ export function formatPrice(
   }).format(amount);
 }
 
-export function displayPriceToStoredMinorUnits(value: number) {
-  return Math.round((value * 100) / USD_TO_UAH_RATE);
+/**
+ * Converts a whole-number shelf price entered in UAH (грн) into stored minor units for `productCurrency`.
+ * New data uses UAH (kopiyky). Legacy USD rows used USD cents derived from the same UAH display input.
+ */
+export function displayPriceToStoredMinorUnits(
+  displayUah: number,
+  productCurrency: string = STOREFRONT_CURRENCY,
+) {
+  if (productCurrency === STOREFRONT_CURRENCY) {
+    return Math.round(displayUah * 100);
+  }
+  return Math.round((displayUah * 100) / USD_TO_UAH_RATE);
 }
 
-export function storedMinorUnitsToDisplayPrice(value: number, currency: string = "USD") {
-  return currency === STOREFRONT_CURRENCY ? value / 100 : (value / 100) * USD_TO_UAH_RATE;
+export function storedMinorUnitsToDisplayPrice(
+  value: number,
+  currency: string = STOREFRONT_CURRENCY,
+) {
+  return currency === STOREFRONT_CURRENCY
+    ? value / 100
+    : (value / 100) * USD_TO_UAH_RATE;
+}
+
+/** Sum stored minor units from different order currencies into a single UAH-kopecks total for reporting. */
+export function storedMinorUnitsToUahKopecks(value: number, currency: string): number {
+  if (currency === STOREFRONT_CURRENCY) {
+    return value;
+  }
+  return Math.round(value * USD_TO_UAH_RATE);
 }
 
 export function parseJson<T>(value: string, fallback: T): T {
@@ -63,6 +91,6 @@ export function slugify(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
-export function assertLocale(value: string): value is "uk" | "ru" | "en" {
-  return ["uk", "ru", "en"].includes(value);
+export function assertLocale(value: string): value is "uk" {
+  return value === "uk";
 }

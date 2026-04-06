@@ -11,7 +11,7 @@ const patchSchema = z.object({
 function jsonAuthError(status: 401 | 403) {
   return NextResponse.json(
     {
-      error: status === 401 ? "Authentication required" : "Insufficient permissions",
+      error: status === 401 ? "Потрібна автентифікація" : "Недостатньо прав",
     },
     { status },
   );
@@ -46,7 +46,7 @@ export async function PATCH(
   const parsed = patchSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
   }
 
   const nextSyncAtValue =
@@ -60,7 +60,7 @@ export async function PATCH(
     nextSyncAtValue instanceof Date &&
     Number.isNaN(nextSyncAtValue.getTime())
   ) {
-    return NextResponse.json({ error: "Invalid nextSyncAt" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректна дата nextSyncAt" }, { status: 400 });
   }
 
   try {
@@ -86,6 +86,6 @@ export async function PATCH(
       source,
     });
   } catch {
-    return NextResponse.json({ error: "Could not update source config" }, { status: 400 });
+    return NextResponse.json({ error: "Не вдалося оновити конфігурацію джерела" }, { status: 400 });
   }
 }

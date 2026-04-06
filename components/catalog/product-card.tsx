@@ -9,14 +9,14 @@ import { ArrowUpRight, Star } from "lucide-react";
 
 type SmartBadge = "POPULAR" | "VALUE" | "BEST_CHOICE";
 
-function getBadgeLabel(badge: SmartBadge, locale: AppLocale) {
+function getBadgeLabel(badge: SmartBadge, _locale: AppLocale) {
   switch (badge) {
     case "POPULAR":
-      return locale === "uk" ? "Популярно" : locale === "ru" ? "Популярно" : "Popular";
+      return "Популярно";
     case "VALUE":
-      return locale === "uk" ? "Вигідно" : locale === "ru" ? "Выгодно" : "Great value";
+      return "Вигідно";
     case "BEST_CHOICE":
-      return locale === "uk" ? "Кращий вибір" : locale === "ru" ? "Лучший выбор" : "Best choice";
+      return "Кращий вибір";
   }
 }
 
@@ -86,8 +86,7 @@ export function ProductCard({
   siteMode?: SiteMode;
 }) {
   const labels = {
-    price:
-      locale === "uk" ? "Ціна" : locale === "ru" ? "Цена" : "Price",
+    price: "Ціна",
   };
   const oldPrice = typeof product.oldPrice === "number" ? product.oldPrice : null;
   const hasDiscount = oldPrice !== null && oldPrice > product.price;
@@ -138,7 +137,7 @@ export function ProductCard({
             {product.inventoryLabel}
           </span>
           <span className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--color-text-soft)] transition duration-300 group-hover:text-[color:var(--color-accent-strong)]">
-            {locale === "uk" ? "Переглянути" : locale === "ru" ? "Смотреть" : "View"}
+            Переглянути
             <ArrowUpRight className="h-3.5 w-3.5" />
           </span>
         </div>
@@ -178,7 +177,7 @@ export function ProductCard({
                   {formatPrice(oldPrice, locale, product.currency)}
                 </p>
                 <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[color:var(--color-accent-strong)]">
-                  {locale === "uk" ? "Вигідна ціна" : locale === "ru" ? "Выгодная цена" : "Special offer"}
+                  Вигідна ціна
                 </p>
               </div>
             ) : null}

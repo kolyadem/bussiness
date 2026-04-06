@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { cn } from "@/lib/utils";
-import { formatPrice } from "@/lib/utils";
+import type { AppLocale } from "@/lib/constants";
+import { cn, formatPrice, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
 type TrendPoint = {
   label: string;
@@ -40,7 +40,7 @@ export function AdminDashboardTrends({
   labels,
   datasets,
 }: {
-  locale: "uk" | "ru" | "en";
+  locale: AppLocale;
   title: string;
   subtitle: string;
   labels: {
@@ -106,7 +106,7 @@ export function AdminDashboardTrends({
               viewBox={`0 0 ${chartWidth} ${chartHeight}`}
               className="h-[220px] w-full"
               role="img"
-              aria-label={locale === "uk" ? "Графік виручки та прибутку" : locale === "ru" ? "График выручки и прибыли" : "Revenue and profit chart"}
+              aria-label="Графік виручки та прибутку"
             >
               {[0, 1, 2, 3].map((line) => {
                 const y = 16 + ((chartHeight - 32) / 3) * line;
@@ -142,13 +142,13 @@ export function AdminDashboardTrends({
               <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
                 {labels.revenue}:{" "}
                 <span className="text-[color:var(--color-text)]">
-                  {formatPrice(point.revenue, locale, "USD")}
+                  {formatPrice(point.revenue, locale, STOREFRONT_CURRENCY_CODE)}
                 </span>
               </p>
               <p className="mt-1 text-sm text-[color:var(--color-text-soft)]">
                 {labels.profit}:{" "}
                 <span className="text-[color:var(--color-text)]">
-                  {formatPrice(point.profit ?? 0, locale, "USD")}
+                  {formatPrice(point.profit ?? 0, locale, STOREFRONT_CURRENCY_CODE)}
                 </span>
               </p>
             </div>

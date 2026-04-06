@@ -7,7 +7,7 @@
  * Run: npm run verify:b1
  */
 import { Prisma } from "@prisma/client";
-import { displayPriceToStoredMinorUnits } from "@/lib/utils";
+import { displayPriceToStoredMinorUnits, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 import { db } from "@/lib/db";
 import {
   getCatalogData,
@@ -122,9 +122,13 @@ async function resolveWhereSqlInputs(
       ? collectDescendantCategoryIds(categories, selectedCategory.id)
       : null;
   const minPriceStored =
-    typeof params.minPrice === "number" ? displayPriceToStoredMinorUnits(params.minPrice) : null;
+    typeof params.minPrice === "number"
+      ? displayPriceToStoredMinorUnits(params.minPrice, STOREFRONT_CURRENCY_CODE)
+      : null;
   const maxPriceStored =
-    typeof params.maxPrice === "number" ? displayPriceToStoredMinorUnits(params.maxPrice) : null;
+    typeof params.maxPrice === "number"
+      ? displayPriceToStoredMinorUnits(params.maxPrice, STOREFRONT_CURRENCY_CODE)
+      : null;
   return { allowedCategoryIds, minPriceStored, maxPriceStored, localizedQuery };
 }
 
@@ -152,9 +156,13 @@ async function prismaCountForCatalog(
       ? collectDescendantCategoryIds(categories, selectedCategory.id)
       : null;
   const minPriceStored =
-    typeof params.minPrice === "number" ? displayPriceToStoredMinorUnits(params.minPrice) : null;
+    typeof params.minPrice === "number"
+      ? displayPriceToStoredMinorUnits(params.minPrice, STOREFRONT_CURRENCY_CODE)
+      : null;
   const maxPriceStored =
-    typeof params.maxPrice === "number" ? displayPriceToStoredMinorUnits(params.maxPrice) : null;
+    typeof params.maxPrice === "number"
+      ? displayPriceToStoredMinorUnits(params.maxPrice, STOREFRONT_CURRENCY_CODE)
+      : null;
   const priceFilter =
     minPriceStored !== null || maxPriceStored !== null
       ? {

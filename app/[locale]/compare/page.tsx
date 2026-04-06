@@ -24,11 +24,7 @@ export async function generateMetadata({
   return pageMetadata(
     locale,
     "compareSeoTitle",
-    locale === "uk"
-      ? "Порівняння товарів за ціною, наявністю та ключовими характеристиками."
-      : locale === "ru"
-        ? "Сравнение товаров по цене, наличию и ключевым характеристикам."
-        : "Compare products by price, availability, and key specifications.",
+    "Порівняння товарів за ціною, наявністю та ключовими характеристиками.",
     "/compare",
     { indexable: false },
   );
@@ -48,7 +44,7 @@ export default async function ComparePage({
   const rows = [
     {
       key: "price",
-      label: locale === "uk" ? "Ціна" : locale === "ru" ? "Цена" : "Price",
+      label: "Ціна",
       values: products.map((product) => formatPrice(product.price, locale, product.currency)),
     },
     {
@@ -58,7 +54,7 @@ export default async function ComparePage({
     },
     {
       key: "availability",
-      label: locale === "uk" ? "Наявність" : locale === "ru" ? "Наличие" : "Availability",
+      label: "Наявність",
       values: products.map((product) => product.inventoryLabel),
     },
     ...specKeys.map((key) => ({
@@ -68,24 +64,12 @@ export default async function ComparePage({
     })),
   ];
   const description =
-    locale === "uk"
-      ? "Зручно звіряйте ключові відмінності між кількома моделями, не стрибаючи між окремими сторінками товарів."
-      : locale === "ru"
-        ? "Сравнивайте важные различия между несколькими моделями без постоянных переходов между карточками товаров."
-        : "Review the important differences between several models without bouncing between separate product pages.";
+    "Зручно звіряйте ключові відмінності між кількома моделями, не стрибаючи між окремими сторінками товарів.";
   const emptyDescription =
     siteMode === SITE_MODES.pcBuild
       ? experience?.emptyCompare ??
-        (locale === "uk"
-          ? "Додавайте комплектуючі в порівняння, щоб спокійно звірити характеристики перед збіркою."
-          : locale === "ru"
-            ? "Добавляйте комплектующие в сравнение, чтобы спокойно сверить характеристики перед сборкой."
-            : "Add components to compare so you can review the trade-offs before locking the build in.")
-      : locale === "uk"
-        ? "Додайте кілька товарів до порівняння з каталогу або сторінки товару, щоб побачити їх поруч."
-        : locale === "ru"
-          ? "Добавьте несколько товаров в сравнение из каталога или карточки товара, чтобы увидеть их рядом."
-          : "Add a few products from the catalog or product page to compare them side by side.";
+        "Додавайте комплектуючі в порівняння, щоб спокійно звірити характеристики перед збіркою."
+      : "Додайте кілька товарів до порівняння з каталогу або сторінки товару, щоб побачити їх поруч.";
 
   return (
     <main className="storefront-shell mx-auto w-full px-4 py-8 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
@@ -103,7 +87,7 @@ export default async function ComparePage({
             </p>
           </div>
           <div className="rounded-full border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-2 text-sm font-medium text-[color:var(--color-text)]">
-            {products.length} {locale === "uk" ? "моделі" : locale === "ru" ? "модели" : "models"}
+            {products.length} моделі
           </div>
         </div>
       </section>

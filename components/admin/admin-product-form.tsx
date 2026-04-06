@@ -13,19 +13,16 @@ import {
   getTechnicalAttributeLabel,
   getTechnicalAttributePlaceholder,
 } from "@/lib/configurator/technical-attributes";
-import { locales, type AppLocale } from "@/lib/constants";
-import { cn, slugify } from "@/lib/utils";
+import { defaultLocale, type AppLocale } from "@/lib/constants";
+import { cn, slugify, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
-type TranslationValues = Record<
-  AppLocale,
-  {
-    name: string;
-    shortDescription: string;
-    description: string;
-    seoTitle: string;
-    seoDescription: string;
-  }
->;
+type TranslationFields = {
+  name: string;
+  shortDescription: string;
+  description: string;
+  seoTitle: string;
+  seoDescription: string;
+};
 
 type SpecRow = {
   key: string;
@@ -60,238 +57,83 @@ type ProductFormInitialValues = {
   heroImage: string;
   gallery: string[];
   metadata: string;
-  translations: TranslationValues;
+  translations: TranslationFields;
   specs: SpecRow[];
   technicalAttributes: TechnicalAttributeValues;
 };
 
-function getLocaleCopy(locale: AppLocale) {
-  if (locale === "uk") {
-    return {
-      coreTitle: "Параметри товару",
-      managerHint:
-        "Спочатку оберіть категорію, SKU та ціну, потім заповніть назву й опис — slug підставиться сам. Технічні поля та JSON потрібні лише для складних товарів.",
-      save: "Зберегти товар",
-      saving: "Збереження...",
-      slugLabel: "Адреса сторінки",
-      slugPlaceholder: "Наприклад: asus-rog-strix-b650e-e",
-      slugHint:
-        "Це частина посилання на товар. Якщо залишити поле порожнім, адреса згенерується з назви.",
-      skuLabel: "SKU / артикул",
-      skuPlaceholder: "Наприклад: MB-ASUS-B650E",
-      statusLabel: "Статус",
-      categoryLabel: "Категорія",
-      categoryPlaceholder: "Виберіть категорію",
-      inventoryLabel: "Наявність",
-      priceLabel: "Ціна",
-      purchasePriceLabel: "Закупівля",
-      oldPriceLabel: "Стара ціна",
-      currencyLabel: "Валюта",
-      stockLabel: "Кількість",
-      financeTitle: "Фінансовий сигнал",
-      unitProfitLabel: "Прибуток з одиниці",
-      marginLabel: "Маржа",
-      financeMissingCost: "Додайте закупівельну ціну, щоб бачити маржу та прибуток.",
-      translationsTitle: "Локалізований контент",
-      nameLabel: "Назва",
-      shortDescriptionLabel: "Короткий опис",
-      descriptionLabel: "Повний опис",
-      seoTitleLabel: "SEO-заголовок",
-      seoDescriptionLabel: "SEO-опис",
-      mediaTitle: "Фотографії товару",
-      mediaHint:
-        "Головне фото використовується в картці товару. Галерея показується на storefront у вибраному порядку.",
-      heroUploadLabel: "Замінити головне фото",
-      heroUploadHint:
-        "Завантажте окреме головне фото або оберіть будь-яке з галереї як основне.",
-      clearHero: "Скасувати нове головне фото",
-      galleryTitle: "Галерея",
-      galleryHint:
-        "Можна додати кілька фото, змінювати їх порядок, прибирати окремі зображення та вибирати головне.",
-      addGalleryLabel: "Додати фото до галереї",
-      emptyGallery: "Поки що немає фото галереї.",
-      makeHero: "Зробити головним",
-      currentHero: "Головне фото",
-      moveLeft: "Лівіше",
-      moveRight: "Правіше",
-      removeImage: "Прибрати",
-      specsTitle: "Характеристики",
-      specsHint:
-        "Додавайте стільки характеристик, скільки потрібно. Storefront покаже їх без жорсткого ліміту.",
-      addSpec: "Додати характеристику",
-      specKeyPlaceholder: "Наприклад: чипсет",
-      specValuePlaceholder: "Наприклад: B650E",
-      metadataTitle: "Додаткові дані",
-      metadataOptional: "необов'язково",
-      metadataLabel: "JSON metadata",
-      metadataHint:
-        "Необов'язкове поле для службових або інтеграційних даних. Якщо не потрібно, залиште порожнім або {}.",
-      removeSpec: "Видалити",
-      draft: "Чернетка",
-      published: "Опубліковано",
-      archived: "Архів",
-      inStock: "В наявності",
-      lowStock: "Мало на складі",
-      outOfStock: "Немає в наявності",
-      preorder: "Передзамовлення",
-      technicalTitle: "Технічні атрибути для configurator",
-      technicalHint:
-        "Ці поля зберігаються як machine-readable дані для configurator і майбутнього compatibility engine.",
-      technicalEmpty:
-        "Для цієї категорії окремі configurator-атрибути поки не потрібні.",
-    };
-  }
-
-  if (locale === "ru") {
-    return {
-      coreTitle: "Параметры товара",
-      managerHint:
-        "Сначала выберите категорию, SKU и цену, затем название и описание — slug подставится сам. Технические поля и JSON нужны только для сложных позиций.",
-      save: "Сохранить товар",
-      saving: "Сохранение...",
-      slugLabel: "Адрес страницы",
-      slugPlaceholder: "Например: asus-rog-strix-b650e-e",
-      slugHint:
-        "Это часть ссылки на товар. Если оставить поле пустым, адрес сгенерируется из названия.",
-      skuLabel: "SKU / артикул",
-      skuPlaceholder: "Например: MB-ASUS-B650E",
-      statusLabel: "Статус",
-      categoryLabel: "Категория",
-      categoryPlaceholder: "Выберите категорию",
-      inventoryLabel: "Наличие",
-      priceLabel: "Цена",
-      purchasePriceLabel: "Закупка",
-      oldPriceLabel: "Старая цена",
-      currencyLabel: "Валюта",
-      stockLabel: "Количество",
-      financeTitle: "Финансовый сигнал",
-      unitProfitLabel: "Прибыль с единицы",
-      marginLabel: "Маржа",
-      financeMissingCost: "Добавьте закупочную цену, чтобы видеть маржу и прибыль.",
-      translationsTitle: "Локализованный контент",
-      nameLabel: "Название",
-      shortDescriptionLabel: "Краткое описание",
-      descriptionLabel: "Полное описание",
-      seoTitleLabel: "SEO-заголовок",
-      seoDescriptionLabel: "SEO-описание",
-      mediaTitle: "Фотографии товара",
-      mediaHint:
-        "Главное фото используется в карточке товара. Галерея показывается на storefront в выбранном порядке.",
-      heroUploadLabel: "Заменить главное фото",
-      heroUploadHint:
-        "Загрузите отдельное главное фото или выберите любое изображение из галереи как основное.",
-      clearHero: "Отменить новое главное фото",
-      galleryTitle: "Галерея",
-      galleryHint:
-        "Можно добавить несколько фото, менять их порядок, удалять отдельные изображения и выбирать главное.",
-      addGalleryLabel: "Добавить фото в галерею",
-      emptyGallery: "Фотографии галереи пока не добавлены.",
-      makeHero: "Сделать главным",
-      currentHero: "Главное фото",
-      moveLeft: "Левее",
-      moveRight: "Правее",
-      removeImage: "Убрать",
-      specsTitle: "Характеристики",
-      specsHint:
-        "Добавляйте столько характеристик, сколько нужно. Storefront покажет их без жёсткого лимита.",
-      addSpec: "Добавить характеристику",
-      specKeyPlaceholder: "Например: чипсет",
-      specValuePlaceholder: "Например: B650E",
-      metadataTitle: "Дополнительные данные",
-      metadataOptional: "необязательно",
-      metadataLabel: "JSON metadata",
-      metadataHint:
-        "Необязательное поле для служебных или интеграционных данных. Если не нужно, оставьте пустым или {}.",
-      removeSpec: "Удалить",
-      draft: "Черновик",
-      published: "Опубликовано",
-      archived: "Архив",
-      inStock: "В наличии",
-      lowStock: "Мало на складе",
-      outOfStock: "Нет в наличии",
-      preorder: "Предзаказ",
-      technicalTitle: "Технические атрибуты для configurator",
-      technicalHint:
-        "Эти поля сохраняются как machine-readable данные для configurator и будущего compatibility engine.",
-      technicalEmpty:
-        "Для этой категории отдельные configurator-атрибуты пока не нужны.",
-    };
-  }
-
-  return {
-    coreTitle: "Product details",
-    managerHint:
-      "Pick category, SKU, and price first, then names and descriptions — the slug fills in automatically. Technical fields and JSON are only for advanced SKUs.",
-    save: "Save product",
-    saving: "Saving...",
-    slugLabel: "Page address",
-    slugPlaceholder: "For example: asus-rog-strix-b650e-e",
-    slugHint:
-      "This becomes part of the product URL. Leave it empty and the address will be generated from the name.",
-    skuLabel: "SKU",
-    skuPlaceholder: "For example: MB-ASUS-B650E",
-    statusLabel: "Status",
-    categoryLabel: "Category",
-    categoryPlaceholder: "Select a category",
-    inventoryLabel: "Availability",
-    priceLabel: "Price",
-    purchasePriceLabel: "Purchase cost",
-    oldPriceLabel: "Previous price",
-    currencyLabel: "Currency",
-    stockLabel: "Stock",
-    financeTitle: "Financial snapshot",
-    unitProfitLabel: "Unit profit",
-    marginLabel: "Margin",
-    financeMissingCost: "Add a purchase cost to unlock margin and profit calculations.",
-    translationsTitle: "Localized content",
-    nameLabel: "Name",
-    shortDescriptionLabel: "Short description",
-    descriptionLabel: "Full description",
-    seoTitleLabel: "SEO title",
-    seoDescriptionLabel: "SEO description",
-    mediaTitle: "Product images",
-    mediaHint:
-      "The main image is used across the product card. Gallery images appear on the storefront in the selected order.",
-    heroUploadLabel: "Replace the main image",
-    heroUploadHint:
-      "Upload a dedicated main image or choose any gallery image as the primary one.",
-    clearHero: "Remove the new main image",
-    galleryTitle: "Gallery",
-    galleryHint:
-      "Add multiple photos, change their order, remove individual images, and mark any image as the main one.",
-    addGalleryLabel: "Add gallery images",
-    emptyGallery: "No gallery images yet.",
-    makeHero: "Set as main",
-    currentHero: "Main image",
-    moveLeft: "Move left",
-    moveRight: "Move right",
-    removeImage: "Remove",
-    specsTitle: "Specifications",
-    specsHint:
-      "Add as many specifications as you need. The storefront will render the full list without a fixed cap.",
-    addSpec: "Add spec",
-    specKeyPlaceholder: "For example: chipset",
-    specValuePlaceholder: "For example: B650E",
-    metadataTitle: "Additional data",
-    metadataOptional: "optional",
-    metadataLabel: "Metadata JSON",
-    metadataHint:
-      "Optional field for service or integration data. Leave it empty or use {} if you do not need it.",
-    removeSpec: "Remove",
-    draft: "Draft",
-    published: "Published",
-    archived: "Archived",
-    inStock: "In stock",
-    lowStock: "Low stock",
-    outOfStock: "Out of stock",
-    preorder: "Preorder",
-    technicalTitle: "Configurator attributes",
-    technicalHint:
-      "These fields are stored as machine-readable technical data for the configurator and future compatibility rules.",
-    technicalEmpty:
-      "This category does not need dedicated configurator attributes right now.",
-  };
-}
+const PRODUCT_FORM_COPY = {
+  coreTitle: "Параметри товару",
+  managerHint:
+    "Спочатку оберіть категорію, SKU та ціну, потім заповніть назву й опис — slug підставиться сам. Технічні поля та JSON потрібні лише для складних товарів.",
+  save: "Зберегти товар",
+  saving: "Збереження...",
+  slugLabel: "Адреса сторінки",
+  slugPlaceholder: "Наприклад: asus-rog-strix-b650e-e",
+  slugHint:
+    "Це частина посилання на товар. Якщо залишити поле порожнім, адреса згенерується з назви.",
+  skuLabel: "SKU / артикул",
+  skuPlaceholder: "Наприклад: MB-ASUS-B650E",
+  statusLabel: "Статус",
+  categoryLabel: "Категорія",
+  categoryPlaceholder: "Виберіть категорію",
+  inventoryLabel: "Наявність",
+  priceLabel: "Ціна",
+  purchasePriceLabel: "Закупівля",
+  oldPriceLabel: "Стара ціна",
+  currencyLabel: "Валюта",
+  stockLabel: "Кількість",
+  financeTitle: "Фінансовий сигнал",
+  unitProfitLabel: "Прибуток з одиниці",
+  marginLabel: "Маржа",
+  financeMissingCost: "Додайте закупівельну ціну, щоб бачити маржу та прибуток.",
+  translationsTitle: "Контент сторінки товару",
+  nameLabel: "Назва",
+  shortDescriptionLabel: "Короткий опис",
+  descriptionLabel: "Повний опис",
+  seoTitleLabel: "SEO-заголовок",
+  seoDescriptionLabel: "SEO-опис",
+  mediaTitle: "Фотографії товару",
+  mediaHint:
+    "Головне фото використовується в картці товару. Галерея показується на storefront у вибраному порядку.",
+  heroUploadLabel: "Замінити головне фото",
+  heroUploadHint:
+    "Завантажте окреме головне фото або оберіть будь-яке з галереї як основне.",
+  clearHero: "Скасувати нове головне фото",
+  galleryTitle: "Галерея",
+  galleryHint:
+    "Можна додати кілька фото, змінювати їх порядок, прибирати окремі зображення та вибирати головне.",
+  addGalleryLabel: "Додати фото до галереї",
+  emptyGallery: "Поки що немає фото галереї.",
+  makeHero: "Зробити головним",
+  currentHero: "Головне фото",
+  moveLeft: "Лівіше",
+  moveRight: "Правіше",
+  removeImage: "Прибрати",
+  specsTitle: "Характеристики",
+  specsHint:
+    "Додавайте стільки характеристик, скільки потрібно. Storefront покаже їх без жорсткого ліміту.",
+  addSpec: "Додати характеристику",
+  specKeyPlaceholder: "Наприклад: чипсет",
+  specValuePlaceholder: "Наприклад: B650E",
+  metadataTitle: "Додаткові дані",
+  metadataOptional: "необов'язково",
+  metadataLabel: "JSON metadata",
+  metadataHint:
+    "Необов'язкове поле для службових або інтеграційних даних. Якщо не потрібно, залиште порожнім або {}.",
+  removeSpec: "Видалити",
+  draft: "Чернетка",
+  published: "Опубліковано",
+  archived: "Архів",
+  inStock: "В наявності",
+  lowStock: "Мало на складі",
+  outOfStock: "Немає в наявності",
+  preorder: "Передзамовлення",
+  technicalTitle: "Технічні атрибути для configurator",
+  technicalHint:
+    "Ці поля зберігаються як machine-readable дані для configurator і майбутнього compatibility engine.",
+  technicalEmpty: "Для цієї категорії окремі configurator-атрибути поки не потрібні.",
+} as const;
 
 function createPendingToken() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -324,11 +166,8 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
   return next;
 }
 
-function formatDisplayCurrency(value: number, locale: AppLocale) {
-  const normalizedLocale =
-    locale === "uk" ? "uk-UA" : locale === "ru" ? "ru-RU" : "en-US";
-
-  return new Intl.NumberFormat(normalizedLocale, {
+function formatDisplayCurrency(value: number) {
+  return new Intl.NumberFormat("uk-UA", {
     style: "currency",
     currency: "UAH",
     maximumFractionDigits: 0,
@@ -359,7 +198,7 @@ async function uploadProductImages(files: File[]) {
     | null;
 
   if (!response.ok || !payload?.files) {
-    throw new Error(payload?.error || "Upload failed");
+    throw new Error(payload?.error || "Не вдалося завантажити файл");
   }
 
   return payload.files;
@@ -398,13 +237,12 @@ export function AdminProductForm({
   >;
   initialValues?: ProductFormInitialValues;
 }) {
-  const resolvedLocale = (locales.includes(locale as AppLocale) ? locale : "uk") as AppLocale;
-  const copy = getLocaleCopy(resolvedLocale);
+  const resolvedLocale = defaultLocale;
+  const copy = PRODUCT_FORM_COPY;
   const action = initialValues?.productId ? updateProductFormAction : createProductAction;
   const [state, formAction] = useActionState<ProductActionState, FormData>(action, {
     status: "idle",
   });
-  const [activeLocale, setActiveLocale] = useState<AppLocale>("uk");
   const [priceInput, setPriceInput] = useState(initialValues?.price ?? 0);
   const [purchasePriceInput, setPurchasePriceInput] = useState<number | null>(
     initialValues?.purchasePrice ?? null,
@@ -412,13 +250,14 @@ export function AdminProductForm({
   const [specs, setSpecs] = useState<SpecRow[]>(
     initialValues?.specs.length ? initialValues.specs : [{ key: "", value: "" }],
   );
-  const [translationValues, setTranslationValues] = useState<TranslationValues>(
-    initialValues?.translations ??
-      ({
-        uk: { name: "", shortDescription: "", description: "", seoTitle: "", seoDescription: "" },
-        ru: { name: "", shortDescription: "", description: "", seoTitle: "", seoDescription: "" },
-        en: { name: "", shortDescription: "", description: "", seoTitle: "", seoDescription: "" },
-      } satisfies TranslationValues),
+  const [translationValues, setTranslationValues] = useState<TranslationFields>(
+    initialValues?.translations ?? {
+      name: "",
+      shortDescription: "",
+      description: "",
+      seoTitle: "",
+      seoDescription: "",
+    },
   );
   const [slugValue, setSlugValue] = useState(initialValues?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(Boolean(initialValues?.slug));
@@ -446,12 +285,7 @@ export function AdminProductForm({
       return;
     }
 
-    const generated = slugify(
-      translationValues[resolvedLocale].name ||
-        translationValues.uk.name ||
-        translationValues.ru.name ||
-        translationValues.en.name,
-    );
+    const generated = slugify(translationValues.name);
     setSlugValue(generated);
   }, [resolvedLocale, slugTouched, translationValues]);
 
@@ -461,17 +295,10 @@ export function AdminProductForm({
     );
   };
 
-  const updateTranslation = (
-    targetLocale: AppLocale,
-    field: keyof TranslationValues[AppLocale],
-    value: string,
-  ) => {
+  const updateTranslation = (field: keyof TranslationFields, value: string) => {
     setTranslationValues((current) => ({
       ...current,
-      [targetLocale]: {
-        ...current[targetLocale],
-        [field]: value,
-      },
+      [field]: value,
     }));
   };
 
@@ -502,13 +329,7 @@ export function AdminProductForm({
         })),
       ]);
     } catch {
-      setUploadError(
-        resolvedLocale === "uk"
-          ? "Не вдалося завантажити зображення галереї."
-          : resolvedLocale === "ru"
-            ? "Не удалось загрузить изображения галереи."
-            : "Unable to upload gallery images.",
-      );
+      setUploadError("Не вдалося завантажити зображення галереї.");
     } finally {
       setIsGalleryUploading(false);
 
@@ -578,13 +399,7 @@ export function AdminProductForm({
         return uploaded.path;
       });
     } catch {
-      setUploadError(
-        resolvedLocale === "uk"
-          ? "Не вдалося завантажити головне фото."
-          : resolvedLocale === "ru"
-            ? "Не удалось загрузить главное фото."
-            : "Unable to upload the main image.",
-      );
+      setUploadError("Не вдалося завантажити головне фото.");
     } finally {
       setIsHeroUploading(false);
 
@@ -609,7 +424,7 @@ export function AdminProductForm({
 
   const getCategoryLabel = (category: (typeof categories)[number]) => {
     const localized =
-      category.translations.find((item) => item.locale === locale)?.name ??
+      category.translations.find((item) => item.locale === defaultLocale)?.name ??
       category.translations[0]?.name ??
       category.slug;
 
@@ -619,7 +434,7 @@ export function AdminProductForm({
 
     const parent = categories.find((item) => item.id === category.parentId);
     const parentLabel =
-      parent?.translations.find((item) => item.locale === locale)?.name ??
+      parent?.translations.find((item) => item.locale === defaultLocale)?.name ??
       parent?.translations[0]?.name ??
       "";
 
@@ -769,7 +584,7 @@ export function AdminProductForm({
             <input
               name="currency"
               maxLength={3}
-              defaultValue={initialValues?.currency ?? "USD"}
+              defaultValue={initialValues?.currency ?? STOREFRONT_CURRENCY_CODE}
               required
               className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 uppercase text-[color:var(--color-text)] outline-none"
             />
@@ -797,7 +612,7 @@ export function AdminProductForm({
                       {copy.unitProfitLabel}
                     </p>
                     <p className="mt-1 text-lg font-semibold text-[color:var(--color-text)]">
-                      {formatDisplayCurrency(unitFinancials.profitPerUnit, resolvedLocale)}
+                      {formatDisplayCurrency(unitFinancials.profitPerUnit)}
                     </p>
                   </div>
                   <div>
@@ -813,7 +628,7 @@ export function AdminProductForm({
                       {copy.purchasePriceLabel}
                     </p>
                     <p className="mt-1 text-lg font-semibold text-[color:var(--color-text)]">
-                      {formatDisplayCurrency(unitFinancials.purchasePrice ?? 0, resolvedLocale)}
+                      {formatDisplayCurrency(unitFinancials.purchasePrice ?? 0)}
                     </p>
                   </div>
                 </div>
@@ -826,31 +641,15 @@ export function AdminProductForm({
       <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold text-[color:var(--color-text)]">{copy.translationsTitle}</h2>
-          <div className="flex flex-wrap gap-2">
-            {locales.map((tabLocale) => (
-              <button
-                key={tabLocale}
-                type="button"
-                onClick={() => setActiveLocale(tabLocale)}
-                className={
-                  activeLocale === tabLocale
-                    ? "rounded-full border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] px-4 py-2 text-sm font-medium text-[color:var(--color-text)]"
-                    : "rounded-full border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-2 text-sm text-[color:var(--color-text-soft)]"
-                }
-              >
-                {tabLocale.toUpperCase()}
-              </button>
-            ))}
-          </div>
         </div>
 
         <div className="mt-6 grid gap-4">
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
             <span>{copy.nameLabel}</span>
             <input
-              name={`name:${activeLocale}`}
-              value={translationValues[activeLocale].name}
-              onChange={(event) => updateTranslation(activeLocale, "name", event.target.value)}
+              name={`name:${resolvedLocale}`}
+              value={translationValues.name}
+              onChange={(event) => updateTranslation("name", event.target.value)}
               required
               className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
             />
@@ -858,10 +657,10 @@ export function AdminProductForm({
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
             <span>{copy.shortDescriptionLabel}</span>
             <textarea
-              name={`shortDescription:${activeLocale}`}
-              value={translationValues[activeLocale].shortDescription}
+              name={`shortDescription:${resolvedLocale}`}
+              value={translationValues.shortDescription}
               onChange={(event) =>
-                updateTranslation(activeLocale, "shortDescription", event.target.value)
+                updateTranslation("shortDescription", event.target.value)
               }
               required
               className="min-h-24 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-[color:var(--color-text)] outline-none"
@@ -870,9 +669,9 @@ export function AdminProductForm({
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
             <span>{copy.descriptionLabel}</span>
             <textarea
-              name={`description:${activeLocale}`}
-              value={translationValues[activeLocale].description}
-              onChange={(event) => updateTranslation(activeLocale, "description", event.target.value)}
+              name={`description:${resolvedLocale}`}
+              value={translationValues.description}
+              onChange={(event) => updateTranslation("description", event.target.value)}
               required
               className="min-h-40 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-[color:var(--color-text)] outline-none"
             />
@@ -881,37 +680,25 @@ export function AdminProductForm({
             <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
               <span>{copy.seoTitleLabel}</span>
               <input
-                name={`seoTitle:${activeLocale}`}
-                value={translationValues[activeLocale].seoTitle}
-                onChange={(event) => updateTranslation(activeLocale, "seoTitle", event.target.value)}
+                name={`seoTitle:${resolvedLocale}`}
+                value={translationValues.seoTitle}
+                onChange={(event) => updateTranslation("seoTitle", event.target.value)}
                 className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
               />
             </label>
             <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
               <span>{copy.seoDescriptionLabel}</span>
               <input
-                name={`seoDescription:${activeLocale}`}
-                value={translationValues[activeLocale].seoDescription}
+                name={`seoDescription:${resolvedLocale}`}
+                value={translationValues.seoDescription}
                 onChange={(event) =>
-                  updateTranslation(activeLocale, "seoDescription", event.target.value)
+                  updateTranslation("seoDescription", event.target.value)
                 }
                 className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
               />
             </label>
           </div>
         </div>
-
-        {locales
-          .filter((tabLocale) => tabLocale !== activeLocale)
-          .map((hiddenLocale) => (
-            <div key={hiddenLocale} className="hidden">
-              <input name={`name:${hiddenLocale}`} value={translationValues[hiddenLocale].name} readOnly />
-              <textarea name={`shortDescription:${hiddenLocale}`} value={translationValues[hiddenLocale].shortDescription} readOnly />
-              <textarea name={`description:${hiddenLocale}`} value={translationValues[hiddenLocale].description} readOnly />
-              <input name={`seoTitle:${hiddenLocale}`} value={translationValues[hiddenLocale].seoTitle} readOnly />
-              <input name={`seoDescription:${hiddenLocale}`} value={translationValues[hiddenLocale].seoDescription} readOnly />
-            </div>
-          ))}
       </section>
 
       <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">

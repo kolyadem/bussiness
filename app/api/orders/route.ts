@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
     if (!limit.allowed) {
       return NextResponse.json(
-        { error: "Too many checkout attempts. Please try again in a few minutes." },
+        { error: "Забагато спроб оформлення. Спробуйте ще раз за кілька хвилин." },
         {
           status: 429,
           headers: {
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(
-      { error: "Could not place the order right now" },
+      { error: "Не вдалося оформити замовлення зараз. Спробуйте пізніше." },
       { status: 500 },
     );
   }

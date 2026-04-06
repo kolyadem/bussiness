@@ -14,41 +14,25 @@ import {
   isOrderDeliveryMethod,
   type OrderDeliveryMethod,
 } from "@/lib/storefront/orders";
+import type { AppLocale } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
 
-function getLabels(locale: "uk" | "ru" | "en") {
+function getLabels() {
   return {
-    title:
-      locale === "uk" ? "Замовлення товарів" : locale === "ru" ? "Заказы товаров" : "Store orders",
-    subtitle:
-      locale === "uk"
-        ? "Пошук, фільтрація та швидке оновлення статусу без переходу в кожен заказ."
-        : locale === "ru"
-          ? "Поиск, фильтрация и быстрое обновление статуса без перехода в каждый заказ."
-          : "Search, filter, and update status without opening every order.",
-    searchPlaceholder:
-      locale === "uk"
-        ? "Номер, ім'я, телефон або email"
-        : locale === "ru"
-          ? "Номер, имя, телефон или email"
-          : "Order number, name, phone, or email",
-    allStatuses: locale === "uk" ? "Усі статуси" : locale === "ru" ? "Все статусы" : "All statuses",
-    search: locale === "uk" ? "Знайти" : locale === "ru" ? "Найти" : "Search",
-    reset: locale === "uk" ? "Скинути" : locale === "ru" ? "Сбросить" : "Reset",
-    noOrders:
-      locale === "uk" ? "Замовлень поки немає." : locale === "ru" ? "Заказов пока нет." : "No orders yet.",
-    noResults:
-      locale === "uk"
-        ? "За поточними фільтрами нічого не знайдено."
-        : locale === "ru"
-          ? "По текущим фильтрам ничего не найдено."
-          : "No orders match the current filters.",
-    city: locale === "uk" ? "Місто" : locale === "ru" ? "Город" : "City",
-    delivery: locale === "uk" ? "Доставка" : locale === "ru" ? "Доставка" : "Delivery",
-    items: locale === "uk" ? "Склад" : locale === "ru" ? "Состав" : "Contents",
-    total: locale === "uk" ? "Сума" : locale === "ru" ? "Сумма" : "Total",
-    open: locale === "uk" ? "Відкрити" : locale === "ru" ? "Открыть" : "Open",
-    account: locale === "uk" ? "Акаунт" : locale === "ru" ? "Аккаунт" : "Account",
+    title: "Замовлення товарів",
+    subtitle: "Пошук, фільтрація та швидке оновлення статусу без переходу в кожен заказ.",
+    searchPlaceholder: "Номер, ім'я, телефон або email",
+    allStatuses: "Усі статуси",
+    search: "Знайти",
+    reset: "Скинути",
+    noOrders: "Замовлень поки немає.",
+    noResults: "За поточними фільтрами нічого не знайдено.",
+    city: "Місто",
+    delivery: "Доставка",
+    items: "Склад",
+    total: "Сума",
+    open: "Відкрити",
+    account: "Акаунт",
   };
 }
 
@@ -56,7 +40,7 @@ export default async function AdminOrdersPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: "uk" | "ru" | "en" }>;
+  params: Promise<{ locale: AppLocale }>;
   searchParams: Promise<{ status?: string; q?: string }>;
 }) {
   const [{ locale }, filters] = await Promise.all([params, searchParams]);
@@ -65,7 +49,7 @@ export default async function AdminOrdersPage({
   const viewer = await requireAdminAccess(locale);
   const canViewFinancials = canViewAdminFinancials(viewer.role);
   const orders = await getAdminOrders({ query: q, status }, viewer.role);
-  const labels = getLabels(locale);
+  const labels = getLabels();
 
   return (
     <div className="space-y-6">
@@ -190,7 +174,7 @@ export default async function AdminOrdersPage({
                       </p>
                       {canViewFinancials ? (
                         <p className="mt-2 text-xs text-[color:var(--color-text-soft)]">
-                          {locale === "uk" ? "Прибуток" : locale === "ru" ? "Прибыль" : "Profit"}:{" "}
+                          Прибуток:{" "}
                           <span className="text-[color:var(--color-text)]">
                             {typeof order.financials.grossProfit === "number"
                               ? formatPrice(order.financials.grossProfit, locale, order.currency)

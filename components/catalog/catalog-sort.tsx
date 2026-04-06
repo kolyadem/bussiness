@@ -18,21 +18,10 @@ export function CatalogSort({
   const [isPending, startNavigation] = useTransition();
 
   const sortLabels = {
-    newest:
-      locale === "uk" ? "Спочатку нові" : locale === "ru" ? "Сначала новые" : "Newest",
-    "price-asc":
-      locale === "uk"
-        ? "Ціна: від нижчої"
-        : locale === "ru"
-          ? "Цена: сначала дешевле"
-          : "Price: Low to High",
-    "price-desc":
-      locale === "uk"
-        ? "Ціна: від вищої"
-        : locale === "ru"
-          ? "Цена: сначала дороже"
-          : "Price: High to Low",
-    rating: locale === "uk" ? "За рейтингом" : locale === "ru" ? "По рейтингу" : "Top Rated",
+    newest: "Спочатку нові",
+    "price-asc": "Ціна: від нижчої",
+    "price-desc": "Ціна: від вищої",
+    rating: "За рейтингом",
   } satisfies Record<CatalogSearchParams["sort"], string>;
 
   const updateSort = (nextSort: string) => {

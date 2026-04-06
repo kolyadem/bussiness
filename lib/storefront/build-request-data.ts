@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
+import type { AppLocale } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { getAuthenticatedUser, hasRole, USER_ROLES } from "@/lib/auth";
 import { evaluateBuildCompatibility } from "@/lib/compatibility";
@@ -11,6 +12,7 @@ import {
   getConfiguratorSlotLabel,
   isConfiguratorSlotKey,
 } from "@/lib/storefront/configurator";
+import { STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 import { mapProduct } from "@/lib/storefront/queries";
 import {
   BUILD_REQUEST_DELIVERY_METHODS,
@@ -33,7 +35,7 @@ const ADMIN_BUILD_REQUEST_SORTS = [
 export type AdminBuildRequestSort = (typeof ADMIN_BUILD_REQUEST_SORTS)[number];
 
 const buildRequestSchema = z.object({
-  locale: z.enum(["uk", "ru", "en"]),
+  locale: z.literal("uk"),
   fullName: z.string().trim().min(2).max(120),
   phone: z.string().trim().min(7).max(32),
   email: z.string().trim().email(),
@@ -43,7 +45,7 @@ const buildRequestSchema = z.object({
 });
 
 const quickBuildRequestSchema = z.object({
-  locale: z.enum(["uk", "ru", "en"]),
+  locale: z.literal("uk"),
   fullName: z.string().trim().min(2).max(120),
   contact: z.string().trim().min(3).max(160),
   budget: z.string().trim().min(1).max(40),
@@ -138,7 +140,7 @@ function normalizeAdminBuildRequestSort(value: string | null | undefined): Admin
     : "created_desc";
 }
 
-async function generateUniqueBuildSlug(name: string, locale: "uk" | "ru" | "en") {
+async function generateUniqueBuildSlug(name: string, locale: AppLocale) {
   const base = buildConfiguratorSlugCandidate(name, locale);
   let candidate = base;
   let attempt = 1;
@@ -226,7 +228,7 @@ async function getBuildRequestRecord(slug: string) {
 }
 
 function serializeBuildItems(
-  locale: "uk" | "ru" | "en",
+  locale: AppLocale,
   items: NonNullable<Awaited<ReturnType<typeof getBuildRequestRecord>>>["items"],
 ) {
   return items.flatMap((item) => {
@@ -304,7 +306,7 @@ export async function createBuildRequestForBuild({
     const firstIssue = parsed.error.issues[0];
     return {
       ok: false as const,
-      error: firstIssue?.message || "Invalid request payload",
+      error: firstIssue?.message || "Некоректні дані запиту",
     };
   }
 
@@ -315,7 +317,7 @@ export async function createBuildRequestForBuild({
   if (!build) {
     return {
       ok: false as const,
-      error: "Build not found",
+      error: "Збірку не знайдено",
     };
   }
 
@@ -395,7 +397,7 @@ export async function createBuildRequestForBuild({
   if (duplicateRequest) {
     return {
       ok: false as const,
-      error: "Too many duplicate requests",
+      error: "Забагато схожих заявок за короткий час",
     };
   }
 
@@ -413,7 +415,7 @@ export async function createBuildRequestForBuild({
       deliveryCity: resolvedDeliveryCity,
       deliveryMethod: parsed.data.deliveryMethod,
       totalPrice,
-      currency: itemsSnapshot[0]?.currency ?? "USD",
+      currency: itemsSnapshot[0]?.currency ?? STOREFRONT_CURRENCY_CODE,
       itemsSnapshot: JSON.stringify(itemsSnapshot),
     },
     include: {
@@ -465,7 +467,7 @@ export async function createQuickBuildRequest(payload: z.infer<typeof quickBuild
     const firstIssue = parsed.error.issues[0];
     return {
       ok: false as const,
-      error: firstIssue?.message || "Invalid request payload",
+      error: firstIssue?.message || "Некоректні дані запиту",
     };
   }
 
@@ -478,14 +480,14 @@ export async function createQuickBuildRequest(payload: z.infer<typeof quickBuild
   if (parsed.data.website?.trim()) {
     return {
       ok: false as const,
-      error: "Spam detected",
+      error: "Виявлено спам",
     };
   }
 
   if (!normalizedContact) {
     return {
       ok: false as const,
-      error: "Contact is invalid",
+      error: "Некоректний контакт",
     };
   }
 
@@ -496,7 +498,7 @@ export async function createQuickBuildRequest(payload: z.infer<typeof quickBuild
   ) {
     return {
       ok: false as const,
-      error: "Request contains unsupported content",
+      error: "Запит містить непідтримуваний вміст",
     };
   }
 
@@ -505,7 +507,7 @@ export async function createQuickBuildRequest(payload: z.infer<typeof quickBuild
   if (budgetMinorUnits === null) {
     return {
       ok: false as const,
-      error: "Budget is invalid",
+      error: "Некоректний бюджет",
     };
   }
 
@@ -530,7 +532,7 @@ export async function createQuickBuildRequest(payload: z.infer<typeof quickBuild
   if (duplicateRequest) {
     return {
       ok: false as const,
-      error: "Too many duplicate requests",
+      error: "Забагато схожих заявок за короткий час",
     };
   }
 
@@ -545,12 +547,7 @@ export async function createQuickBuildRequest(payload: z.infer<typeof quickBuild
     }),
     generateUniqueShareToken(),
   ]);
-  const buildName =
-    parsed.data.locale === "uk"
-      ? `Швидка заявка: ${parsed.data.fullName}`
-      : parsed.data.locale === "ru"
-        ? `Быстрая заявка: ${parsed.data.fullName}`
-        : `Quick inquiry: ${parsed.data.fullName}`;
+  const buildName = `Швидка заявка: ${parsed.data.fullName}`;
   const slug = await generateUniqueBuildSlug(
     `${getConfiguratorDefaultName(parsed.data.locale)} ${Date.now()}`,
     parsed.data.locale,
@@ -593,7 +590,7 @@ export async function createQuickBuildRequest(payload: z.infer<typeof quickBuild
         comment: normalizedSource || null,
         status: "NEW",
         totalPrice: budgetMinorUnits,
-        currency: siteSettings?.defaultCurrency ?? "USD",
+        currency: siteSettings?.defaultCurrency ?? STOREFRONT_CURRENCY_CODE,
         itemsSnapshot: "[]",
       },
     });
@@ -748,7 +745,7 @@ export async function updateAdminBuildRequestStatus({
   status: BuildRequestStatus;
 }) {
   if (!isBuildRequestStatus(status)) {
-    throw new Error("Invalid status");
+    throw new Error("Некоректний статус");
   }
 
   const request = await db.pcBuildRequest.findUnique({
@@ -776,7 +773,7 @@ export async function updateAdminBuildRequestStatus({
   });
 
   if (!request) {
-    throw new Error("Request not found");
+    throw new Error("Заявку не знайдено");
   }
 
   if (request.status === status) {

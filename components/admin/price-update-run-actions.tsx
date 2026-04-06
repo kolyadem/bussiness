@@ -126,7 +126,7 @@ export function PriceUpdateRunClient({
       if (data.skippedStale && data.skippedStale.length > 0) {
         toast.message(priceUpdatesTFormat(locale, "toastSkippedStale", String(data.skippedStale.length)));
       }
-      router.push(`/${locale}/admin/price-updates`);
+      router.push(`/admin/price-updates`);
       router.refresh();
     } catch {
       toast.error(priceUpdatesT(locale, "toastNetwork"));

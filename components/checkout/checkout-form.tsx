@@ -41,119 +41,30 @@ export function CheckoutForm({
 
   const labels = {
     autofill:
-      locale === "uk"
-        ? "Дані з акаунта вже підставлені. За потреби їх можна змінити перед підтвердженням замовлення."
-        : locale === "ru"
-          ? "Данные аккаунта уже подставлены. При необходимости их можно изменить перед оформлением заказа."
-          : "Your account details were prefilled and can still be edited before placing the order.",
-    fullName: locale === "uk" ? "ПІБ" : locale === "ru" ? "ФИО" : "Full name",
-    phone: locale === "uk" ? "Телефон" : locale === "ru" ? "Телефон" : "Phone",
+      "Дані з акаунта вже підставлені. За потреби їх можна змінити перед підтвердженням замовлення.",
+    fullName: "ПІБ",
+    phone: "Телефон",
     email: "Email",
-    city: locale === "uk" ? "Місто" : locale === "ru" ? "Город" : "City",
-    cityHint:
-      locale === "uk"
-        ? "Почніть вводити місто України"
-        : locale === "ru"
-          ? "Начните вводить город Украины"
-          : "Start typing a city in Ukraine",
-    delivery: locale === "uk" ? "Спосіб доставки" : locale === "ru" ? "Способ доставки" : "Delivery method",
-    comment: locale === "uk" ? "Коментар до замовлення" : locale === "ru" ? "Комментарий к заказу" : "Order comment",
-    commentHint:
-      locale === "uk"
-        ? "Наприклад, зручний час дзвінка або уточнення по доставці"
-        : locale === "ru"
-          ? "Например, удобное время звонка или уточнение по доставке"
-          : "For example, the best time to call or any delivery note",
-    submit:
-      locale === "uk"
-        ? "Підтвердити замовлення"
-        : locale === "ru"
-          ? "Подтвердить заказ"
-          : "Place order",
-    branch:
-      locale === "uk"
-        ? "Нова пошта — відділення"
-        : locale === "ru"
-          ? "Новая почта — отделение"
-          : "Nova Poshta branch",
-    courier:
-      locale === "uk"
-        ? "Нова пошта — кур'єр"
-        : locale === "ru"
-          ? "Новая почта — курьер"
-          : "Nova Poshta courier",
-    branchField:
-      locale === "uk"
-        ? "Номер відділення"
-        : locale === "ru"
-          ? "Номер отделения"
-          : "Branch number",
-    branchPlaceholder:
-      locale === "uk"
-        ? "Наприклад, 17"
-        : locale === "ru"
-          ? "Например, 17"
-          : "For example, 17",
-    addressField:
-      locale === "uk"
-        ? "Адреса доставки"
-        : locale === "ru"
-          ? "Адрес доставки"
-          : "Delivery address",
-    addressPlaceholder:
-      locale === "uk"
-        ? "Вулиця, будинок, квартира"
-        : locale === "ru"
-          ? "Улица, дом, квартира"
-          : "Street, building, apartment",
-    submitHint:
-      locale === "uk"
-        ? "Після оформлення менеджер зв'яжеться з вами для підтвердження деталей."
-        : locale === "ru"
-          ? "После оформления менеджер свяжется с вами для подтверждения деталей."
-          : "Our manager will contact you after the order is placed to confirm the details.",
-    fullNameError:
-      locale === "uk"
-        ? "Вкажіть ім'я та прізвище."
-        : locale === "ru"
-          ? "Укажите имя и фамилию."
-          : "Enter your full name.",
-    phoneError:
-      locale === "uk"
-        ? "Вкажіть коректний номер телефону."
-        : locale === "ru"
-          ? "Укажите корректный номер телефона."
-          : "Enter a valid phone number.",
-    emailError:
-      locale === "uk"
-        ? "Вкажіть коректний email."
-        : locale === "ru"
-          ? "Укажите корректный email."
-          : "Enter a valid email address.",
-    cityError:
-      locale === "uk"
-        ? "Оберіть або введіть місто доставки."
-        : locale === "ru"
-          ? "Выберите или введите город доставки."
-          : "Choose or enter a delivery city.",
-    branchError:
-      locale === "uk"
-        ? "Вкажіть номер відділення Нової пошти."
-        : locale === "ru"
-          ? "Укажите номер отделения Новой почты."
-          : "Enter the Nova Poshta branch number.",
-    addressError:
-      locale === "uk"
-        ? "Вкажіть адресу для кур'єрської доставки."
-        : locale === "ru"
-          ? "Укажите адрес для курьерской доставки."
-          : "Enter a delivery address for courier shipping.",
-    genericError:
-      locale === "uk"
-        ? "Не вдалося оформити замовлення."
-        : locale === "ru"
-          ? "Не удалось оформить заказ."
-          : "Could not place the order.",
+    city: "Місто",
+    cityHint: "Почніть вводити місто України",
+    delivery: "Спосіб доставки",
+    comment: "Коментар до замовлення",
+    commentHint: "Наприклад, зручний час дзвінка або уточнення по доставці",
+    submit: "Підтвердити замовлення",
+    branch: "Нова пошта — відділення",
+    courier: "Нова пошта — кур'єр",
+    branchField: "Номер відділення",
+    branchPlaceholder: "Наприклад, 17",
+    addressField: "Адреса доставки",
+    addressPlaceholder: "Вулиця, будинок, квартира",
+    submitHint: "Після оформлення менеджер зв'яжеться з вами для підтвердження деталей.",
+    fullNameError: "Вкажіть ім'я та прізвище.",
+    phoneError: "Вкажіть коректний номер телефону.",
+    emailError: "Вкажіть коректний email.",
+    cityError: "Оберіть або введіть місто доставки.",
+    branchError: "Вкажіть номер відділення Нової пошти.",
+    addressError: "Вкажіть адресу для кур'єрської доставки.",
+    genericError: "Не вдалося оформити замовлення.",
   };
 
   const citySuggestions = useMemo(() => {

@@ -12,6 +12,7 @@ import {
   type BuildRequestDeliveryMethod,
   type BuildRequestStatus,
 } from "@/lib/storefront/build-requests";
+import type { AppLocale } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
 
 const SORT_OPTIONS = [
@@ -23,104 +24,36 @@ const SORT_OPTIONS = [
 
 type SortOption = (typeof SORT_OPTIONS)[number];
 
-function getCopy(locale: "uk" | "ru" | "en") {
-  if (locale === "uk") {
-    return {
-      title: "Заявки на збірку",
-      subtitle: "Список запитів на підбір ПК та конфігурації з configurator.",
-      countLabel: "заявок у вибірці",
-      empty: "За поточними фільтрами заявки не знайдено.",
-      searchLabel: "Пошук",
-      searchPlaceholder: "Ім'я, контакт, сценарій або нотатка",
-      statusLabel: "Статус",
-      sortLabel: "Сортування",
-      apply: "Застосувати",
-      reset: "Скинути",
-      quickInquiry: "Швидка заявка",
-      account: "Акаунт",
-      useCase: "Сценарій",
-      city: "Місто",
-      delivery: "Доставка",
-      build: "Збірка",
-      budget: "Бюджет / сума",
-      created: "Створено",
-      updated: "Оновлено",
-      notSpecified: "Не вказано",
-      open: "Відкрити",
-      withNote: "Є нотатка",
-      allStatuses: "Усі статуси",
-      sorts: {
-        created_desc: "Новіші спочатку",
-        created_asc: "Старіші спочатку",
-        updated_desc: "Нещодавно оновлені",
-        updated_asc: "Давно не оновлювалися",
-      },
-    };
-  }
-
-  if (locale === "ru") {
-    return {
-      title: "Заявки на сборку",
-      subtitle: "Список запросов на подбор ПК и конфигурации из configurator.",
-      countLabel: "заявок в выборке",
-      empty: "По текущим фильтрам заявок не найдено.",
-      searchLabel: "Поиск",
-      searchPlaceholder: "Имя, контакт, сценарий или заметка",
-      statusLabel: "Статус",
-      sortLabel: "Сортировка",
-      apply: "Применить",
-      reset: "Сбросить",
-      quickInquiry: "Быстрая заявка",
-      account: "Аккаунт",
-      useCase: "Сценарий",
-      city: "Город",
-      delivery: "Доставка",
-      build: "Сборка",
-      budget: "Бюджет / сумма",
-      created: "Создано",
-      updated: "Обновлено",
-      notSpecified: "Не указано",
-      open: "Открыть",
-      withNote: "Есть заметка",
-      allStatuses: "Все статусы",
-      sorts: {
-        created_desc: "Сначала новые",
-        created_asc: "Сначала старые",
-        updated_desc: "Недавно обновленные",
-        updated_asc: "Давно не обновлялись",
-      },
-    };
-  }
-
+function getCopy() {
   return {
-    title: "Build requests",
-    subtitle: "Requests from quick inquiries and configurator-based build submissions.",
-    countLabel: "requests in view",
-    empty: "No requests match the current filters.",
-    searchLabel: "Search",
-    searchPlaceholder: "Name, contact, use case, or note",
-    statusLabel: "Status",
-    sortLabel: "Sort",
-    apply: "Apply",
-    reset: "Reset",
-    quickInquiry: "Quick inquiry",
-    account: "Account",
-    useCase: "Use case",
-    city: "City",
-    delivery: "Delivery",
-    build: "Build",
-    budget: "Budget / total",
-    created: "Created",
-    updated: "Updated",
-    notSpecified: "Not specified",
-    open: "Open",
-    withNote: "Has note",
-    allStatuses: "All statuses",
+    title: "Заявки на збірку",
+    subtitle: "Список запитів на підбір ПК та конфігурації з configurator.",
+    countLabel: "заявок у вибірці",
+    empty: "За поточними фільтрами заявки не знайдено.",
+    searchLabel: "Пошук",
+    searchPlaceholder: "Ім'я, контакт, сценарій або нотатка",
+    statusLabel: "Статус",
+    sortLabel: "Сортування",
+    apply: "Застосувати",
+    reset: "Скинути",
+    quickInquiry: "Швидка заявка",
+    account: "Акаунт",
+    useCase: "Сценарій",
+    city: "Місто",
+    delivery: "Доставка",
+    build: "Збірка",
+    budget: "Бюджет / сума",
+    created: "Створено",
+    updated: "Оновлено",
+    notSpecified: "Не вказано",
+    open: "Відкрити",
+    withNote: "Є нотатка",
+    allStatuses: "Усі статуси",
     sorts: {
-      created_desc: "Newest first",
-      created_asc: "Oldest first",
-      updated_desc: "Recently updated",
-      updated_asc: "Least recently updated",
+      created_desc: "Новіші спочатку",
+      created_asc: "Старіші спочатку",
+      updated_desc: "Нещодавно оновлені",
+      updated_asc: "Давно не оновлювалися",
     },
   };
 }
@@ -129,7 +62,7 @@ function normalizeSort(value: string | undefined): SortOption {
   return SORT_OPTIONS.includes(value as SortOption) ? (value as SortOption) : "created_desc";
 }
 
-function formatDate(date: Date, locale: "uk" | "ru" | "en") {
+function formatDate(date: Date, locale: AppLocale) {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -140,12 +73,12 @@ export default async function AdminBuildRequestsPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: "uk" | "ru" | "en" }>;
+  params: Promise<{ locale: AppLocale }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale } = await params;
   const rawSearchParams = await searchParams;
-  const copy = getCopy(locale);
+  const copy = getCopy();
   const queryParam = rawSearchParams.q;
   const statusParam = rawSearchParams.status;
   const sortParam = rawSearchParams.sort;

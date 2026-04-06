@@ -459,19 +459,19 @@ export async function setConfiguratorSlotItem({
   });
 
   if (!product) {
-    throw new Error("Product not found");
+    throw new Error("Товар не знайдено");
   }
 
   const localizedNames = product.translations.map((translation) => translation.name.toLowerCase());
 
   if (!matchConfiguratorSlotKeywords(slot, localizedNames, product.category.slug)) {
-    throw new Error("Product does not match slot");
+    throw new Error("Товар не підходить для цього слота");
   }
 
   const buildView = await mapBuildRecord(build, locale);
 
   if (!buildView) {
-    throw new Error("Build not found");
+    throw new Error("Збірку не знайдено");
   }
 
   const rules = await getCompatibilityRulesForRequest();

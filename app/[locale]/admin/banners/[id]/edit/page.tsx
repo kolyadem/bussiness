@@ -20,7 +20,7 @@ export default async function AdminBannerEditPage({
     <div className="space-y-6">
       <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-6">
         <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
-          {locale === "uk" ? "Редагування банера" : locale === "ru" ? "Редактирование баннера" : "Edit banner"}
+          Редагування банера
         </h2>
       </section>
       <AdminBannerForm

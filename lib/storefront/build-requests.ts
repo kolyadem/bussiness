@@ -118,36 +118,28 @@ export function getBuildRequestNumber(id: string) {
   return `LM-${id.slice(-6).toUpperCase()}`;
 }
 
-export function getBuildRequestStatusLabel(status: BuildRequestStatus, locale: AppLocale) {
+export function getBuildRequestStatusLabel(status: BuildRequestStatus, _locale: AppLocale) {
   switch (status) {
     case "NEW":
-      return locale === "uk" ? "Нова" : locale === "ru" ? "Новая" : "New";
+      return "Нова";
     case "IN_REVIEW":
-      return locale === "uk" ? "В обробці" : locale === "ru" ? "На рассмотрении" : "In review";
+      return "В обробці";
     case "COMPLETED":
-      return locale === "uk" ? "Виконана" : locale === "ru" ? "Выполнена" : "Completed";
+      return "Виконана";
     case "REJECTED":
-      return locale === "uk" ? "Відхилена" : locale === "ru" ? "Отклонена" : "Rejected";
+      return "Відхилена";
   }
 }
 
 export function getBuildRequestDeliveryMethodLabel(
   method: BuildRequestDeliveryMethod,
-  locale: AppLocale,
+  _locale: AppLocale,
 ) {
   switch (method) {
     case "NOVA_POSHTA_BRANCH":
-      return locale === "uk"
-        ? "Нова пошта, відділення"
-        : locale === "ru"
-          ? "Новая почта, отделение"
-          : "Nova Poshta branch";
+      return "Нова пошта, відділення";
     case "NOVA_POSHTA_COURIER":
-      return locale === "uk"
-        ? "Кур'єр Нової пошти"
-        : locale === "ru"
-          ? "Курьер Новой почты"
-          : "Nova Poshta courier";
+      return "Кур'єр Нової пошти";
   }
 }
 
@@ -164,18 +156,8 @@ export function getBuildRequestStatusTone(status: BuildRequestStatus) {
   }
 }
 
-export function getBuildRequestBooleanLabel(value: boolean, locale: AppLocale) {
-  return value
-    ? locale === "uk"
-      ? "Так"
-      : locale === "ru"
-        ? "Да"
-        : "Yes"
-    : locale === "uk"
-      ? "Ні"
-      : locale === "ru"
-        ? "Нет"
-        : "No";
+export function getBuildRequestBooleanLabel(value: boolean, _locale: AppLocale) {
+  return value ? "Так" : "Ні";
 }
 
 export function parseBuildRequestItemsSnapshot(value: string) {

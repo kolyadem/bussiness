@@ -15,12 +15,13 @@ import {
   normalizeOrderStatus,
   type OrderDeliveryMethod,
 } from "@/lib/storefront/orders";
+import type { AppLocale } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
 
 export default async function AdminOrderDetailPage({
   params,
 }: {
-  params: Promise<{ locale: "uk" | "ru" | "en"; id: string }>;
+  params: Promise<{ locale: AppLocale; id: string }>;
 }) {
   const { locale, id } = await params;
   const viewer = await requireAdminAccess(locale);
@@ -37,45 +38,28 @@ export default async function AdminOrderDetailPage({
     : null;
 
   const copy = {
-    back: locale === "uk" ? "Назад до замовлень" : locale === "ru" ? "Назад к заказам" : "Back to orders",
-    contact: locale === "uk" ? "Контакти" : locale === "ru" ? "Контакты" : "Contact details",
-    client: locale === "uk" ? "Клієнт" : locale === "ru" ? "Клиент" : "Client",
-    phone: locale === "uk" ? "Телефон" : locale === "ru" ? "Телефон" : "Phone",
-    account: locale === "uk" ? "Акаунт" : locale === "ru" ? "Аккаунт" : "Account",
-    guest: locale === "uk" ? "Гість" : locale === "ru" ? "Гость" : "Guest",
-    delivery: locale === "uk" ? "Доставка" : locale === "ru" ? "Доставка" : "Delivery",
-    city: locale === "uk" ? "Місто" : locale === "ru" ? "Город" : "City",
-    method: locale === "uk" ? "Спосіб" : locale === "ru" ? "Способ" : "Method",
-    address: locale === "uk" ? "Адреса" : locale === "ru" ? "Адрес" : "Address",
-    branch: locale === "uk" ? "Відділення" : locale === "ru" ? "Отделение" : "Branch",
-    comment:
-      locale === "uk"
-        ? "Коментар клієнта"
-        : locale === "ru"
-          ? "Комментарий клиента"
-          : "Customer comment",
-    managerNote:
-      locale === "uk" ? "Нотатка менеджера" : locale === "ru" ? "Заметка менеджера" : "Manager note",
-    items: locale === "uk" ? "Склад замовлення" : locale === "ru" ? "Состав заказа" : "Order items",
-    revenue: locale === "uk" ? "Виручка" : locale === "ru" ? "Выручка" : "Revenue",
-    cost: locale === "uk" ? "Собівартість" : locale === "ru" ? "Себестоимость" : "Cost",
-    profit: locale === "uk" ? "Прибуток" : locale === "ru" ? "Прибыль" : "Profit",
-    management:
-      locale === "uk"
-        ? "Управління замовленням"
-        : locale === "ru"
-          ? "Управление заказом"
-          : "Order management",
-    grossProfit:
-      locale === "uk" ? "Валовий прибуток" : locale === "ru" ? "Валовая прибыль" : "Gross profit",
-    margin: locale === "uk" ? "Маржа" : locale === "ru" ? "Маржа" : "Margin",
-    itemsCount: locale === "uk" ? "Позицій" : locale === "ru" ? "Позиций" : "Items",
-    missingCost:
-      locale === "uk"
-        ? "Для частини позицій ще не задано закупівлю."
-        : locale === "ru"
-          ? "Для части позиций еще не задана закупка."
-          : "Some items still have no purchase cost.",
+    back: "Назад до замовлень",
+    contact: "Контакти",
+    client: "Клієнт",
+    phone: "Телефон",
+    account: "Акаунт",
+    guest: "Гість",
+    delivery: "Доставка",
+    city: "Місто",
+    method: "Спосіб",
+    address: "Адреса",
+    branch: "Відділення",
+    comment: "Коментар клієнта",
+    managerNote: "Нотатка менеджера",
+    items: "Склад замовлення",
+    revenue: "Виручка",
+    cost: "Собівартість",
+    profit: "Прибуток",
+    management: "Управління замовленням",
+    grossProfit: "Валовий прибуток",
+    margin: "Маржа",
+    itemsCount: "Позицій",
+    missingCost: "Для частини позицій ще не задано закупівлю.",
   };
 
   return (

@@ -14,7 +14,7 @@ import { upsertImportSourceConfig } from "@/lib/admin/imports/persistence";
 function jsonAuthError(status: 401 | 403) {
   return NextResponse.json(
     {
-      error: status === 401 ? "Authentication required" : "Insufficient permissions",
+      error: status === 401 ? "Потрібна автентифікація" : "Недостатньо прав",
     },
     { status },
   );
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
   const formData = await request.formData().catch(() => null);
 
   if (!formData) {
-    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
+    return NextResponse.json({ error: "Некоректні дані форми" }, { status: 400 });
   }
 
   const sourceConfigId = normalizeText(formData.get("sourceConfigId"));
@@ -129,11 +129,11 @@ export async function POST(request: Request) {
   const nextSyncAtValue = normalizeText(formData.get("nextSyncAt"));
 
   if (!isImportSourceType(sourceTypeValue)) {
-    return NextResponse.json({ error: "Unsupported source type" }, { status: 400 });
+    return NextResponse.json({ error: "Непідтримуваний тип джерела" }, { status: 400 });
   }
 
   if (!isImportMode(importModeValue)) {
-    return NextResponse.json({ error: "Unsupported import mode" }, { status: 400 });
+    return NextResponse.json({ error: "Непідтримуваний режим імпорту" }, { status: 400 });
   }
 
   const rawHeaders = parseAuthHeaders(authHeadersRaw);
@@ -141,7 +141,7 @@ export async function POST(request: Request) {
   if (rawHeaders === null) {
     return NextResponse.json(
       {
-        error: "Auth headers must be a valid JSON object",
+        error: "Поле заголовків авторизації має бути коректним JSON-об'єктом",
       },
       { status: 400 },
     );
@@ -156,7 +156,7 @@ export async function POST(request: Request) {
     : null;
 
   if (sourceConfigId && !sourceConfig) {
-    return NextResponse.json({ error: "Import source config not found" }, { status: 404 });
+    return NextResponse.json({ error: "Конфігурацію джерела імпорту не знайдено" }, { status: 404 });
   }
 
   const sourceType = sourceConfig ? (sourceConfig.sourceType as ImportSourceType) : sourceTypeValue;
@@ -183,13 +183,13 @@ export async function POST(request: Request) {
 
   if (sourceType.startsWith("UPLOAD_")) {
     if (!(sourceFile instanceof File) || sourceFile.size <= 0) {
-      return NextResponse.json({ error: "Source file is required" }, { status: 400 });
+      return NextResponse.json({ error: "Потрібен файл джерела" }, { status: 400 });
     }
 
     rawContent = await sourceFile.text();
     sourceFileName = sourceFile.name || null;
   } else if (!sourceUrl) {
-    return NextResponse.json({ error: "Source URL is required" }, { status: 400 });
+    return NextResponse.json({ error: "Потрібен URL джерела" }, { status: 400 });
   }
 
   let savedSourceConfigId = sourceConfig?.id ?? null;
@@ -198,7 +198,7 @@ export async function POST(request: Request) {
     if (!sourceKey || !sourceName) {
       return NextResponse.json(
         {
-          error: "Source key and source name are required to save a reusable config",
+          error: "Для збереження шаблону потрібні ключ і назва джерела",
         },
         { status: 400 },
       );

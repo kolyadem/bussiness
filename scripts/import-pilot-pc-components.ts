@@ -144,22 +144,14 @@ async function ensurePilotBrands() {
         website: brand.website,
         translations: {
           deleteMany: {},
-          create: [
-            { locale: "uk", name: brand.name, summary: brand.summaryUk },
-            { locale: "ru", name: brand.name, summary: brand.summaryRu },
-            { locale: "en", name: brand.name, summary: brand.summaryEn },
-          ],
+          create: [{ locale: "uk", name: brand.name, summary: brand.summaryUk }],
         },
       },
       create: {
         slug: brand.slug,
         website: brand.website,
         translations: {
-          create: [
-            { locale: "uk", name: brand.name, summary: brand.summaryUk },
-            { locale: "ru", name: brand.name, summary: brand.summaryRu },
-            { locale: "en", name: brand.name, summary: brand.summaryEn },
-          ],
+          create: [{ locale: "uk", name: brand.name, summary: brand.summaryUk }],
         },
       },
     });
@@ -220,7 +212,7 @@ export async function buildPilotImportRows(items: PilotCatalogItem[]): Promise<{
       status: "PUBLISHED",
       price: item.price,
       oldPrice: item.oldPrice,
-      currency: "USD",
+      currency: "UAH",
       inventoryStatus,
       stock: item.stock,
       heroImage: hero,
@@ -239,22 +231,6 @@ export async function buildPilotImportRows(items: PilotCatalogItem[]): Promise<{
           description: description.uk,
           seoTitle: item.name,
           seoDescription: item.shortUk,
-        },
-        {
-          locale: "ru",
-          name: item.name,
-          shortDescription: item.shortRu,
-          description: description.ru,
-          seoTitle: item.name,
-          seoDescription: item.shortRu,
-        },
-        {
-          locale: "en",
-          name: item.name,
-          shortDescription: item.shortEn,
-          description: description.en,
-          seoTitle: item.name,
-          seoDescription: item.shortEn,
         },
       ],
     });

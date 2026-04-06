@@ -1,63 +1,33 @@
 import { updateUserRoleAction } from "@/app/actions/admin-users";
 import { getAdminUsers, requireAdminOnlyAccess } from "@/lib/admin";
 import { USER_ROLES } from "@/lib/auth";
+import type { AppLocale } from "@/lib/constants";
 
 type SearchParams = {
   saved?: string;
   error?: string;
 };
 
-function getCopy(locale: "uk" | "ru" | "en") {
+function getCopy() {
   return {
-    title: locale === "uk" ? "Користувачі та ролі" : locale === "ru" ? "Пользователи и роли" : "Users and roles",
-    subtitle:
-      locale === "uk"
-        ? "Тільки власник магазину може видавати або знімати роль менеджера."
-        : locale === "ru"
-          ? "Только владелец магазина может выдавать или снимать роль менеджера."
-          : "Only the store owner can grant or revoke manager access.",
-    login: locale === "uk" ? "Логін" : locale === "ru" ? "Логин" : "Login",
-    name: locale === "uk" ? "Користувач" : locale === "ru" ? "Пользователь" : "User",
-    contacts: locale === "uk" ? "Контакти" : locale === "ru" ? "Контакты" : "Contacts",
-    orders: locale === "uk" ? "Замовлень" : locale === "ru" ? "Заказов" : "Orders",
-    role: locale === "uk" ? "Роль" : locale === "ru" ? "Роль" : "Role",
-    save: locale === "uk" ? "Зберегти" : locale === "ru" ? "Сохранить" : "Save",
-    locked: locale === "uk" ? "Захищено" : locale === "ru" ? "Защищено" : "Locked",
-    customer: locale === "uk" ? "Клієнт" : locale === "ru" ? "Клиент" : "Customer",
-    manager: locale === "uk" ? "Менеджер" : locale === "ru" ? "Менеджер" : "Manager",
-    admin: locale === "uk" ? "Адміністратор" : locale === "ru" ? "Администратор" : "Administrator",
-    saved:
-      locale === "uk"
-        ? "Роль користувача оновлено."
-        : locale === "ru"
-          ? "Роль пользователя обновлена."
-          : "User role updated.",
-    missingUser:
-      locale === "uk"
-        ? "Не вдалося визначити користувача."
-        : locale === "ru"
-          ? "Не удалось определить пользователя."
-          : "Could not resolve the user.",
-    userNotFound:
-      locale === "uk" ? "Користувача не знайдено." : locale === "ru" ? "Пользователь не найден." : "User not found.",
-    selfLock:
-      locale === "uk"
-        ? "Не можна змінювати власну роль."
-        : locale === "ru"
-          ? "Нельзя менять собственную роль."
-          : "You cannot change your own role.",
-    adminLock:
-      locale === "uk"
-        ? "ADMIN-акаунти захищені від редагування з цього екрану."
-        : locale === "ru"
-          ? "ADMIN-аккаунты защищены от редактирования с этого экрана."
-          : "ADMIN accounts are locked on this screen.",
-    lastAdminLock:
-      locale === "uk"
-        ? "Не можна змінити роль останнього ADMIN."
-        : locale === "ru"
-          ? "Нельзя изменить роль последнего ADMIN."
-          : "The last ADMIN account cannot be changed.",
+    title: "Користувачі та ролі",
+    subtitle: "Тільки власник магазину може видавати або знімати роль менеджера.",
+    login: "Логін",
+    name: "Користувач",
+    contacts: "Контакти",
+    orders: "Замовлень",
+    role: "Роль",
+    save: "Зберегти",
+    locked: "Захищено",
+    customer: "Клієнт",
+    manager: "Менеджер",
+    admin: "Адміністратор",
+    saved: "Роль користувача оновлено.",
+    missingUser: "Не вдалося визначити користувача.",
+    userNotFound: "Користувача не знайдено.",
+    selfLock: "Не можна змінювати власну роль.",
+    adminLock: "ADMIN-акаунти захищені від редагування з цього екрану.",
+    lastAdminLock: "Не можна змінити роль останнього ADMIN.",
   };
 }
 
@@ -99,13 +69,13 @@ export default async function AdminUsersPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: "uk" | "ru" | "en" }>;
+  params: Promise<{ locale: AppLocale }>;
   searchParams: Promise<SearchParams>;
 }) {
   const [{ locale }, query] = await Promise.all([params, searchParams]);
   const admin = await requireAdminOnlyAccess(locale);
   const users = await getAdminUsers();
-  const copy = getCopy(locale);
+  const copy = getCopy();
   const feedback = getFeedback(query, copy);
 
   return (

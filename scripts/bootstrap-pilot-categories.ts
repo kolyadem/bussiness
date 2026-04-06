@@ -1,6 +1,6 @@
 /**
  * Minimal bootstrap: ensure the 8 pilot catalog categories exist with translations.
- * Data mirrors prisma/seed-storefront.ts (same slug, image, uk/ru/en name + description).
+ * Data mirrors prisma/seed-storefront.ts (same slug, image, Ukrainian copy).
  * Does not delete other categories or run full seed.
  *
  * Run: npm run catalog:bootstrap-pilot-categories
@@ -8,7 +8,7 @@
 import "dotenv/config";
 import { db } from "@/lib/db";
 
-const locales = ["uk", "ru", "en"] as const;
+const locales = ["uk"] as const;
 
 /**
  * Mirror of the corresponding entries in prisma/seed-storefront.ts `categories` array.
@@ -26,8 +26,6 @@ const PILOT_CATEGORY_SEEDS: Array<{
     sortOrder: 1,
     translations: {
       uk: { name: "Процесори", description: "Сучасні CPU для ігор та роботи." },
-      ru: { name: "Процессоры", description: "Современные CPU для игр и работы." },
-      en: { name: "Processors", description: "Modern CPUs for gaming and work." },
     },
   },
   {
@@ -36,8 +34,6 @@ const PILOT_CATEGORY_SEEDS: Array<{
     sortOrder: 2,
     translations: {
       uk: { name: "Материнські плати", description: "Основа збалансованої збірки." },
-      ru: { name: "Материнские платы", description: "Основа сбалансированной сборки." },
-      en: { name: "Motherboards", description: "The core of a balanced build." },
     },
   },
   {
@@ -46,8 +42,6 @@ const PILOT_CATEGORY_SEEDS: Array<{
     sortOrder: 3,
     translations: {
       uk: { name: "Оперативна памʼять", description: "Швидкі DDR5-комплекти." },
-      ru: { name: "Оперативная память", description: "Быстрые DDR5-комплекты." },
-      en: { name: "Memory", description: "Fast DDR5 kits." },
     },
   },
   {
@@ -56,8 +50,6 @@ const PILOT_CATEGORY_SEEDS: Array<{
     sortOrder: 4,
     translations: {
       uk: { name: "Відеокарти", description: "GPU для AAA-ігор і creator-задач." },
-      ru: { name: "Видеокарты", description: "GPU для AAA-игр и creator-задач." },
-      en: { name: "Graphics cards", description: "GPUs for AAA gaming and creator workloads." },
     },
   },
   {
@@ -66,8 +58,6 @@ const PILOT_CATEGORY_SEEDS: Array<{
     sortOrder: 5,
     translations: {
       uk: { name: "SSD / HDD", description: "Накопичувачі для системи та бібліотеки." },
-      ru: { name: "SSD / HDD", description: "Накопители для системы и библиотеки." },
-      en: { name: "SSD / HDD", description: "Storage for OS and game libraries." },
     },
   },
   {
@@ -76,8 +66,6 @@ const PILOT_CATEGORY_SEEDS: Array<{
     sortOrder: 6,
     translations: {
       uk: { name: "Блоки живлення", description: "Надійне живлення із запасом по потужності." },
-      ru: { name: "Блоки питания", description: "Надежное питание с запасом по мощности." },
-      en: { name: "Power supplies", description: "Stable power delivery with room to grow." },
     },
   },
   {
@@ -86,8 +74,6 @@ const PILOT_CATEGORY_SEEDS: Array<{
     sortOrder: 7,
     translations: {
       uk: { name: "Охолодження", description: "Кулери для тихої та стабільної роботи системи." },
-      ru: { name: "Охлаждение", description: "Кулеры для тихой и стабильной работы системы." },
-      en: { name: "Cooling", description: "Cooling solutions for quiet, stable builds." },
     },
   },
   {
@@ -96,8 +82,6 @@ const PILOT_CATEGORY_SEEDS: Array<{
     sortOrder: 8,
     translations: {
       uk: { name: "Корпуси", description: "Корпуси з підтримкою сучасних high-end компонентів." },
-      ru: { name: "Корпуса", description: "Корпуса с поддержкой современных high-end компонентов." },
-      en: { name: "Cases", description: "Cases built for modern premium components." },
     },
   },
 ];

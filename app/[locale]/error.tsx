@@ -4,27 +4,11 @@ import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-function getCopy(locale: string) {
-  if (locale === "uk") {
-    return {
-      title: "Щось пішло не так",
-      body: "Спробуйте ще раз. Якщо проблема повторюється, зв'яжіться з підтримкою.",
-      action: "Спробувати знову",
-    };
-  }
-
-  if (locale === "ru") {
-    return {
-      title: "Что-то пошло не так",
-      body: "Попробуйте ещё раз. Если проблема повторяется, свяжитесь с поддержкой.",
-      action: "Повторить",
-    };
-  }
-
+function getCopy(_locale: string) {
   return {
-    title: "Something went wrong",
-    body: "Please try again. If the problem keeps happening, contact support.",
-    action: "Try again",
+    title: "Щось пішло не так",
+    body: "Спробуйте ще раз. Якщо проблема повторюється, зв'яжіться з підтримкою.",
+    action: "Спробувати знову",
   };
 }
 
@@ -36,7 +20,7 @@ export default function LocaleError({
   reset: () => void;
 }) {
   const params = useParams();
-  const locale = typeof params.locale === "string" ? params.locale : "en";
+  const locale = typeof params.locale === "string" ? params.locale : "uk";
   const copy = getCopy(locale);
 
   useEffect(() => {

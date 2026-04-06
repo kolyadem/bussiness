@@ -61,20 +61,20 @@ export function normalizeOrderStatus(value: string | null | undefined): OrderSta
   return ORDER_STATUSES.includes(value as OrderStatus) ? (value as OrderStatus) : "NEW";
 }
 
-export function getOrderStatusLabel(status: OrderStatus, locale: AppLocale) {
+export function getOrderStatusLabel(status: OrderStatus, _locale: AppLocale) {
   switch (status) {
     case "NEW":
-      return locale === "uk" ? "Нове" : locale === "ru" ? "Новый" : "New";
+      return "Нове";
     case "CONFIRMED":
-      return locale === "uk" ? "Підтверджено" : locale === "ru" ? "Подтверждено" : "Confirmed";
+      return "Підтверджено";
     case "PROCESSING":
-      return locale === "uk" ? "В обробці" : locale === "ru" ? "В обработке" : "Processing";
+      return "В обробці";
     case "SHIPPED":
-      return locale === "uk" ? "Відправлено" : locale === "ru" ? "Отправлено" : "Shipped";
+      return "Відправлено";
     case "COMPLETED":
-      return locale === "uk" ? "Завершено" : locale === "ru" ? "Завершено" : "Completed";
+      return "Завершено";
     case "CANCELLED":
-      return locale === "uk" ? "Скасовано" : locale === "ru" ? "Отменено" : "Cancelled";
+      return "Скасовано";
   }
 }
 
@@ -95,20 +95,12 @@ export function getOrderStatusTone(status: OrderStatus) {
   }
 }
 
-export function getOrderDeliveryMethodLabel(method: OrderDeliveryMethod, locale: AppLocale) {
+export function getOrderDeliveryMethodLabel(method: OrderDeliveryMethod, _locale: AppLocale) {
   switch (method) {
     case "NOVA_POSHTA_BRANCH":
-      return locale === "uk"
-        ? "Нова пошта, відділення"
-        : locale === "ru"
-          ? "Новая почта, отделение"
-          : "Nova Poshta branch";
+      return "Нова пошта, відділення";
     case "NOVA_POSHTA_COURIER":
-      return locale === "uk"
-        ? "Нова пошта, кур'єр"
-        : locale === "ru"
-          ? "Новая почта, курьер"
-          : "Nova Poshta courier";
+      return "Нова пошта, кур'єр";
   }
 }
 
@@ -156,11 +148,7 @@ export function getOrderItemConfigurationLabel(
     ? getConfiguratorSlotLabel(parsed.slot, locale)
     : parsed.slot;
 
-  return locale === "uk"
-    ? `Збірка "${parsed.buildName}" • ${slotLabel}`
-    : locale === "ru"
-      ? `Сборка "${parsed.buildName}" • ${slotLabel}`
-      : `Build "${parsed.buildName}" • ${slotLabel}`;
+  return `Збірка "${parsed.buildName}" • ${slotLabel}`;
 }
 
 export function getOrderKindFromItems(
@@ -179,14 +167,14 @@ export function getOrderKindFromItems(
   return "MIXED";
 }
 
-export function getOrderKindLabel(kind: OrderKind, locale: AppLocale) {
+export function getOrderKindLabel(kind: OrderKind, _locale: AppLocale) {
   switch (kind) {
     case "PRODUCT":
-      return locale === "uk" ? "Товарний" : locale === "ru" ? "Товарный" : "Product";
+      return "Товарний";
     case "CONFIGURATOR":
-      return locale === "uk" ? "Збірка" : locale === "ru" ? "Сборка" : "Build";
+      return "Збірка";
     case "MIXED":
-      return locale === "uk" ? "Змішаний" : locale === "ru" ? "Смешанный" : "Mixed";
+      return "Змішаний";
   }
 }
 

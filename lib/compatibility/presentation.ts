@@ -3,44 +3,32 @@ import type { CompatibilityResultStatus } from "@/lib/compatibility/types";
 
 export function getCompatibilityStatusBadgeLabel(
   status: CompatibilityResultStatus,
-  locale: AppLocale,
+  _locale: AppLocale,
 ) {
   if (status === "pass") {
-    return locale === "uk" ? "Сумісно" : locale === "ru" ? "Совместимо" : "Compatible";
+    return "Сумісно";
   }
 
   if (status === "warning") {
-    return locale === "uk" ? "Попередження" : locale === "ru" ? "Предупреждение" : "Warning";
+    return "Попередження";
   }
 
-  return locale === "uk" ? "Несумісно" : locale === "ru" ? "Несовместимо" : "Incompatible";
+  return "Несумісно";
 }
 
 export function getCompatibilityStatusTitle(
   status: CompatibilityResultStatus,
-  locale: AppLocale,
+  _locale: AppLocale,
 ) {
   if (status === "pass") {
-    return locale === "uk"
-      ? "Збірка сумісна"
-      : locale === "ru"
-        ? "Сборка совместима"
-        : "Build is compatible";
+    return "Збірка сумісна";
   }
 
   if (status === "warning") {
-    return locale === "uk"
-      ? "Є попередження щодо сумісності"
-      : locale === "ru"
-        ? "Есть предупреждения по совместимости"
-        : "Build has compatibility warnings";
+    return "Є попередження щодо сумісності";
   }
 
-  return locale === "uk"
-    ? "Є проблеми сумісності"
-    : locale === "ru"
-      ? "Есть проблемы совместимости"
-      : "Build has compatibility issues";
+  return "Є проблеми сумісності";
 }
 
 export function getCompatibilityStatusTone(status: CompatibilityResultStatus) {
@@ -57,19 +45,11 @@ export function getCompatibilityStatusTone(status: CompatibilityResultStatus) {
 
 export function getCompatibilityAdditionalMessagesLabel(
   count: number,
-  locale: AppLocale,
+  _locale: AppLocale,
 ) {
   if (count <= 0) {
     return "";
   }
 
-  if (locale === "uk") {
-    return `Ще ${count} повідомл.`;
-  }
-
-  if (locale === "ru") {
-    return `Еще ${count} сообщ.`;
-  }
-
-  return `${count} more`;
+  return `Ще ${count} повідомл.`;
 }

@@ -21,11 +21,7 @@ export async function generateMetadata({
   return pageMetadata(
     locale,
     "homeSeoTitle",
-    locale === "uk"
-      ? "Збірка ПК, комплектуючі та периферія — конфігуратор і каталог."
-      : locale === "ru"
-        ? "Сборка ПК, комплектующие и периферия — конфигуратор и каталог."
-        : "PC builds, components, and peripherals — configurator and catalog.",
+    "Збірка ПК, комплектуючі та периферія — конфігуратор і каталог.",
     "",
   );
 }
@@ -78,7 +74,7 @@ export default async function LocaleHome({
     "@context": "https://schema.org",
     "@type": "Organization",
     name: data.settings?.brandName || "Lumina Tech",
-    url: getAbsoluteUrl(`/${locale}`),
+    url: getAbsoluteUrl("/"),
     logo: getAbsoluteUrl(data.settings?.logoPath || "/favicon.ico"),
     ...(contactPointLd.length > 0 ? { contactPoint: contactPointLd } : {}),
     sameAs: [
@@ -94,11 +90,11 @@ export default async function LocaleHome({
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: data.settings?.brandName || "Lumina Tech",
-    url: getAbsoluteUrl(`/${locale}`),
-    inLanguage: locale,
+    url: getAbsoluteUrl("/"),
+    inLanguage: "uk",
     potentialAction: {
       "@type": "SearchAction",
-      target: `${getAbsoluteUrl(`/${locale}/catalog`)}?q={search_term_string}`,
+      target: `${getAbsoluteUrl("/catalog")}?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
   };
@@ -138,11 +134,7 @@ export default async function LocaleHome({
         <div className="relative mx-auto flex max-w-5xl flex-col items-center text-center">
           <h1 className="font-heading text-4xl font-semibold tracking-[-0.06em] text-[color:var(--color-text)] sm:text-5xl lg:text-6xl">
             {isPcBuild
-              ? locale === "uk"
-                ? "Зберемо ПК під ваш бюджет і задачі"
-                : locale === "ru"
-                  ? "Соберём ПК под ваш бюджет и задачи"
-                  : "We build a PC around your budget and goals"
+              ? "Зберемо ПК під ваш бюджет і задачі"
               : (heroTranslation?.title ?? data.settings?.heroTitle ?? heroTitleDefault)}
           </h1>
           {!isPcBuild ? (
@@ -161,24 +153,14 @@ export default async function LocaleHome({
             >
               <Button className="w-full sm:min-w-52">
                 {isPcBuild
-                  ? experience?.heroPrimary ??
-                    (locale === "uk"
-                      ? "Отримати підбір збірки"
-                      : locale === "ru"
-                        ? "Получить подборку сборки"
-                        : "Get a build recommendation")
+                  ? experience?.heroPrimary ?? "Отримати підбір збірки"
                   : heroTranslation?.ctaLabel ?? data.settings?.heroCtaLabel ?? t("heroButton")}
               </Button>
             </Link>
             <Link href={isPcBuild ? "/configurator" : "/wishlist"} className="w-full sm:w-auto">
               <Button variant="secondary" className="w-full sm:min-w-52">
                 {isPcBuild
-                  ? experience?.heroSecondary ??
-                    (locale === "uk"
-                      ? "Перейти до компонентів"
-                      : locale === "ru"
-                        ? "Перейти к комплектующим"
-                        : "Browse components")
+                  ? experience?.heroSecondary ?? "Перейти до компонентів"
                   : t("heroSecondary")}
               </Button>
             </Link>

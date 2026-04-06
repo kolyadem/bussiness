@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       lineCount: result.lineCount,
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Preview failed";
+    const msg = e instanceof Error ? e.message : "Не вдалося виконати перевірку";
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }

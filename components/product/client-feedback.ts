@@ -6,14 +6,6 @@ export async function readApiPayload(response: Response) {
   }
 }
 
-export function getActionErrorMessage(locale: string) {
-  if (locale === "uk") {
-    return "Не вдалося виконати дію. Спробуйте ще раз.";
-  }
-
-  if (locale === "ru") {
-    return "Не удалось выполнить действие. Попробуйте ещё раз.";
-  }
-
-  return "Could not complete the action. Please try again.";
+export function getActionErrorMessage(_locale: string) {
+  return "Не вдалося виконати дію. Спробуйте ще раз.";
 }

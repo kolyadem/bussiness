@@ -1,8 +1,6 @@
+import "@/lib/zod-init";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { Inter, Manrope } from "next/font/google";
-import { defaultLocale } from "@/lib/constants";
-import { resolveLocaleFromPathname } from "@/lib/storefront/seo";
 import "./globals.css";
 
 const inter = Inter({
@@ -17,7 +15,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "Lumina Tech",
-  description: "Foundation stage of a premium multilingual electronics store built with Next.js and Prisma.",
+  description: "Преміальний магазин техніки на Next.js та Prisma.",
 };
 
 const themeInitScript = `
@@ -38,40 +36,18 @@ const themeInitScript = `
   })();
 `;
 
-async function getDocumentLocale() {
-  const requestHeaders = await headers();
-  const headerCandidates = [
-    requestHeaders.get("x-pathname"),
-    requestHeaders.get("next-url"),
-    requestHeaders.get("referer"),
-  ];
-
-  for (const candidate of headerCandidates) {
-    const locale = resolveLocaleFromPathname(candidate);
-
-    if (locale) {
-      return locale;
-    }
-  }
-
-  return defaultLocale;
-}
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const documentLocale = await getDocumentLocale();
-
   return (
     <html
-      lang={documentLocale}
+      lang="uk"
       suppressHydrationWarning
       className={`${inter.variable} ${manrope.variable} h-full antialiased`}
     >
       <head>
-        {/* Inline early theme init: avoids next/script + dangerouslySetInnerHTML quirks in React 19 / devtools noise */}
         <script id="theme-init" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="min-h-full font-sans">{children}</body>

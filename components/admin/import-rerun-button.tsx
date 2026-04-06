@@ -4,13 +4,14 @@ import { startTransition, useState } from "react";
 import { LoaderCircle, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import type { AppLocale } from "@/lib/constants";
 
 export function ImportRerunButton({
   jobId,
-  locale,
+  locale: _locale,
 }: {
   jobId: string;
-  locale: "uk" | "ru" | "en";
+  locale: AppLocale;
 }) {
   const [pending, setPending] = useState(false);
 
@@ -36,19 +37,13 @@ export function ImportRerunButton({
               | null;
 
             if (!response.ok) {
-              throw new Error(payload?.error || "Could not rerun import");
+              throw new Error(payload?.error || "Не вдалося повторити імпорт");
             }
 
-            toast.success(
-              locale === "uk"
-                ? "Повторний запуск імпорту розпочато"
-                : locale === "ru"
-                  ? "Повторный запуск импорта начат"
-                  : "Import re-run started",
-            );
+            toast.success("Повторний запуск імпорту розпочато");
 
             if (payload?.jobId) {
-              window.location.assign(`/${locale}/admin/imports/${payload.jobId}`);
+              window.location.assign(`/admin/imports/${payload.jobId}`);
             } else {
               window.location.reload();
             }
@@ -56,11 +51,7 @@ export function ImportRerunButton({
             toast.error(
               error instanceof Error
                 ? error.message
-                : locale === "uk"
-                  ? "Не вдалося перезапустити імпорт"
-                  : locale === "ru"
-                    ? "Не удалось перезапустить импорт"
-                    : "Could not rerun import",
+                : "Не вдалося перезапустити імпорт",
             );
           } finally {
             setPending(false);
@@ -69,7 +60,7 @@ export function ImportRerunButton({
       }}
     >
       {pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RotateCw className="h-4 w-4" />}
-      <span>{locale === "uk" ? "Повторити імпорт" : locale === "ru" ? "Повторить импорт" : "Re-run import"}</span>
+      <span>Повторити імпорт</span>
     </Button>
   );
 }

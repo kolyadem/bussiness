@@ -80,86 +80,60 @@ const CONFIGURATOR_SLOT_DEFINITIONS: Record<ConfiguratorSlotKey, ConfiguratorSlo
 };
 
 const SLOT_LABELS: Record<ConfiguratorSlotKey, Record<AppLocale, string>> = {
-  cpu: { uk: "Процесор", ru: "Процессор", en: "CPU" },
-  motherboard: { uk: "Материнська плата", ru: "Материнская плата", en: "Motherboard" },
-  ram: { uk: "Оперативна пам'ять", ru: "Оперативная память", en: "RAM" },
-  gpu: { uk: "Відеокарта", ru: "Видеокарта", en: "GPU" },
-  storage: { uk: "Накопичувач", ru: "Накопитель", en: "Storage" },
-  psu: { uk: "Блок живлення", ru: "Блок питания", en: "PSU" },
-  cooling: { uk: "Охолодження", ru: "Охлаждение", en: "Cooling" },
-  case: { uk: "Корпус", ru: "Корпус", en: "Case" },
-  monitor: { uk: "Монітор", ru: "Монитор", en: "Monitor" },
-  keyboard: { uk: "Клавіатура", ru: "Клавиатура", en: "Keyboard" },
-  mouse: { uk: "Миша", ru: "Мышь", en: "Mouse" },
-  headset: { uk: "Гарнітура", ru: "Гарнитура", en: "Headset" },
-  accessories: { uk: "Аксесуари", ru: "Аксессуары", en: "Accessories" },
+  cpu: { uk: "Процесор" },
+  motherboard: { uk: "Материнська плата" },
+  ram: { uk: "Оперативна пам'ять" },
+  gpu: { uk: "Відеокарта" },
+  storage: { uk: "Накопичувач" },
+  psu: { uk: "Блок живлення" },
+  cooling: { uk: "Охолодження" },
+  case: { uk: "Корпус" },
+  monitor: { uk: "Монітор" },
+  keyboard: { uk: "Клавіатура" },
+  mouse: { uk: "Миша" },
+  headset: { uk: "Гарнітура" },
+  accessories: { uk: "Аксесуари" },
 };
 
 const SLOT_DESCRIPTIONS: Record<ConfiguratorSlotKey, Record<AppLocale, string>> = {
   cpu: {
     uk: "База збірки та відправна точка для подальшого вибору.",
-    ru: "Основа сборки и отправная точка для дальнейшего выбора.",
-    en: "The build foundation and the starting point for the rest.",
   },
   motherboard: {
     uk: "Плата, що об'єднує всі ключові компоненти системи.",
-    ru: "Плата, которая объединяет все ключевые компоненты системы.",
-    en: "The board that ties the key components together.",
   },
   ram: {
     uk: "Пам'ять для щоденної роботи, ігор і професійних задач.",
-    ru: "Память для повседневной работы, игр и профессиональных задач.",
-    en: "Memory for daily work, gaming, and productivity.",
   },
   gpu: {
     uk: "Головний вибір для графіки, ігор та творчих навантажень.",
-    ru: "Ключевой выбор для графики, игр и творческих задач.",
-    en: "The main choice for graphics, gaming, and creative workloads.",
   },
   storage: {
     uk: "SSD або HDD для системи, бібліотеки ігор і проєктів.",
-    ru: "SSD или HDD для системы, библиотеки игр и проектов.",
-    en: "SSD or HDD storage for the OS, games, and projects.",
   },
   psu: {
     uk: "Живлення із запасом під обрану конфігурацію.",
-    ru: "Питание с запасом под выбранную конфигурацию.",
-    en: "Power delivery sized for the chosen configuration.",
   },
   cooling: {
     uk: "Повітряне або рідинне охолодження для стабільної температури.",
-    ru: "Воздушное или жидкостное охлаждение для стабильных температур.",
-    en: "Air or liquid cooling for stable temperatures.",
   },
   case: {
     uk: "Корпус, що визначає посадку компонентів і загальний характер збірки.",
-    ru: "Корпус, который определяет посадку компонентов и общий характер сборки.",
-    en: "The chassis that shapes fitment and the look of the build.",
   },
   monitor: {
     uk: "Дисплей для завершення робочого або ігрового сетапу.",
-    ru: "Дисплей для завершения рабочего или игрового сетапа.",
-    en: "A display to complete the workstation or gaming setup.",
   },
   keyboard: {
     uk: "Клавіатура для щоденної роботи та ігрових сесій.",
-    ru: "Клавиатура для ежедневной работы и игровых сессий.",
-    en: "A keyboard for daily work and gaming sessions.",
   },
   mouse: {
     uk: "Точний контроль для роботи, ігор і творчих задач.",
-    ru: "Точный контроль для работы, игр и творческих задач.",
-    en: "Precise control for work, play, and creative tasks.",
   },
   headset: {
     uk: "Аудіо для зв'язку, занурення та стрімінгу.",
-    ru: "Аудио для общения, погружения и стриминга.",
-    en: "Audio for communication, immersion, and streaming.",
   },
   accessories: {
     uk: "Додаткові периферійні аксесуари навколо основного сетапу.",
-    ru: "Дополнительные периферийные аксессуары вокруг основного сетапа.",
-    en: "Extra accessories around the main setup.",
   },
 };
 
@@ -183,8 +157,8 @@ export function getConfiguratorSlotDescription(slot: ConfiguratorSlotKey, locale
   return SLOT_DESCRIPTIONS[slot][locale];
 }
 
-export function getConfiguratorDefaultName(locale: AppLocale) {
-  return locale === "uk" ? "Моя збірка ПК" : locale === "ru" ? "Моя сборка ПК" : "My PC build";
+export function getConfiguratorDefaultName(_locale: AppLocale) {
+  return "Моя збірка ПК";
 }
 
 export function getConfiguratorUniqueBaseName(value: string, locale: AppLocale) {
@@ -227,5 +201,5 @@ export function matchConfiguratorSlotKeywords(
 }
 
 export function getConfiguratorShareHref(locale: AppLocale, shareToken: string) {
-  return `/${locale}/configurator/share/${shareToken}`;
+  return `/configurator/share/${shareToken}`;
 }

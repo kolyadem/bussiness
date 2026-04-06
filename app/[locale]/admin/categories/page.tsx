@@ -16,26 +16,16 @@ export default async function AdminCategoriesPage({
   const notice = Array.isArray(query.error) ? query.error[0] : query.error;
   const deleted = (Array.isArray(query.deleted) ? query.deleted[0] : query.deleted) === "1";
   const copy = {
-    title: locale === "uk" ? "Категорії" : locale === "ru" ? "Категории" : "Categories",
-    parent: locale === "uk" ? "Батьківська" : locale === "ru" ? "Родительская" : "Parent",
-    products: locale === "uk" ? "Товари" : locale === "ru" ? "Товары" : "Products",
-    children: locale === "uk" ? "Підкатегорії" : locale === "ru" ? "Подкатегории" : "Children",
-    add: locale === "uk" ? "Додати категорію" : locale === "ru" ? "Добавить категорию" : "New category",
-    actions: locale === "uk" ? "Дії" : locale === "ru" ? "Действия" : "Actions",
-    edit: locale === "uk" ? "Редагувати" : locale === "ru" ? "Редактировать" : "Edit",
-    remove: locale === "uk" ? "Видалити" : locale === "ru" ? "Удалить" : "Delete",
-    inUse:
-      locale === "uk"
-        ? "Категорію не можна видалити, поки вона має товари або підкатегорії."
-        : locale === "ru"
-          ? "Категорию нельзя удалить, пока у неё есть товары или подкатегории."
-          : "This category cannot be deleted while products or subcategories are linked to it.",
-    deleted:
-      locale === "uk"
-        ? "Категорію видалено."
-        : locale === "ru"
-          ? "Категория удалена."
-          : "Category deleted.",
+    title: "Категорії",
+    parent: "Батьківська",
+    products: "Товари",
+    children: "Підкатегорії",
+    add: "Додати категорію",
+    actions: "Дії",
+    edit: "Редагувати",
+    remove: "Видалити",
+    inUse: "Категорію не можна видалити, поки вона має товари або підкатегорії.",
+    deleted: "Категорію видалено.",
     empty: "—",
   };
 

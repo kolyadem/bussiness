@@ -11,7 +11,7 @@ export async function POST(
     const result = await addConfiguratorBuildToCart(slug);
 
     if (!result) {
-      return NextResponse.json({ error: "Build not found" }, { status: 404 });
+      return NextResponse.json({ error: "Збірку не знайдено" }, { status: 404 });
     }
 
     return NextResponse.json({ ok: true, ...result });
@@ -26,9 +26,11 @@ export async function POST(
       {
         error:
           error instanceof Error &&
-          (error.message === "Build not found" || error.message.includes("compat"))
+          (error.message === "Збірку не знайдено" ||
+            error.message === "Build not found" ||
+            error.message.includes("compat"))
             ? error.message
-            : "Could not add build to cart",
+            : "Не вдалося додати збірку в кошик",
       },
       { status: 409 },
     );

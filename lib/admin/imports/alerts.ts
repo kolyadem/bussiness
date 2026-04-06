@@ -19,7 +19,7 @@ export const IMPORT_ALERT_STATUSES = ["ACTIVE", "ACKNOWLEDGED", "RESOLVED"] as c
 
 export type ImportAlertStatus = (typeof IMPORT_ALERT_STATUSES)[number];
 
-export type ImportAlertLocale = "uk" | "ru" | "en";
+export type ImportAlertLocale = "uk";
 
 export function isImportAlertType(value: string): value is ImportAlertType {
   return IMPORT_ALERT_TYPES.includes(value as ImportAlertType);
@@ -59,31 +59,31 @@ export function getImportAlertStatusTone(status: ImportAlertStatus) {
 
 export function getImportAlertSeverityLabel(
   severity: ImportAlertSeverity,
-  locale: ImportAlertLocale,
+  _locale: ImportAlertLocale,
 ) {
   switch (severity) {
     case "INFO":
-      return locale === "uk" ? "Інфо" : locale === "ru" ? "Инфо" : "Info";
+      return "Інфо";
     case "WARNING":
-      return locale === "uk" ? "Попередження" : locale === "ru" ? "Предупреждение" : "Warning";
+      return "Попередження";
     case "ERROR":
-      return locale === "uk" ? "Помилка" : locale === "ru" ? "Ошибка" : "Error";
+      return "Помилка";
     case "CRITICAL":
-      return locale === "uk" ? "Критично" : locale === "ru" ? "Критично" : "Critical";
+      return "Критично";
   }
 }
 
 export function getImportAlertStatusLabel(
   status: ImportAlertStatus,
-  locale: ImportAlertLocale,
+  _locale: ImportAlertLocale,
 ) {
   switch (status) {
     case "ACTIVE":
-      return locale === "uk" ? "Активний" : locale === "ru" ? "Активный" : "Active";
+      return "Активний";
     case "ACKNOWLEDGED":
-      return locale === "uk" ? "Підтверджено" : locale === "ru" ? "Подтверждено" : "Acknowledged";
+      return "Підтверджено";
     case "RESOLVED":
-      return locale === "uk" ? "Вирішено" : locale === "ru" ? "Решено" : "Resolved";
+      return "Вирішено";
   }
 }
 

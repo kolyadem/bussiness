@@ -1,10 +1,11 @@
+import type { AppLocale } from "@/lib/constants";
 import { getAbsoluteLocalizedUrl } from "@/lib/storefront/seo";
 import { getBuildRequestNumber } from "@/lib/storefront/build-requests";
 import { logEvent, reportServerError } from "@/lib/observability/logger";
 
 type BuildRequestNotificationPayload = {
   requestId: string;
-  locale: "uk" | "ru" | "en";
+  locale: AppLocale;
   customerName: string;
   contact: string;
   source?: string | null;
@@ -22,7 +23,7 @@ function formatMoney(amount: number | null | undefined, currency: string | null 
   const normalizedAmount = amount / 100;
 
   try {
-    return new Intl.NumberFormat("en", {
+    return new Intl.NumberFormat("uk-UA", {
       style: "currency",
       currency,
       maximumFractionDigits: 2,

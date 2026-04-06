@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { AppLocale } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { getAuthenticatedUser, hasRole, USER_ROLES } from "@/lib/auth";
 import { isPrismaRecoverableBuildTimeError } from "@/lib/prisma-build";
@@ -6,6 +7,7 @@ import {
   calculateOrderLineFinancials,
   resolveOrderFinancials,
 } from "@/lib/commerce/finance";
+import { STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 import { getCart, mapProduct } from "@/lib/storefront/queries";
 import { resolveStorefrontOwner } from "@/lib/storefront/persistence";
 import {
@@ -19,7 +21,7 @@ import {
 } from "@/lib/storefront/orders";
 
 const checkoutSchema = z.object({
-  locale: z.enum(["uk", "ru", "en"]),
+  locale: z.literal("uk"),
   fullName: z.string().trim().min(2).max(120),
   phone: z.string().trim().min(7).max(32),
   email: z.string().trim().email(),
@@ -179,7 +181,7 @@ export async function getCheckoutPrefill() {
   }
 }
 
-export async function getCheckoutPageData(locale: "uk" | "ru" | "en") {
+export async function getCheckoutPageData(locale: AppLocale) {
   const [cart, prefill] = await Promise.all([getCart(), getCheckoutPrefill()]);
 
   return {
@@ -196,7 +198,7 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
     const firstIssue = parsed.error.issues[0];
     return {
       ok: false as const,
-      error: firstIssue?.message || "Invalid checkout payload",
+      error: firstIssue?.message || "Некоректні дані оформлення замовлення",
     };
   }
 
@@ -210,7 +212,7 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
   if (!ownerWhere) {
     return {
       ok: false as const,
-      error: "Could not resolve cart owner",
+      error: "Не вдалося визначити власника кошика",
     };
   }
 
@@ -259,16 +261,16 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
       });
 
       if (!cart || cart.items.length === 0) {
-        throw new OrderCreationError("Cart is empty");
+        throw new OrderCreationError("Кошик порожній");
       }
 
       for (const item of cart.items) {
         if (item.product.status !== "PUBLISHED") {
-          throw new OrderCreationError("One of the products is no longer available");
+          throw new OrderCreationError("Один із товарів більше недоступний");
         }
 
         if (item.product.inventoryStatus === "OUT_OF_STOCK") {
-          throw new OrderCreationError("One of the products is out of stock");
+          throw new OrderCreationError("Один із товарів немає в наявності");
         }
       }
 
@@ -296,7 +298,7 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
         totalPrice,
         items: orderItemsInput,
       });
-      const currency = cart.items[0]?.product.currency ?? "USD";
+      const currency = cart.items[0]?.product.currency ?? STOREFRONT_CURRENCY_CODE;
 
       const order = await tx.order.create({
         data: {
@@ -353,7 +355,7 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
         });
 
         if (reserved.count === 0) {
-          throw new OrderCreationError("Not enough stock for one of the products");
+          throw new OrderCreationError("Недостатньо товару на складі для однієї з позицій");
         }
 
         const updatedProduct = await tx.product.findUnique({
@@ -366,7 +368,7 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
         });
 
         if (!updatedProduct) {
-          throw new OrderCreationError("One of the products is no longer available");
+          throw new OrderCreationError("Один із товарів більше недоступний");
         }
 
         await tx.product.update({
@@ -404,7 +406,7 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
   }
 }
 
-export async function getAccountOrders(locale: "uk" | "ru" | "en", userId: string) {
+export async function getAccountOrders(locale: AppLocale, userId: string) {
   const orders = await db.order.findMany({
     where: {
       userId,
@@ -441,7 +443,7 @@ export async function getAccountOrderById({
   locale,
 }: {
   id: string;
-  locale: "uk" | "ru" | "en";
+  locale: AppLocale;
 }) {
   const viewer = await getAuthenticatedUser();
 
@@ -578,13 +580,13 @@ export async function updateAdminOrderManagement({
   const viewer = await getAuthenticatedUser();
 
   if (!viewer || !hasRole(viewer.role, USER_ROLES.manager)) {
-    throw new Error("Unauthorized");
+    throw new Error("Потрібна автентифікація");
   }
 
   const parsed = adminOrderManagementSchema.safeParse({ status, managerNote });
 
   if (!parsed.success || !isOrderStatus(parsed.data.status)) {
-    throw new Error("Invalid order status");
+    throw new Error("Некоректний статус замовлення");
   }
 
   const existing = await db.order.findUnique({
@@ -597,7 +599,7 @@ export async function updateAdminOrderManagement({
   });
 
   if (!existing) {
-    throw new Error("Order not found");
+    throw new Error("Замовлення не знайдено");
   }
 
   return db.order.update({

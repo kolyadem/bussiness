@@ -14,6 +14,7 @@ import {
   type ImportMode,
   type ImportSourceType,
 } from "@/lib/admin/imports/types";
+import type { AppLocale } from "@/lib/constants";
 
 type SourceConfigSummary = {
   id: string;
@@ -58,15 +59,15 @@ type PreviewResult = {
   };
 };
 
-function formatBytes(bytes: number, locale: "uk" | "ru" | "en") {
+function formatBytes(bytes: number, locale: string) {
   if (bytes >= 1_048_576) {
-    return new Intl.NumberFormat(locale, {
+    return new Intl.NumberFormat(locale || "uk", {
       maximumFractionDigits: 1,
     }).format(bytes / 1_048_576) + " MB";
   }
 
   if (bytes >= 1024) {
-    return new Intl.NumberFormat(locale, {
+    return new Intl.NumberFormat(locale || "uk", {
       maximumFractionDigits: 1,
     }).format(bytes / 1024) + " KB";
   }
@@ -74,8 +75,8 @@ function formatBytes(bytes: number, locale: "uk" | "ru" | "en") {
   return `${bytes} B`;
 }
 
-function formatStableDateTime(value: Date | string, locale: "uk" | "ru" | "en") {
-  return new Intl.DateTimeFormat(locale, {
+function formatStableDateTime(value: Date | string, locale: string) {
+  return new Intl.DateTimeFormat(locale || "uk", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -89,7 +90,7 @@ export function ImportCenter({
   locale,
   sourceConfigs,
 }: {
-  locale: "uk" | "ru" | "en";
+  locale: AppLocale;
   sourceConfigs: SourceConfigSummary[];
 }) {
   const [pending, setPending] = useState(false);
@@ -189,35 +190,23 @@ export function ImportCenter({
         const result = (await response.json().catch(() => null)) as PreviewResult | null;
 
         if (!response.ok || !result) {
-          throw new Error(result?.error || "Import request failed");
+          throw new Error(result?.error || "Запит імпорту не вдався");
         }
 
         setPreview(result);
 
         if (dryRun) {
-          toast.success(
-            locale === "uk"
-              ? "Preview готовий"
-              : locale === "ru"
-                ? "Preview готов"
-                : "Preview is ready",
-          );
+          toast.success("Попередній перегляд готовий");
           return;
         }
 
-        toast.success(
-          locale === "uk"
-            ? "Імпорт завершено"
-            : locale === "ru"
-              ? "Импорт завершён"
-              : "Import finished",
-        );
+        toast.success("Імпорт завершено");
 
         if (result.jobId) {
-          window.location.assign(`/${locale}/admin/imports/${result.jobId}`);
+          window.location.assign(`/admin/imports/${result.jobId}`);
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Import request failed";
+        const message = error instanceof Error ? error.message : "Запит імпорту не вдався";
         toast.error(message);
       } finally {
         setPending(false);
@@ -226,97 +215,42 @@ export function ImportCenter({
   }
 
   const copy = {
-    launchTitle:
-      locale === "uk"
-        ? "Новий імпорт товарів"
-        : locale === "ru"
-          ? "Новый импорт товаров"
-          : "New product import",
+    launchTitle: "Новий імпорт товарів",
     launchText:
-      locale === "uk"
-        ? "Перевірте джерело, режим синхронізації та спочатку запустіть безпечний dry-run preview."
-        : locale === "ru"
-          ? "Проверьте источник, режим синхронизации и сначала запустите безопасный dry-run preview."
-          : "Review the source, sync mode, and start with a safe dry-run preview.",
-    sourcePreset:
-      locale === "uk" ? "Збережене джерело" : locale === "ru" ? "Сохранённый источник" : "Saved source",
-    customSource:
-      locale === "uk" ? "Нове джерело" : locale === "ru" ? "Новый источник" : "New source",
-    sourceKey: locale === "uk" ? "Ключ джерела" : locale === "ru" ? "Ключ источника" : "Source key",
-    sourceName: locale === "uk" ? "Назва джерела" : locale === "ru" ? "Название источника" : "Source name",
-    sourceType: locale === "uk" ? "Тип джерела" : locale === "ru" ? "Тип источника" : "Source type",
-    sourceUrl: locale === "uk" ? "API / feed URL" : locale === "ru" ? "API / feed URL" : "API / feed URL",
-    sourceFile:
-      locale === "uk" ? "Файл імпорту" : locale === "ru" ? "Файл импорта" : "Import file",
-    importMode: locale === "uk" ? "Режим імпорту" : locale === "ru" ? "Режим импорта" : "Import mode",
-    authType: locale === "uk" ? "Авторизація" : locale === "ru" ? "Авторизация" : "Authorization",
-    authToken: locale === "uk" ? "API токен" : locale === "ru" ? "API токен" : "API token",
-    authHeaders:
-      locale === "uk"
-        ? "Додаткові headers (JSON)"
-        : locale === "ru"
-          ? "Дополнительные headers (JSON)"
-          : "Additional headers (JSON)",
-    limits:
-      locale === "uk" ? "Ліміти та надійність" : locale === "ru" ? "Лимиты и надёжность" : "Limits and reliability",
-    timeout: locale === "uk" ? "Timeout, мс" : locale === "ru" ? "Timeout, мс" : "Timeout, ms",
-    retries: locale === "uk" ? "Retry" : locale === "ru" ? "Retry" : "Retry count",
-    maxRows: locale === "uk" ? "Макс. рядків" : locale === "ru" ? "Макс. строк" : "Max rows",
-    maxPayload:
-      locale === "uk" ? "Макс. payload" : locale === "ru" ? "Макс. payload" : "Max payload",
-    matching:
-      locale === "uk"
-        ? "Правила зіставлення"
-        : locale === "ru"
-          ? "Правила сопоставления"
-          : "Matching rules",
-    skuFallback:
-      locale === "uk"
-        ? "Дозволити SKU fallback"
-        : locale === "ru"
-          ? "Разрешить SKU fallback"
-          : "Allow SKU fallback",
-    slugFallback:
-      locale === "uk"
-        ? "Дозволити slug fallback"
-        : locale === "ru"
-          ? "Разрешить slug fallback"
-          : "Allow slug fallback",
-    schedule:
-      locale === "uk"
-        ? "Foundation для sync"
-        : locale === "ru"
-          ? "Foundation для sync"
-          : "Sync foundation",
-    frequency:
-      locale === "uk" ? "Частота" : locale === "ru" ? "Частота" : "Frequency",
-    nextSync:
-      locale === "uk" ? "Наступний sync" : locale === "ru" ? "Следующий sync" : "Next sync",
-    saveSource:
-      locale === "uk"
-        ? "Зберегти як reusable source config"
-        : locale === "ru"
-          ? "Сохранить как reusable source config"
-          : "Save as reusable source config",
-    preview:
-      locale === "uk" ? "Validate & preview" : locale === "ru" ? "Validate и preview" : "Validate & preview",
-    run:
-      locale === "uk" ? "Run import" : locale === "ru" ? "Run import" : "Run import",
-    safeNote:
-      locale === "uk"
-        ? "Dry-run не записує Product, зв’язані сутності чи зображення."
-        : locale === "ru"
-          ? "Dry-run не записывает Product, связанные сущности или изображения."
-          : "Dry-run does not write Product data, related entities, or images.",
-    previewTitle:
-      locale === "uk" ? "Preview результат" : locale === "ru" ? "Результат preview" : "Preview result",
-    created: locale === "uk" ? "Створиться" : locale === "ru" ? "Создастся" : "Created",
-    updated: locale === "uk" ? "Оновиться" : locale === "ru" ? "Обновится" : "Updated",
-    skipped: locale === "uk" ? "Пропуститься" : locale === "ru" ? "Пропустится" : "Skipped",
-    failed: locale === "uk" ? "З помилкою" : locale === "ru" ? "С ошибкой" : "Failed",
-    totalRows: locale === "uk" ? "Рядків" : locale === "ru" ? "Строк" : "Rows",
-    openJob:
-      locale === "uk" ? "Відкрити job" : locale === "ru" ? "Открыть job" : "Open job",
+      "Перевірте джерело, режим синхронізації та спочатку запустіть безпечний dry-run preview.",
+    sourcePreset: "Збережене джерело",
+    customSource: "Нове джерело",
+    sourceKey: "Ключ джерела",
+    sourceName: "Назва джерела",
+    sourceType: "Тип джерела",
+    sourceUrl: "URL API / фіду",
+    sourceFile: "Файл імпорту",
+    importMode: "Режим імпорту",
+    authType: "Авторизація",
+    authToken: "API токен",
+    authHeaders: "Додаткові заголовки (JSON)",
+    limits: "Ліміти та надійність",
+    timeout: "Таймаут, мс",
+    retries: "Повтори",
+    maxRows: "Макс. рядків",
+    maxPayload: "Макс. розмір тіла запиту",
+    matching: "Правила зіставлення",
+    skuFallback: "Дозволити SKU fallback",
+    slugFallback: "Дозволити slug fallback",
+    schedule: "База для синхронізації",
+    frequency: "Частота",
+    nextSync: "Наступна синхронізація",
+    saveSource: "Зберегти як шаблон джерела",
+    preview: "Перевірити та переглянути",
+    run: "Запустити імпорт",
+    safeNote: "Dry-run не записує Product, зв’язані сутності чи зображення.",
+    previewTitle: "Результат попереднього перегляду",
+    created: "Створиться",
+    updated: "Оновиться",
+    skipped: "Пропуститься",
+    failed: "З помилкою",
+    totalRows: "Рядків",
+    openJob: "Відкрити job",
   };
 
   return (
@@ -333,9 +267,9 @@ export function ImportCenter({
         <div className="rounded-[1.6rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] p-5">
           <p className="text-sm font-medium text-[color:var(--color-text)]">{copy.safeNote}</p>
           <div className="mt-4 grid gap-3 text-sm text-[color:var(--color-text-soft)]">
-            <p>externalId match: `importSourceKey + externalId`</p>
-            <p>SKU fallback: {skuFallbackEnabled ? "enabled" : "disabled"}</p>
-            <p>Slug fallback: {slugFallbackEnabled ? "enabled" : "disabled"}</p>
+            <p>Зіставлення externalId: `importSourceKey + externalId`</p>
+            <p>SKU fallback: {skuFallbackEnabled ? "увімкнено" : "вимкнено"}</p>
+            <p>Slug fallback: {slugFallbackEnabled ? "увімкнено" : "вимкнено"}</p>
           </div>
         </div>
       </section>
@@ -379,7 +313,7 @@ export function ImportCenter({
                   value={sourceName}
                   onChange={(event) => setSourceName(event.target.value)}
                   className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
-                  placeholder="Primary supplier feed"
+                  placeholder="Основний фід постачальника"
                 />
               </div>
               <div className="grid gap-2">
@@ -418,7 +352,7 @@ export function ImportCenter({
                 <label className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center gap-3 rounded-[1.4rem] border border-dashed border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] px-4 py-6 text-center transition hover:border-[color:var(--color-accent-line)]">
                   <UploadCloud className="h-5 w-5 text-[color:var(--color-accent-strong)]" />
                   <span className="text-sm text-[color:var(--color-text-soft)]">
-                    {sourceFile ? sourceFile.name : "JSON, CSV, XML or YML"}
+                    {sourceFile ? sourceFile.name : "JSON, CSV, XML або YML"}
                   </span>
                   <input
                     type="file"
@@ -448,9 +382,9 @@ export function ImportCenter({
                   onChange={(event) => setAuthType(event.target.value)}
                   className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
                 >
-                  <option value="NONE">None</option>
-                  <option value="BEARER">Bearer token</option>
-                  <option value="CUSTOM_HEADERS">Custom headers</option>
+                  <option value="NONE">Без авторизації</option>
+                  <option value="BEARER">Bearer-токен</option>
+                  <option value="CUSTOM_HEADERS">Власні заголовки</option>
                 </select>
               </div>
               <div className="grid gap-2">
@@ -459,7 +393,7 @@ export function ImportCenter({
                   value={authToken}
                   onChange={(event) => setAuthToken(event.target.value)}
                   className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
-                  placeholder="Optional bearer token"
+                  placeholder="Необов'язковий bearer-токен"
                 />
               </div>
             </div>
@@ -514,7 +448,7 @@ export function ImportCenter({
                   value={frequency}
                   onChange={(event) => setFrequency(event.target.value)}
                   className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
-                  placeholder="daily / weekly / manual"
+                  placeholder="щодня / щотижня / вручну"
                 />
               </div>
               <div className="grid gap-2">
@@ -546,19 +480,15 @@ export function ImportCenter({
             <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
               <h3 className="text-lg font-semibold text-[color:var(--color-text)]">{selectedSourceConfig.name}</h3>
               <div className="mt-4 grid gap-3 text-sm text-[color:var(--color-text-soft)]">
-                <p>{selectedSourceConfig.endpointUrl ?? "Upload source"}</p>
+                <p>{selectedSourceConfig.endpointUrl ?? "Локальне завантаження"}</p>
                 <p>{getImportSourceTypeLabel(selectedSourceConfig.sourceType as ImportSourceType, locale)}</p>
                 <p>
-                  {formatBytes(selectedSourceConfig.maxPayloadBytes, locale)} / {selectedSourceConfig.maxRows} rows
+                  {formatBytes(selectedSourceConfig.maxPayloadBytes, locale)} / {selectedSourceConfig.maxRows} рядків
                 </p>
                 <p>
                   {selectedSourceConfig.lastSyncAt
-                    ? `${locale === "uk" ? "Останній sync" : locale === "ru" ? "Последний sync" : "Last sync"}: ${formatStableDateTime(selectedSourceConfig.lastSyncAt, locale)}`
-                    : locale === "uk"
-                      ? "Ще не синхронізувалось"
-                      : locale === "ru"
-                        ? "Ещё не синхронизировалось"
-                        : "No sync yet"}
+                    ? `Останній sync: ${formatStableDateTime(selectedSourceConfig.lastSyncAt, locale)}`
+                    : "Ще не синхронізувалось"}
                 </p>
               </div>
             </section>
@@ -599,7 +529,7 @@ export function ImportCenter({
 
                 {preview.jobId ? (
                   <a
-                    href={`/${locale}/admin/imports/${preview.jobId}`}
+                    href={`/admin/imports/${preview.jobId}`}
                     className="inline-flex text-sm font-medium text-[color:var(--color-accent-strong)] transition hover:text-[color:var(--color-text)]"
                   >
                     {copy.openJob}
@@ -608,11 +538,7 @@ export function ImportCenter({
               </div>
             ) : (
               <div className="mt-4 rounded-[1.4rem] border border-dashed border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] px-4 py-8 text-sm leading-7 text-[color:var(--color-text-soft)]">
-                {locale === "uk"
-                  ? "Запустіть preview, щоб побачити created/updated/skipped/failed до запису в базу."
-                  : locale === "ru"
-                    ? "Запустите preview, чтобы увидеть created/updated/skipped/failed до записи в базу."
-                    : "Run preview to inspect created/updated/skipped/failed before writing to the database."}
+                Запустіть попередній перегляд, щоб побачити кількість створених, оновлених, пропущених і з помилкою до запису в базу.
               </div>
             )}
           </section>

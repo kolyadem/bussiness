@@ -20,7 +20,7 @@ export async function updateUserRoleAction(formData: FormData) {
   const admin = await requireAdminOnlyAccess(locale);
 
   if (!targetUserId) {
-    redirect(`/${locale}/admin/users?error=missing-user`);
+    redirect(`/admin/users?error=missing-user`);
   }
 
   const target = await db.user.findUnique({
@@ -34,18 +34,18 @@ export async function updateUserRoleAction(formData: FormData) {
   });
 
   if (!target) {
-    redirect(`/${locale}/admin/users?error=user-not-found`);
+    redirect(`/admin/users?error=user-not-found`);
   }
 
   if (target.id === admin.id) {
-    redirect(`/${locale}/admin/users?error=self-role-lock`);
+    redirect(`/admin/users?error=self-role-lock`);
   }
 
   if (target.role === USER_ROLES.admin) {
     const adminCount = await countAdminUsers();
 
     if (adminCount <= 1) {
-      redirect(`/${locale}/admin/users?error=last-admin-lock`);
+      redirect(`/admin/users?error=last-admin-lock`);
     }
   }
 
@@ -58,5 +58,5 @@ export async function updateUserRoleAction(formData: FormData) {
     },
   });
 
-  redirect(`/${locale}/admin/users?saved=1`);
+  redirect(`/admin/users?saved=1`);
 }
