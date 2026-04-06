@@ -104,9 +104,58 @@ export default async function ComparePage({
             }
           />
         ) : (
-          <div className="overflow-hidden rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] shadow-[var(--shadow-soft)]">
-            <div className="overflow-x-auto">
-              <table className="min-w-[1040px] border-separate border-spacing-0">
+          <>
+            <div className="space-y-5 lg:hidden">
+              {products.map((product, productIndex) => (
+                <article
+                  key={product.id}
+                  className="overflow-hidden rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] shadow-[var(--shadow-soft)]"
+                >
+                  <div className="border-b border-[color:var(--color-line)] p-5">
+                    <Link href={`/product/${product.slug}`} className="block">
+                      <ProductImageFrame
+                        src={product.heroImage}
+                        alt={product.name}
+                        className="rounded-[1.4rem] border-[color:var(--color-line)]"
+                      />
+                    </Link>
+                    <div className="mt-4 space-y-2">
+                      <Link
+                        href={`/product/${product.slug}`}
+                        className="line-clamp-2 text-lg font-semibold leading-7 text-[color:var(--color-text)] transition hover:text-[color:var(--color-accent-strong)]"
+                      >
+                        {product.name}
+                      </Link>
+                      <p className="font-heading text-2xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
+                        {formatPrice(product.price, locale, product.currency)}
+                      </p>
+                    </div>
+                    <div className="mt-4">
+                      <ListRemoveButton endpoint="/api/compare" productId={product.id} compact />
+                    </div>
+                  </div>
+                  <dl className="divide-y divide-[color:var(--color-line)]">
+                    {rows.map((row) => (
+                      <div
+                        key={`${product.id}-${row.key}`}
+                        className="flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+                      >
+                        <dt className="text-sm font-medium capitalize text-[color:var(--color-text-soft)] sm:max-w-[40%]">
+                          {row.label}
+                        </dt>
+                        <dd className="min-w-0 break-words text-sm leading-7 text-[color:var(--color-text)] sm:text-right">
+                          {row.values[productIndex]}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </article>
+              ))}
+            </div>
+
+            <div className="hidden min-w-0 overflow-hidden rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] shadow-[var(--shadow-soft)] lg:block">
+              <div className="overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+                <table className="min-w-[1040px] border-separate border-spacing-0">
                 <thead>
                   <tr>
                     <th className="sticky left-0 z-20 min-w-52 border-b border-r border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-5 py-5 text-left align-top">
@@ -168,8 +217,9 @@ export default async function ComparePage({
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </main>

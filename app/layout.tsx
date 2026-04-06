@@ -24,9 +24,7 @@ const themeInitScript = `
       const storedTheme = localStorage.getItem("lumina-theme");
       const theme = storedTheme === "light" || storedTheme === "dark"
         ? storedTheme
-        : window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
+        : "light";
       document.documentElement.dataset.theme = theme;
       document.documentElement.style.colorScheme = theme;
     } catch {

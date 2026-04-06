@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 type Theme = "light" | "dark";
 
@@ -24,14 +31,14 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof document === "undefined") {
-      return "light";
-    }
-
-    return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
-  });
+  /** Matches SSR; synced from <html data-theme> in useLayoutEffect (set before paint by app/layout.tsx script). */
+  const [theme, setThemeState] = useState<Theme>("light");
   const mounted = useSyncExternalStore(subscribeToMount, () => true, () => false);
+
+  useLayoutEffect(() => {
+    const t = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+    setThemeState(t);
+  }, []);
 
   const value = useMemo(
     () => ({

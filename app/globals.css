@@ -128,6 +128,8 @@ body::after {
 
 .storefront-shell {
   max-width: 100rem;
+  width: 100%;
+  min-width: 0;
 }
 
 @media (min-width: 1280px) {

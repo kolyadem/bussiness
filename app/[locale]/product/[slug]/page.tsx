@@ -210,8 +210,8 @@ export default async function ProductPage({
         {t("backToCatalog")}
       </Link>
 
-      <section className="mt-6 grid gap-8 xl:grid-cols-[1.02fr_0.98fr] xl:gap-10 2xl:grid-cols-[1.06fr_0.94fr]">
-        <div className="space-y-6">
+      <section className="mt-6 grid min-w-0 gap-8 xl:grid-cols-[1.02fr_0.98fr] xl:gap-10 2xl:grid-cols-[1.06fr_0.94fr]">
+        <div className="min-w-0 space-y-6">
           <ProductMediaGallery
             images={productImages}
             name={mapped.name}
@@ -238,7 +238,7 @@ export default async function ProductPage({
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <section className="rounded-[2.4rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] p-6 shadow-[var(--shadow-strong)] sm:p-8">
             <div className="flex flex-wrap gap-2">
               <span className="rounded-full border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[color:var(--color-text)]">
@@ -340,10 +340,14 @@ export default async function ProductPage({
                 {specEntries.map(([key, value]) => (
                   <div
                     key={key}
-                    className="flex items-center justify-between gap-4 rounded-[1.2rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-sm"
+                    className="flex flex-col gap-1 rounded-[1.2rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-sm sm:flex-row sm:items-start sm:justify-between sm:gap-4"
                   >
-                    <span className="capitalize text-[color:var(--color-text-soft)]">{key}</span>
-                    <span className="font-medium text-[color:var(--color-text)]">{String(value)}</span>
+                    <span className="min-w-0 shrink capitalize text-[color:var(--color-text-soft)] sm:max-w-[45%]">
+                      {key}
+                    </span>
+                    <span className="min-w-0 break-words font-medium text-[color:var(--color-text)] sm:text-right">
+                      {String(value)}
+                    </span>
                   </div>
                 ))}
               </div>

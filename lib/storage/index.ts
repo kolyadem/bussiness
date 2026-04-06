@@ -1,5 +1,6 @@
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { del, put } from "@vercel/blob";
 import { logEvent } from "@/lib/observability/logger";
 
 export type StorageUploadInput = {
@@ -15,7 +16,6 @@ export type StorageUploadResult = {
 };
 
 type StorageDriver = {
-  kind: "local";
   upload(input: StorageUploadInput): Promise<StorageUploadResult>;
   remove(assetPath: string): Promise<void>;
   isManagedPath(assetPath: string | null | undefined): assetPath is string;
@@ -74,8 +74,20 @@ function resolveManagedLocalPath(assetPath: string) {
   return absolute;
 }
 
+/** Vercel Blob public URLs use this host pattern (store id is the first label). */
+function isVercelBlobPublicUrl(assetPath: string): boolean {
+  try {
+    const url = new URL(assetPath);
+    if (url.protocol !== "https:") {
+      return false;
+    }
+    return url.hostname.endsWith(".public.blob.vercel-storage.com");
+  } catch {
+    return false;
+  }
+}
+
 const localStorageDriver: StorageDriver = {
-  kind: "local",
   async upload(input) {
     await ensureLocalRoot();
     const extension = getExtension(input.fileName, input.contentType);
@@ -112,18 +124,67 @@ const localStorageDriver: StorageDriver = {
   },
 };
 
+const vercelBlobStorageDriver: StorageDriver = {
+  async upload(input) {
+    const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+    if (!token) {
+      throw new Error(
+        "BLOB_READ_WRITE_TOKEN is required when STORAGE_DRIVER is vercel-blob. Add it in Vercel → Storage → Blob, or copy the token into env.",
+      );
+    }
+
+    const extension = getExtension(input.fileName, input.contentType);
+    const filename = `${Date.now()}-${crypto.randomUUID()}${extension}`;
+    const relativeFolder = input.folder?.trim().replace(/^\/+|\/+$/g, "") || "";
+    const pathname = relativeFolder ? `${relativeFolder}/${filename}` : `products/${filename}`;
+
+    const blob = await put(pathname, input.buffer, {
+      access: "public",
+      token,
+      contentType: input.contentType || undefined,
+      addRandomSuffix: false,
+    });
+
+    return {
+      path: blob.url,
+      publicUrl: blob.url,
+    };
+  },
+  async remove(assetPath) {
+    if (!isVercelBlobPublicUrl(assetPath)) {
+      return;
+    }
+    const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+    if (!token) {
+      return;
+    }
+    try {
+      await del(assetPath, { token });
+    } catch {
+      // Ignore missing blobs (already removed or token scope).
+    }
+  },
+  isManagedPath(assetPath): assetPath is string {
+    return Boolean(assetPath && isVercelBlobPublicUrl(assetPath));
+  },
+};
+
 let externalFallbackWarningShown = false;
 
-function getStorageDriver() {
+function getStorageDriver(): StorageDriver {
   if (STORAGE_DRIVER === "local") {
     return localStorageDriver;
+  }
+
+  if (STORAGE_DRIVER === "vercel-blob" || STORAGE_DRIVER === "blob") {
+    return vercelBlobStorageDriver;
   }
 
   if (!externalFallbackWarningShown) {
     externalFallbackWarningShown = true;
     void logEvent(
       "warn",
-      "External storage driver requested but not configured; falling back to local storage",
+      "Unknown STORAGE_DRIVER; falling back to local storage (ephemeral on Vercel serverless)",
       {
         requestedDriver: STORAGE_DRIVER,
       },
@@ -137,20 +198,32 @@ export async function uploadFileToStorage(input: StorageUploadInput) {
   return getStorageDriver().upload(input);
 }
 
+/**
+ * Deletes a stored asset. Accepts either a Vercel Blob HTTPS URL or a local `/uploads/...` path
+ * under the configured product folder, regardless of current `STORAGE_DRIVER`, so admin can remove
+ * legacy paths after switching drivers.
+ */
 export async function removeFileFromStorage(assetPath: string | null | undefined) {
   if (!assetPath) {
     return;
   }
 
-  const driver = getStorageDriver();
-
-  if (!driver.isManagedPath(assetPath)) {
+  if (isVercelBlobPublicUrl(assetPath)) {
+    await vercelBlobStorageDriver.remove(assetPath);
     return;
   }
 
-  await driver.remove(assetPath);
+  if (localStorageDriver.isManagedPath(assetPath)) {
+    await localStorageDriver.remove(assetPath);
+  }
 }
 
-export function isManagedStoragePath(assetPath: string | null | undefined) {
-  return getStorageDriver().isManagedPath(assetPath);
+export function isManagedStoragePath(assetPath: string | null | undefined): assetPath is string {
+  if (!assetPath) {
+    return false;
+  }
+  if (isVercelBlobPublicUrl(assetPath)) {
+    return true;
+  }
+  return localStorageDriver.isManagedPath(assetPath);
 }

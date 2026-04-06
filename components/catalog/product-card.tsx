@@ -162,17 +162,17 @@ export function ProductCard({
         </div>
 
         <div className="rounded-[1.45rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-4 backdrop-blur-xl">
-          <div className="flex items-end justify-between gap-3">
-            <div>
+          <div className="flex min-w-0 flex-wrap items-end justify-between gap-3">
+            <div className="min-w-0">
               <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-[color:var(--color-text-soft)]">
                 {labels.price}
               </p>
-              <p className="mt-1 font-heading text-2xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
+              <p className="mt-1 break-words font-heading text-2xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
                 {formatPrice(product.price, locale, product.currency)}
               </p>
             </div>
             {oldPrice ? (
-              <div className="text-right">
+              <div className="min-w-0 shrink-0 text-right">
                 <p className="text-sm text-[color:var(--color-text-soft)] line-through">
                   {formatPrice(oldPrice, locale, product.currency)}
                 </p>

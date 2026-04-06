@@ -5,6 +5,7 @@ export const messages = {
   navAccount: "Акаунт",
   navWishlist: "Обране",
   navCompare: "Порівняння",
+  navConfigurator: "Конфігуратор",
   navCart: "Кошик",
   heroBadge: "преміальний магазин техніки",
   homeHeroTitle: "Техніка, зібрана без випадкових компромісів",

@@ -111,7 +111,7 @@ export default async function LocaleHome({
         suppressHydrationWarning
         dangerouslySetInnerHTML={{ __html: sanitizeJsonLd(websiteStructuredData) }}
       />
-      <section className="relative overflow-hidden rounded-[2.6rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-6 py-12 shadow-[var(--shadow-soft)] backdrop-blur-2xl sm:px-8 sm:py-16 lg:px-10 lg:py-18 xl:px-12 xl:py-20">
+      <section className="relative overflow-hidden rounded-[2.6rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-4 py-10 shadow-[var(--shadow-soft)] backdrop-blur-2xl sm:px-8 sm:py-16 lg:px-10 lg:py-18 xl:px-12 xl:py-20">
         <div
           className={`pointer-events-none absolute inset-0 ${hero?.image ? "opacity-[0.12]" : "opacity-[0.2]"}`}
           aria-hidden
@@ -131,8 +131,8 @@ export default async function LocaleHome({
           aria-hidden
         />
 
-        <div className="relative mx-auto flex max-w-5xl flex-col items-center text-center">
-          <h1 className="font-heading text-4xl font-semibold tracking-[-0.06em] text-[color:var(--color-text)] sm:text-5xl lg:text-6xl">
+        <div className="relative mx-auto flex min-w-0 max-w-5xl flex-col items-center px-1 text-center sm:px-0">
+          <h1 className="font-heading text-[clamp(1.65rem,4.2vw+0.6rem,2.25rem)] font-semibold leading-tight tracking-[-0.06em] text-[color:var(--color-text)] sm:text-5xl lg:text-6xl">
             {isPcBuild
               ? "Зберемо ПК під ваш бюджет і задачі"
               : (heroTranslation?.title ?? data.settings?.heroTitle ?? heroTitleDefault)}
@@ -173,13 +173,13 @@ export default async function LocaleHome({
       </section>
 
       <section className="mt-10">
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <h2 className="font-heading text-3xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
+        <div className="mb-6 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <h2 className="min-w-0 font-heading text-2xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)] sm:text-3xl">
             {isPcBuild ? experience?.featuredTitle ?? t("featured") : t("featured")}
           </h2>
           <Link
             href="/catalog"
-            className="text-sm text-[color:var(--color-text-soft)] transition hover:text-[color:var(--color-text)]"
+            className="shrink-0 self-start text-sm text-[color:var(--color-text-soft)] transition hover:text-[color:var(--color-text)] sm:self-auto"
           >
             {t("continueShopping")}
           </Link>

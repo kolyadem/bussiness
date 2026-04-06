@@ -42,11 +42,14 @@ export function CatalogSort({
   };
 
   return (
-    <div className={cn(isPending && "opacity-85")} aria-busy={isPending}>
+    <div
+      className={cn("w-full min-w-0 sm:w-auto", isPending && "opacity-85")}
+      aria-busy={isPending}
+    >
       <select
         value={sort}
         onChange={(event) => updateSort(event.target.value)}
-        className="h-11 min-w-56 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm font-medium text-[color:var(--color-text)] outline-none transition duration-200 ease-out hover:border-[color:var(--color-line-strong)] focus:border-[color:var(--color-accent-line)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent-line)] focus-visible:ring-offset-2"
+        className="h-11 w-full min-w-0 max-w-full rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm font-medium text-[color:var(--color-text)] outline-none transition duration-200 ease-out hover:border-[color:var(--color-line-strong)] focus:border-[color:var(--color-accent-line)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent-line)] focus-visible:ring-offset-2 sm:min-w-56 sm:w-auto"
       >
         <option value="newest">{sortLabels.newest}</option>
         <option value="price-asc">{sortLabels["price-asc"]}</option>
