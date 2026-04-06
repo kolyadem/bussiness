@@ -104,7 +104,7 @@ export default async function CheckoutPage({
                           {product.name}
                         </p>
                         <p className="mt-1 text-sm text-[color:var(--color-text-soft)]">
-                          {product.brand.name}
+                          {product.category.name}
                         </p>
                         {item.configuration ? (
                           <p className="mt-2 text-xs leading-6 text-[color:var(--color-accent-strong)]">

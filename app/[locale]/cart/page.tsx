@@ -72,7 +72,7 @@ function CartUpsellCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-soft)]">
-              {product.brand.name}
+              {product.category.name}
             </span>
             <span className="rounded-full border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text)]">
               {product.inventoryLabel}
@@ -193,7 +193,7 @@ export default async function CartPage({
                       <div className="space-y-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="rounded-full border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[color:var(--color-text-soft)]">
-                            {product.brand.name}
+                            {product.category.name}
                           </span>
                           <span className="rounded-full border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-[color:var(--color-text)]">
                             {product.inventoryLabel}

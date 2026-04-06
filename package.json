@@ -2,6 +2,9 @@
   "name": "bussiness",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "dev:webpack": "next dev --webpack",
@@ -9,6 +12,7 @@
     "dev:clean": "npm run clean:next && npm run dev",
     "dev:webpack:clean": "npm run clean:next && npm run dev:webpack",
     "build": "prisma generate && next build",
+    "build:with-migrate": "prisma migrate deploy && prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "verify": "npm run lint && npm run build",
@@ -17,6 +21,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
+    "db:migrate": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed-storefront.ts",
     "db:setup": "npm run prisma:generate && npm run prisma:migrate:deploy && npm run prisma:seed",
     "admin:ensure": "tsx scripts/ensure-admin-user.ts",
@@ -31,10 +36,10 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
     "@hookform/resolvers": "^5.2.2",
-    "@prisma/adapter-better-sqlite3": "^7.6.0",
+    "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.8.0",
+    "pg": "^8.14.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^1.7.0",

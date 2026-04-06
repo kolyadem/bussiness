@@ -52,6 +52,7 @@ export async function PUT(
     },
     select: {
       id: true,
+      brandId: true,
     },
   });
 
@@ -72,6 +73,8 @@ export async function PUT(
     );
   }
 
+  normalized.data.brandId = existing.brandId;
+
   if (!canViewAdminFinancials(auth.user.role)) {
     const financialSnapshot = await db.product.findUnique({
       where: {
@@ -87,16 +90,11 @@ export async function PUT(
 
   const relations = await validateProductRelationTargets(normalized.data);
 
-  if (!relations.brandExists || !relations.categoryExists) {
+  if (!relations.categoryExists) {
     return NextResponse.json(
       {
-        error: "Brand or category was not found",
-        issues: [
-          ...(!relations.brandExists ? [{ path: "brandId", message: "Brand not found" }] : []),
-          ...(!relations.categoryExists
-            ? [{ path: "categoryId", message: "Category not found" }]
-            : []),
-        ],
+        error: "Category was not found",
+        issues: [{ path: "categoryId", message: "Category not found" }],
       },
       { status: 404 },
     );

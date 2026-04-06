@@ -78,8 +78,7 @@ export function ProductCard({
     inventoryStatus?: string;
     rating: number;
     conversionBadge?: SmartBadge | null;
-    brand: { name: string };
-    category?: { name: string; slug?: string };
+    category: { name: string; slug?: string };
   };
   locale: AppLocale;
   showActions?: boolean;
@@ -109,7 +108,7 @@ export function ProductCard({
       <div className="relative flex items-center justify-between gap-3 pb-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--color-text-soft)]">
-            {product.brand.name}
+            {product.category.name}
           </span>
           {resolvedBadge ? (
             <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${getBadgeTone(resolvedBadge)}`}>

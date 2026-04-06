@@ -27,13 +27,11 @@ export default async function AdminProductsPage({
       canViewFinancials={canViewFinancials}
       products={products.map((product) => {
         const translation = pickAdminTranslation(product.translations, locale);
-        const brand = pickAdminTranslation(product.brand.translations, locale);
         const category = pickAdminTranslation(product.category.translations, locale);
 
         return {
           id: product.id,
           name: translation.name,
-          brandName: brand.name,
           categoryName: category.name,
           heroImage: product.heroImage,
           sku: product.sku,
@@ -57,10 +55,6 @@ export default async function AdminProductsPage({
           updatedAt: product.updatedAt.toISOString(),
         };
       })}
-      brands={options.brands.map((brand) => ({
-        id: brand.id,
-        name: pickAdminTranslation(brand.translations, locale).name,
-      }))}
       categories={options.categories.map((category) => ({
         id: category.id,
         name: pickAdminTranslation(category.translations, locale).name,

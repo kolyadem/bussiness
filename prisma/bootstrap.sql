@@ -1,3 +1,6 @@
+-- LEGACY: SQLite-only scratch schema. The app uses PostgreSQL + `prisma/migrations/`.
+-- Do not run this against Neon; use `npx prisma migrate deploy` instead.
+
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS "User" (
@@ -223,7 +226,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "BannerTranslation_bannerId_locale_key" ON "Ba
 
 CREATE TABLE IF NOT EXISTS "SiteSettings" (
   "id" TEXT NOT NULL PRIMARY KEY,
-  "siteMode" TEXT NOT NULL DEFAULT 'STORE',
+  "siteMode" TEXT NOT NULL DEFAULT 'PC_BUILD',
   "brandName" TEXT NOT NULL,
   "logoText" TEXT NOT NULL,
   "supportEmail" TEXT NOT NULL,

@@ -83,6 +83,12 @@ export function AdminCategoryForm({
         : locale === "ru"
           ? "Необязательная ссылка на изображение категории."
           : "Optional URL for the category image.",
+    slugHint:
+      locale === "uk"
+        ? "Можна залишити порожнім — згенерується з назви (вкладка UK)."
+        : locale === "ru"
+          ? "Можно оставить пустым — будет из названия (вкладка UK)."
+          : "Leave empty to auto-generate from the UK name.",
     name: locale === "uk" ? "Назва" : locale === "ru" ? "Название" : "Name",
     description: locale === "uk" ? "Опис" : locale === "ru" ? "Описание" : "Description",
     save:
@@ -143,9 +149,10 @@ export function AdminCategoryForm({
             <input
               name="slug"
               defaultValue={initialValues?.slug ?? ""}
-              required
+              placeholder={locale === "uk" ? "авто з назви" : locale === "ru" ? "авто из названия" : "auto from name"}
               className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
             />
+            <span className="text-xs leading-6 text-[color:var(--color-text-soft)]">{copy.slugHint}</span>
           </label>
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
             <span>{copy.sortOrder}</span>

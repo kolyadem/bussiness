@@ -47,7 +47,7 @@ export default async function AdminBuildRequestDetailPage({
       productSlug: product.slug,
       productName: product.name,
       heroImage: product.heroImage,
-      brandName: product.brand.name,
+      brandName: product.category.name,
       price: product.price,
       currency: product.currency,
     };

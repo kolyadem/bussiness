@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getAuthenticatedUser, hasRole, USER_ROLES } from "@/lib/auth";
+import { isPrismaRecoverableBuildTimeError } from "@/lib/prisma-build";
 import {
   calculateOrderLineFinancials,
   resolveOrderFinancials,
@@ -157,18 +158,25 @@ export async function getCheckoutPrefill() {
     return getCheckoutFormPrefill(null);
   }
 
-  const profile = await db.user.findUnique({
-    where: {
-      id: viewer.id,
-    },
-    select: {
-      name: true,
-      email: true,
-      phone: true,
-    },
-  });
+  try {
+    const profile = await db.user.findUnique({
+      where: {
+        id: viewer.id,
+      },
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+      },
+    });
 
-  return getCheckoutFormPrefill(profile);
+    return getCheckoutFormPrefill(profile);
+  } catch (error) {
+    if (isPrismaRecoverableBuildTimeError(error)) {
+      return getCheckoutFormPrefill(null);
+    }
+    throw error;
+  }
 }
 
 export async function getCheckoutPageData(locale: "uk" | "ru" | "en") {
@@ -276,7 +284,7 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
           productName: product.name,
           productSlug: product.slug,
           heroImage: product.heroImage,
-          brandName: product.brand.name,
+          brandName: product.category.name,
           configuration: item.configuration ?? null,
         };
       });

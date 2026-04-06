@@ -3,6 +3,7 @@ import { getAuthenticatedUser, hasRole, USER_ROLES } from "@/lib/auth";
 import { canViewAdminFinancials } from "@/lib/admin";
 import { createProductRecord, isUniqueConstraintError, validateProductRelationTargets } from "@/lib/admin/product-persistence";
 import { normalizeProductIngestPayload } from "@/lib/admin/product-ingest";
+import { getDefaultBrandId } from "@/lib/commerce/default-brand";
 
 function jsonAuthError(status: 401 | 403) {
   return NextResponse.json(
@@ -41,7 +42,10 @@ export async function POST(request: Request) {
     return auth.error;
   }
 
-  const body = await request.json();
+  const body = (await request.json()) as Record<string, unknown>;
+  if (!String(body.brandId ?? "").trim()) {
+    body.brandId = await getDefaultBrandId();
+  }
   const normalized = normalizeProductIngestPayload(body);
 
   if (normalized.success && !canViewAdminFinancials(auth.user.role)) {
@@ -60,16 +64,11 @@ export async function POST(request: Request) {
 
   const relations = await validateProductRelationTargets(normalized.data);
 
-  if (!relations.brandExists || !relations.categoryExists) {
+  if (!relations.categoryExists) {
     return NextResponse.json(
       {
-        error: "Brand or category was not found",
-        issues: [
-          ...(!relations.brandExists ? [{ path: "brandId", message: "Brand not found" }] : []),
-          ...(!relations.categoryExists
-            ? [{ path: "categoryId", message: "Category not found" }]
-            : []),
-        ],
+        error: "Category was not found",
+        issues: [{ path: "categoryId", message: "Category not found" }],
       },
       { status: 404 },
     );

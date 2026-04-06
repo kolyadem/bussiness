@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronUp,
   Copy,
   LoaderCircle,
   ShoppingCart,
@@ -50,7 +51,6 @@ type ProductPreview = {
   shortDescription: string;
   price: number;
   currency: string;
-  brand: { name: string };
   category: { slug: string; name: string };
   technicalAttributes: Record<string, string | number | string[]>;
 };
@@ -126,6 +126,7 @@ function getCopy(locale: AppLocale) {
       orderBuild: "Замовити збірку",
       closeRequest: "Сховати форму",
       currentTotal: "Поточна сума",
+      openSummary: "Підсумок збірки",
       itemCount: "Позицій",
       summaryTitle: "Ваша збірка",
       summaryEmpty: "Коли додасте перші компоненти, тут з'явиться короткий підсумок.",
@@ -172,6 +173,7 @@ function getCopy(locale: AppLocale) {
       orderBuild: "Заказать сборку",
       closeRequest: "Скрыть форму",
       currentTotal: "Текущая сумма",
+      openSummary: "Итог сборки",
       itemCount: "Позиций",
       summaryTitle: "Ваша сборка",
       summaryEmpty: "Когда добавите первые компоненты, здесь появится краткое резюме.",
@@ -217,6 +219,7 @@ function getCopy(locale: AppLocale) {
     orderBuild: "Request build",
     closeRequest: "Hide form",
     currentTotal: "Current total",
+    openSummary: "Build summary",
     itemCount: "Items",
     summaryTitle: "Your build",
     summaryEmpty: "Once you add the first components, a short summary will appear here.",
@@ -640,7 +643,7 @@ export function ConfiguratorBuilder({
             <div className="flex min-w-0 flex-col gap-3">
               <div className="min-w-0">
                 <p className="text-xs uppercase tracking-[0.16em] text-[color:var(--color-text-soft)]">
-                  {selected.product.brand.name}
+                  {selected.product.category.name}
                 </p>
                 <Link
                   href={`/product/${selected.product.slug}`}
@@ -681,8 +684,16 @@ export function ConfiguratorBuilder({
     );
   };
 
+  const scrollToBuildSummary = () => {
+    document.getElementById("configurator-build-summary")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   return (
-    <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_390px]">
+    <>
+    <div className="grid gap-6 pb-[calc(5.75rem+env(safe-area-inset-bottom))] 2xl:pb-0 2xl:grid-cols-[minmax(0,1fr)_390px]">
       <ConfiguratorOpenTracker locale={locale} buildSlug={build?.slug ?? null} />
       <div className="space-y-6">
         <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] px-6 py-6 shadow-[var(--shadow-strong)] sm:px-7 lg:px-8">
@@ -717,7 +728,10 @@ export function ConfiguratorBuilder({
         </section>
       </div>
 
-      <aside className="self-start 2xl:sticky 2xl:top-[calc(var(--header-offset)+0.75rem)] 2xl:h-fit">
+      <aside
+        id="configurator-build-summary"
+        className="scroll-mt-[calc(var(--header-offset)+0.75rem)] self-start 2xl:sticky 2xl:top-[calc(var(--header-offset)+0.75rem)] 2xl:h-fit"
+      >
         <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] p-5 shadow-[var(--shadow-strong)]">
           <div className="space-y-2">
             <h2 className="font-heading text-2xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
@@ -1009,5 +1023,31 @@ export function ConfiguratorBuilder({
         </section>
       </aside>
     </div>
+
+    <div
+      className="fixed inset-x-0 bottom-0 z-[60] 2xl:hidden border-t border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)]/95 px-4 py-3 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] backdrop-blur-md supports-[backdrop-filter]:bg-[color:var(--color-surface)]/80"
+      style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+    >
+      <button
+        type="button"
+        onClick={scrollToBuildSummary}
+        aria-label={copy.openSummary}
+        className="flex w-full items-center justify-between gap-3 rounded-[1.25rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-2.5 text-left transition active:scale-[0.99]"
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[color:var(--color-text-soft)]">
+            {copy.currentTotal}
+          </p>
+          <p className="mt-0.5 truncate font-heading text-xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
+            {formatPrice(build?.totalPrice ?? 0, locale, summaryItems[0]?.item?.product.currency ?? "USD")}
+          </p>
+          <p className="mt-0.5 text-xs text-[color:var(--color-text-soft)]">
+            {copy.itemCount}: <span className="font-medium text-[color:var(--color-text)]">{build?.itemCount ?? 0}</span>
+          </p>
+        </div>
+        <ChevronUp className="h-5 w-5 shrink-0 text-[color:var(--color-text-soft)]" aria-hidden />
+      </button>
+    </div>
+    </>
   );
 }

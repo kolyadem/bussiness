@@ -585,7 +585,7 @@ function matchesConfiguratorVendor(
   product: ConfiguratorSelectionProduct,
   vendor: ConfiguratorVendorFilter,
 ) {
-  const haystack = `${product.brand.slug} ${product.brand.name}`.toLowerCase();
+  const haystack = `${product.category.slug} ${product.category.name}`.toLowerCase();
   return haystack.includes(vendor);
 }
 

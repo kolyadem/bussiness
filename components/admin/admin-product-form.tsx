@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, type ChangeEvent } from "react";
-import type { Brand, Category } from "@prisma/client";
+import type { Category } from "@prisma/client";
 import { createProductAction, updateProductFormAction } from "@/app/actions/admin";
 import { AdminSubmitButton } from "@/components/admin/admin-submit-button";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,6 @@ type ProductFormInitialValues = {
   slug: string;
   sku: string;
   categoryId: string;
-  brandId: string;
   status: string;
   price: number;
   purchasePrice: number | null;
@@ -70,6 +69,8 @@ function getLocaleCopy(locale: AppLocale) {
   if (locale === "uk") {
     return {
       coreTitle: "Параметри товару",
+      managerHint:
+        "Спочатку оберіть категорію, SKU та ціну, потім заповніть назву й опис — slug підставиться сам. Технічні поля та JSON потрібні лише для складних товарів.",
       save: "Зберегти товар",
       saving: "Збереження...",
       slugLabel: "Адреса сторінки",
@@ -79,8 +80,6 @@ function getLocaleCopy(locale: AppLocale) {
       skuLabel: "SKU / артикул",
       skuPlaceholder: "Наприклад: MB-ASUS-B650E",
       statusLabel: "Статус",
-      brandLabel: "Бренд",
-      brandPlaceholder: "Виберіть бренд",
       categoryLabel: "Категорія",
       categoryPlaceholder: "Виберіть категорію",
       inventoryLabel: "Наявність",
@@ -123,6 +122,7 @@ function getLocaleCopy(locale: AppLocale) {
       specKeyPlaceholder: "Наприклад: чипсет",
       specValuePlaceholder: "Наприклад: B650E",
       metadataTitle: "Додаткові дані",
+      metadataOptional: "необов'язково",
       metadataLabel: "JSON metadata",
       metadataHint:
         "Необов'язкове поле для службових або інтеграційних даних. Якщо не потрібно, залиште порожнім або {}.",
@@ -145,6 +145,8 @@ function getLocaleCopy(locale: AppLocale) {
   if (locale === "ru") {
     return {
       coreTitle: "Параметры товара",
+      managerHint:
+        "Сначала выберите категорию, SKU и цену, затем название и описание — slug подставится сам. Технические поля и JSON нужны только для сложных позиций.",
       save: "Сохранить товар",
       saving: "Сохранение...",
       slugLabel: "Адрес страницы",
@@ -154,8 +156,6 @@ function getLocaleCopy(locale: AppLocale) {
       skuLabel: "SKU / артикул",
       skuPlaceholder: "Например: MB-ASUS-B650E",
       statusLabel: "Статус",
-      brandLabel: "Бренд",
-      brandPlaceholder: "Выберите бренд",
       categoryLabel: "Категория",
       categoryPlaceholder: "Выберите категорию",
       inventoryLabel: "Наличие",
@@ -198,6 +198,7 @@ function getLocaleCopy(locale: AppLocale) {
       specKeyPlaceholder: "Например: чипсет",
       specValuePlaceholder: "Например: B650E",
       metadataTitle: "Дополнительные данные",
+      metadataOptional: "необязательно",
       metadataLabel: "JSON metadata",
       metadataHint:
         "Необязательное поле для служебных или интеграционных данных. Если не нужно, оставьте пустым или {}.",
@@ -219,6 +220,8 @@ function getLocaleCopy(locale: AppLocale) {
 
   return {
     coreTitle: "Product details",
+    managerHint:
+      "Pick category, SKU, and price first, then names and descriptions — the slug fills in automatically. Technical fields and JSON are only for advanced SKUs.",
     save: "Save product",
     saving: "Saving...",
     slugLabel: "Page address",
@@ -228,8 +231,6 @@ function getLocaleCopy(locale: AppLocale) {
     skuLabel: "SKU",
     skuPlaceholder: "For example: MB-ASUS-B650E",
     statusLabel: "Status",
-    brandLabel: "Brand",
-    brandPlaceholder: "Select a brand",
     categoryLabel: "Category",
     categoryPlaceholder: "Select a category",
     inventoryLabel: "Availability",
@@ -272,6 +273,7 @@ function getLocaleCopy(locale: AppLocale) {
     specKeyPlaceholder: "For example: chipset",
     specValuePlaceholder: "For example: B650E",
     metadataTitle: "Additional data",
+    metadataOptional: "optional",
     metadataLabel: "Metadata JSON",
     metadataHint:
       "Optional field for service or integration data. Leave it empty or use {} if you do not need it.",
@@ -381,20 +383,11 @@ async function deleteUploadedProductImages(paths: string[]) {
 export function AdminProductForm({
   locale,
   canViewFinancials = true,
-  brands,
   categories,
   initialValues,
 }: {
   locale: string;
   canViewFinancials?: boolean;
-  brands: Array<
-    Brand & {
-      translations: Array<{
-        locale: string;
-        name: string;
-      }>;
-    }
-  >;
   categories: Array<
     Category & {
       translations: Array<{
@@ -614,11 +607,6 @@ export function AdminProductForm({
     }
   };
 
-  const getBrandLabel = (brand: (typeof brands)[number]) =>
-    brand.translations.find((item) => item.locale === locale)?.name ??
-    brand.translations[0]?.name ??
-    brand.slug;
-
   const getCategoryLabel = (category: (typeof categories)[number]) => {
     const localized =
       category.translations.find((item) => item.locale === locale)?.name ??
@@ -668,58 +656,10 @@ export function AdminProductForm({
             {copy.save}
           </AdminSubmitButton>
         </div>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--color-text-soft)]">{copy.managerHint}</p>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)] xl:col-span-2">
-            <span>{copy.slugLabel}</span>
-            <input
-              name="slug"
-              value={slugValue}
-              onChange={(event) => handleSlugChange(event.target.value)}
-              placeholder={copy.slugPlaceholder}
-              className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
-            />
-            <span className="text-xs leading-6 text-[color:var(--color-text-soft)]">{copy.slugHint}</span>
-          </label>
-          <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <span>{copy.skuLabel}</span>
-            <input
-              name="sku"
-              defaultValue={initialValues?.sku ?? ""}
-              placeholder={copy.skuPlaceholder}
-              required
-              className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
-            />
-          </label>
-          <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <span>{copy.statusLabel}</span>
-            <select
-              name="status"
-              defaultValue={initialValues?.status ?? "DRAFT"}
-              className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
-            >
-              <option value="DRAFT">{copy.draft}</option>
-              <option value="PUBLISHED">{copy.published}</option>
-              <option value="ARCHIVED">{copy.archived}</option>
-            </select>
-          </label>
-          <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-            <span>{copy.brandLabel}</span>
-            <select
-              name="brandId"
-              defaultValue={initialValues?.brandId ?? ""}
-              required
-              className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
-            >
-              <option value="">{copy.brandPlaceholder}</option>
-              {brands.map((brand) => (
-                <option key={brand.id} value={brand.id}>
-                  {getBrandLabel(brand)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
             <span>{copy.categoryLabel}</span>
             <select
               name="categoryId"
@@ -734,6 +674,39 @@ export function AdminProductForm({
                   {getCategoryLabel(category)}
                 </option>
               ))}
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
+            <span>{copy.skuLabel}</span>
+            <input
+              name="sku"
+              defaultValue={initialValues?.sku ?? ""}
+              placeholder={copy.skuPlaceholder}
+              required
+              className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
+            />
+          </label>
+          <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)] xl:col-span-2">
+            <span>{copy.slugLabel}</span>
+            <input
+              name="slug"
+              value={slugValue}
+              onChange={(event) => handleSlugChange(event.target.value)}
+              placeholder={copy.slugPlaceholder}
+              className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
+            />
+            <span className="text-xs leading-6 text-[color:var(--color-text-soft)]">{copy.slugHint}</span>
+          </label>
+          <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
+            <span>{copy.statusLabel}</span>
+            <select
+              name="status"
+              defaultValue={initialValues?.status ?? "DRAFT"}
+              className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
+            >
+              <option value="DRAFT">{copy.draft}</option>
+              <option value="PUBLISHED">{copy.published}</option>
+              <option value="ARCHIVED">{copy.archived}</option>
             </select>
           </label>
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
@@ -848,71 +821,6 @@ export function AdminProductForm({
             </div>
           ) : null}
         </div>
-      </section>
-
-      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold text-[color:var(--color-text)]">{copy.technicalTitle}</h2>
-          <p className="max-w-3xl text-sm leading-7 text-[color:var(--color-text-soft)]">{copy.technicalHint}</p>
-        </div>
-
-        {technicalDefinitions.length > 0 ? (
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {technicalDefinitions.map((definition) => (
-              <label
-                key={definition.code}
-                className={cn(
-                  "grid gap-2 text-sm text-[color:var(--color-text-soft)]",
-                  definition.fieldType === "list" ? "md:col-span-2 xl:col-span-3" : "",
-                )}
-              >
-                <span>
-                  {getTechnicalAttributeLabel(definition, resolvedLocale)}
-                  {definition.unit ? `, ${definition.unit}` : ""}
-                </span>
-                {definition.fieldType === "list" ? (
-                  <textarea
-                    name={`technical:${definition.code}`}
-                    value={technicalAttributes[definition.code] ?? ""}
-                    onChange={(event) =>
-                      setTechnicalAttributes((current) => ({
-                        ...current,
-                        [definition.code]: event.target.value,
-                      }))
-                    }
-                    placeholder={getTechnicalAttributePlaceholder(definition, resolvedLocale)}
-                    className="min-h-24 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-[color:var(--color-text)] outline-none"
-                  />
-                ) : (
-                  <input
-                    name={`technical:${definition.code}`}
-                    type={definition.fieldType === "number" ? "number" : "text"}
-                    min={definition.fieldType === "number" ? "0" : undefined}
-                    step={definition.fieldType === "number" ? "1" : undefined}
-                    value={technicalAttributes[definition.code] ?? ""}
-                    onChange={(event) =>
-                      setTechnicalAttributes((current) => ({
-                        ...current,
-                        [definition.code]: event.target.value,
-                      }))
-                    }
-                    placeholder={getTechnicalAttributePlaceholder(definition, resolvedLocale)}
-                    className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
-                  />
-                )}
-                {getTechnicalAttributeHint(definition, resolvedLocale) ? (
-                  <span className="text-xs leading-6 text-[color:var(--color-text-soft)]">
-                    {getTechnicalAttributeHint(definition, resolvedLocale)}
-                  </span>
-                ) : null}
-              </label>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-6 rounded-[1.4rem] border border-dashed border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-5 text-sm text-[color:var(--color-text-soft)]">
-            {copy.technicalEmpty}
-          </div>
-        )}
       </section>
 
       <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
@@ -1121,6 +1029,71 @@ export function AdminProductForm({
       </section>
 
       <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold text-[color:var(--color-text)]">{copy.technicalTitle}</h2>
+          <p className="max-w-3xl text-sm leading-7 text-[color:var(--color-text-soft)]">{copy.technicalHint}</p>
+        </div>
+
+        {technicalDefinitions.length > 0 ? (
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {technicalDefinitions.map((definition) => (
+              <label
+                key={definition.code}
+                className={cn(
+                  "grid gap-2 text-sm text-[color:var(--color-text-soft)]",
+                  definition.fieldType === "list" ? "md:col-span-2 xl:col-span-3" : "",
+                )}
+              >
+                <span>
+                  {getTechnicalAttributeLabel(definition, resolvedLocale)}
+                  {definition.unit ? `, ${definition.unit}` : ""}
+                </span>
+                {definition.fieldType === "list" ? (
+                  <textarea
+                    name={`technical:${definition.code}`}
+                    value={technicalAttributes[definition.code] ?? ""}
+                    onChange={(event) =>
+                      setTechnicalAttributes((current) => ({
+                        ...current,
+                        [definition.code]: event.target.value,
+                      }))
+                    }
+                    placeholder={getTechnicalAttributePlaceholder(definition, resolvedLocale)}
+                    className="min-h-24 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-[color:var(--color-text)] outline-none"
+                  />
+                ) : (
+                  <input
+                    name={`technical:${definition.code}`}
+                    type={definition.fieldType === "number" ? "number" : "text"}
+                    min={definition.fieldType === "number" ? "0" : undefined}
+                    step={definition.fieldType === "number" ? "1" : undefined}
+                    value={technicalAttributes[definition.code] ?? ""}
+                    onChange={(event) =>
+                      setTechnicalAttributes((current) => ({
+                        ...current,
+                        [definition.code]: event.target.value,
+                      }))
+                    }
+                    placeholder={getTechnicalAttributePlaceholder(definition, resolvedLocale)}
+                    className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
+                  />
+                )}
+                {getTechnicalAttributeHint(definition, resolvedLocale) ? (
+                  <span className="text-xs leading-6 text-[color:var(--color-text-soft)]">
+                    {getTechnicalAttributeHint(definition, resolvedLocale)}
+                  </span>
+                ) : null}
+              </label>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-6 rounded-[1.4rem] border border-dashed border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-5 text-sm text-[color:var(--color-text-soft)]">
+            {copy.technicalEmpty}
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold text-[color:var(--color-text)]">{copy.specsTitle}</h2>
@@ -1155,11 +1128,14 @@ export function AdminProductForm({
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold text-[color:var(--color-text)]">{copy.metadataTitle}</h2>
-          <p className="max-w-3xl text-sm leading-7 text-[color:var(--color-text-soft)]">{copy.metadataHint}</p>
-        </div>
+      <details className="group rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
+        <summary className="cursor-pointer list-none text-2xl font-semibold text-[color:var(--color-text)] marker:content-none">
+          <span className="inline-flex items-center gap-2">
+            {copy.metadataTitle}
+            <span className="text-sm font-normal text-[color:var(--color-text-soft)]">({copy.metadataOptional})</span>
+          </span>
+        </summary>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--color-text-soft)]">{copy.metadataHint}</p>
         <label className="mt-4 grid gap-2 text-sm text-[color:var(--color-text-soft)]">
           <span>{copy.metadataLabel}</span>
           <textarea
@@ -1168,7 +1144,7 @@ export function AdminProductForm({
             className="min-h-32 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 font-mono text-xs text-[color:var(--color-text)] outline-none"
           />
         </label>
-      </section>
+      </details>
 
       {state.message ? (
         <p className="rounded-[1.2rem] border border-rose-500/20 bg-rose-500/8 px-4 py-3 text-sm text-rose-300">

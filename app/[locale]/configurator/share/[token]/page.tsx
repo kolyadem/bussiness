@@ -104,7 +104,7 @@ export default async function SharedConfiguratorPage({
                     {slot.label}
                   </p>
                   <p className="mt-2 text-xl font-semibold text-[color:var(--color-text)]">{item.product.name}</p>
-                  <p className="mt-3 text-sm text-[color:var(--color-text-soft)]">{item.product.brand.name}</p>
+                  <p className="mt-3 text-sm text-[color:var(--color-text-soft)]">{item.product.category.name}</p>
                   <p className="mt-4 font-heading text-2xl font-semibold text-[color:var(--color-text)]">
                     {formatPrice(item.product.price, locale, item.product.currency)}
                   </p>

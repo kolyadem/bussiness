@@ -6,16 +6,10 @@
  * Order: SiteSettings.featuredProductIds → [] → delete all PcBuildItem → reset PcBuild.totalPrice → delete all Product.
  * OrderItem.productId uses onDelete: SetNull — orders stay valid.
  *
- * Backup prisma/*.db before running against production-like data.
+ * Backup the database before running against production-like data.
  */
 import "dotenv/config";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "@prisma/client";
-
-const adapter = new PrismaBetterSqlite3({
-  url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-});
-const prisma = new PrismaClient({ adapter });
+import { db as prisma } from "@/lib/db";
 
 function isConfirmed() {
   return (
@@ -30,7 +24,7 @@ async function main() {
     console.error(
       [
         "[catalog-safe-wipe] Refused: this will DELETE ALL PRODUCTS.",
-        "  Backup your SQLite DB (e.g. prisma/dev.db) if needed.",
+        "  Backup your Postgres database (dump or Neon branch) if needed.",
         "  Then run with:  npm run catalog:safe-wipe -- --yes",
         "  or set: CATALOG_SAFE_WIPE_CONFIRM=1",
       ].join("\n"),

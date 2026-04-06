@@ -7,11 +7,12 @@ import { cn } from "@/lib/utils";
 export function ProductMediaGallery({
   images,
   name,
-  brandName,
+  watermarkText,
 }: {
   images: string[];
   name: string;
-  brandName: string;
+  /** Shown on image watermark (e.g. category or store). */
+  watermarkText: string;
 }) {
   const sanitizedImages = images.filter(Boolean);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -26,7 +27,7 @@ export function ProductMediaGallery({
       <ProductImageFrame
         src={activeImage}
         alt={name}
-        watermark={brandName}
+        watermark={watermarkText}
         className="rounded-[2.2rem] border-[color:var(--color-line)] bg-[color:var(--color-surface-strong)] shadow-[var(--shadow-strong)]"
         fillClassName="group-hover:scale-[1.08] sm:p-10"
         priority
@@ -50,7 +51,7 @@ export function ProductMediaGallery({
               <ProductImageFrame
                 src={image}
                 alt={`${name} ${index + 1}`}
-                watermark={brandName}
+                watermark={watermarkText}
                 className="rounded-[1rem] border-none bg-[color:var(--color-surface-strong)] shadow-none"
                 fillClassName="p-4"
               />

@@ -117,27 +117,18 @@ export async function getAdminDashboardData({
           status: "DRAFT",
         },
       }),
-      db.brand.count(),
       db.category.count(),
       db.importJob.count(),
     ]),
     getRoleAwareDashboardData({ locale, viewerRole }),
   ]);
 
-  const [
-    productsCount,
-    publishedCount,
-    draftCount,
-    brandsCount,
-    categoriesCount,
-    importsCount,
-  ] = baseCounts;
+  const [productsCount, publishedCount, draftCount, categoriesCount, importsCount] = baseCounts;
 
   return {
     productsCount,
     publishedCount,
     draftCount,
-    brandsCount,
     categoriesCount,
     importsCount,
     ...dashboard,
@@ -210,11 +201,6 @@ export async function getAdminProducts(viewerRole?: string | null) {
           attribute: true,
         },
       },
-      brand: {
-        include: {
-          translations: true,
-        },
-      },
       category: {
         include: {
           translations: true,
@@ -230,61 +216,18 @@ export async function getAdminProducts(viewerRole?: string | null) {
 }
 
 export async function getAdminProductOptions() {
-  const [brands, categories] = await Promise.all([
-    db.brand.findMany({
-      include: {
-        translations: true,
-      },
-      orderBy: {
-        sortOrder: "asc",
-      },
-    }),
-    db.category.findMany({
-      include: {
-        translations: true,
-      },
-      orderBy: {
-        sortOrder: "asc",
-      },
-    }),
-  ]);
-
-  return {
-    brands,
-    categories,
-  };
-}
-
-export async function getAdminBrands() {
-  return db.brand.findMany({
+  const categories = await db.category.findMany({
     include: {
       translations: true,
-      _count: {
-        select: {
-          products: true,
-        },
-      },
     },
     orderBy: {
       sortOrder: "asc",
     },
   });
-}
 
-export async function getAdminBrandById(id: string) {
-  return db.brand.findUnique({
-    where: {
-      id,
-    },
-    include: {
-      translations: true,
-      _count: {
-        select: {
-          products: true,
-        },
-      },
-    },
-  });
+  return {
+    categories,
+  };
 }
 
 export async function getAdminCategories() {
@@ -378,11 +321,6 @@ export async function getAdminProductById(id: string, viewerRole?: string | null
       attributes: {
         include: {
           attribute: true,
-        },
-      },
-      brand: {
-        include: {
-          translations: true,
         },
       },
       category: {
@@ -502,37 +440,6 @@ export function getAdminLocaleFields(product: {
       description: string;
       seoTitle: string;
       seoDescription: string;
-    }
-  >;
-}
-
-export function getAdminBrandLocaleFields(brand: {
-  translations: Array<{
-    locale: string;
-    name: string;
-    summary: string | null;
-  }>;
-}) {
-  return Object.fromEntries(
-    locales.map((locale) => {
-      const translation =
-        brand.translations.find((item) => item.locale === locale) ??
-        brand.translations.find((item) => item.locale === defaultLocale) ??
-        null;
-
-      return [
-        locale,
-        {
-          name: translation?.name ?? "",
-          summary: translation?.summary ?? "",
-        },
-      ];
-    }),
-  ) as Record<
-    AppLocale,
-    {
-      name: string;
-      summary: string;
     }
   >;
 }

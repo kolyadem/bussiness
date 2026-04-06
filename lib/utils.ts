@@ -47,11 +47,19 @@ export function parseJson<T>(value: string, fallback: T): T {
   }
 }
 
+/**
+ * URL slug: prefer ASCII `[a-z0-9]`; if that would be empty (e.g. Cyrillic-only name), keep Unicode letters/digits.
+ */
 export function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
+  const normalized = value.toLowerCase().trim();
+  const ascii = normalized
     .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  if (ascii.length >= 2) {
+    return ascii;
+  }
+  return normalized
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/(^-|-$)/g, "");
 }
 

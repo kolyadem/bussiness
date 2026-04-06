@@ -1,18 +1,11 @@
 import "dotenv/config";
 import { hash } from "bcryptjs";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 import {
   buildTechnicalScalarFields,
   getAllTechnicalAttributeDefinitions,
   getTechnicalAttributeLabel,
 } from "@/lib/configurator/technical-attributes";
-
-const adapter = new PrismaBetterSqlite3({
-  url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-});
-
-const db = new PrismaClient({ adapter });
 const locales = ["uk", "ru", "en"] as const;
 
 const brands = [
@@ -960,6 +953,7 @@ async function main() {
 
   await db.siteSettings.create({
     data: {
+      siteMode: "PC_BUILD",
       brandName: "Lumina Tech",
       shortBrandName: "Lumina",
       logoText: "LUMINA",
@@ -971,16 +965,17 @@ async function main() {
       instagramUrl: "https://instagram.com/luminatech",
       telegramUrl: "https://t.me/luminatech",
       youtubeUrl: "https://youtube.com/@luminatech",
-      metaTitle: "Lumina Tech premium electronics store",
-      metaDescription: "Premium online store for PCs, components, laptops and gaming gear with multilingual storefront architecture.",
+      metaTitle: "Lumina Tech — збірка ПК та комплектуючі",
+      metaDescription:
+        "Конфігуратор ПК, сумісність компонентів, каталог комплектуючих та готових систем.",
       faviconPath: "/favicon.ico",
       defaultCurrency: "USD",
       defaultLocale: "uk",
       watermarkText: "LUMINA",
-      heroTitle: "Преміальна техніка без випадкових компромісів",
-      heroSubtitle: "Реальний каталог компонентів, ready-made ПК та периферії на Prisma + Next.js.",
-      heroCtaLabel: "Каталог",
-      heroCtaHref: "/uk/catalog",
+      heroTitle: "Збірка ПК під ваші задачі",
+      heroSubtitle: "Конфігуратор сумісності, каталог комплектуючих і готові рішення в одному місці.",
+      heroCtaLabel: "Конфігуратор",
+      heroCtaHref: "/uk/configurator",
       featuredCategorySlugs: JSON.stringify(["ready-pcs", "processors", "graphics-cards"]),
       featuredProductIds: JSON.stringify([]),
       },

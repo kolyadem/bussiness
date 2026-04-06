@@ -1,24 +1,26 @@
 import "dotenv/config";
 import { hash } from "bcryptjs";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 
-const ADMIN_EMAIL = process.env.MAIN_ADMIN_EMAIL?.trim() || "kolyadem1@lumina.local";
-const ADMIN_LOGIN = process.env.MAIN_ADMIN_LOGIN?.trim() || "kolyadem1";
-const ADMIN_PASSWORD = process.env.MAIN_ADMIN_PASSWORD?.trim() || "lumina228krasava1337";
-const ADMIN_NAME = process.env.MAIN_ADMIN_NAME?.trim() || "Kolyadem Owner";
+/** Login field in DB (`User.login`). Prefer MAIN_ADMIN_USERNAME; MAIN_ADMIN_LOGIN is legacy alias. */
+const ADMIN_USERNAME =
+  process.env.MAIN_ADMIN_USERNAME?.trim() ||
+  process.env.MAIN_ADMIN_LOGIN?.trim() ||
+  "kolyadem1";
 
-const adapter = new PrismaBetterSqlite3({
-  url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-});
-
-const db = new PrismaClient({ adapter });
+const ADMIN_EMAIL = process.env.MAIN_ADMIN_EMAIL?.trim() || "kolyadem2@gmail.com";
+const ADMIN_PASSWORD = process.env.MAIN_ADMIN_PASSWORD?.trim();
+const ADMIN_NAME = process.env.MAIN_ADMIN_NAME?.trim() || "Admin";
 
 async function main() {
+  if (!ADMIN_PASSWORD) {
+    throw new Error("MAIN_ADMIN_PASSWORD is required (set in .env before running npm run admin:ensure).");
+  }
   const passwordHash = await hash(ADMIN_PASSWORD, 12);
+
   const existing = await db.user.findFirst({
     where: {
-      OR: [{ email: ADMIN_EMAIL }, { login: ADMIN_LOGIN }],
+      OR: [{ email: ADMIN_EMAIL }, { login: ADMIN_USERNAME }],
     },
     select: {
       id: true,
@@ -31,7 +33,7 @@ async function main() {
         id: existing.id,
       },
       data: {
-        login: ADMIN_LOGIN,
+        login: ADMIN_USERNAME,
         email: ADMIN_EMAIL,
         name: ADMIN_NAME,
         passwordHash,
@@ -42,7 +44,7 @@ async function main() {
   } else {
     await db.user.create({
       data: {
-        login: ADMIN_LOGIN,
+        login: ADMIN_USERNAME,
         email: ADMIN_EMAIL,
         name: ADMIN_NAME,
         passwordHash,
@@ -52,10 +54,9 @@ async function main() {
     });
   }
 
-  console.log("Main admin user is ready.");
+  console.log("Owner/admin user is ready.");
+  console.log(`Login (username): ${ADMIN_USERNAME}`);
   console.log(`Email: ${ADMIN_EMAIL}`);
-  console.log(`Login: ${ADMIN_LOGIN}`);
-  console.log(`Password: ${ADMIN_PASSWORD}`);
 }
 
 main()

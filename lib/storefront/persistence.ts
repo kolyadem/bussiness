@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
+import { productListInclude } from "@/lib/storefront/product-includes";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { ensureSessionId, getSessionId } from "@/lib/session";
 
@@ -472,32 +473,7 @@ export async function getOwnedListItems({
 
   const include = {
     product: {
-      include: {
-        translations: true,
-        attributes: {
-          include: {
-            attribute: true,
-          },
-        },
-        brand: {
-          include: {
-            translations: true,
-          },
-        },
-        category: {
-          include: {
-            translations: true,
-          },
-        },
-        reviews: {
-          where: {
-            status: "APPROVED",
-          },
-          orderBy: {
-            createdAt: "desc" as const,
-          },
-        },
-      },
+      include: productListInclude,
     },
   } as const;
 

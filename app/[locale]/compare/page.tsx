@@ -52,11 +52,6 @@ export default async function ComparePage({
       values: products.map((product) => formatPrice(product.price, locale, product.currency)),
     },
     {
-      key: "brand",
-      label: t("brand"),
-      values: products.map((product) => product.brand.name),
-    },
-    {
       key: "category",
       label: t("category"),
       values: products.map((product) => product.category.name),

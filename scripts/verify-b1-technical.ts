@@ -42,7 +42,6 @@ function collectDescendantCategoryIds(categories: CategoryTreeRecord[], rootId: 
 /** Mirrors lib/storefront/queries.ts buildCatalogProductWhereSql */
 function buildCatalogProductWhereSql(params: {
   allowedCategoryIds: string[] | null;
-  brands: string[];
   availability: CatalogAvailabilityOption[];
   minPriceStored: number | null;
   maxPriceStored: number | null;
@@ -56,13 +55,6 @@ function buildCatalogProductWhereSql(params: {
       Prisma.sql`p."categoryId" IN (${Prisma.join(
         params.allowedCategoryIds.map((id) => Prisma.sql`${id}`),
       )})`,
-    );
-  }
-  if (params.brands.length > 0) {
-    parts.push(
-      Prisma.sql`p."brandId" IN (SELECT "id" FROM "Brand" WHERE "slug" IN (${Prisma.join(
-        params.brands.map((slug) => Prisma.sql`${slug}`),
-      )}))`,
     );
   }
   if (params.availability.length > 0) {
@@ -91,12 +83,6 @@ function buildCatalogProductWhereSql(params: {
           SELECT 1 FROM "ProductTranslation" pt
           WHERE pt."productId" = p."id" AND pt."locale" = ${loc}
           AND pt."name" LIKE '%' || ${q} || '%'
-        )
-        OR EXISTS (
-          SELECT 1 FROM "Brand" b
-          INNER JOIN "BrandTranslation" bt ON bt."brandId" = b."id"
-          WHERE b."id" = p."brandId" AND bt."locale" = ${loc}
-          AND bt."name" LIKE '%' || ${q} || '%'
         )
       )`,
     );
@@ -179,7 +165,6 @@ async function prismaCountForCatalog(
   const where = {
     status: "PUBLISHED" as const,
     ...(allowedCategoryIds ? { categoryId: { in: allowedCategoryIds } } : {}),
-    ...(params.brands.length > 0 ? { brand: { slug: { in: params.brands } } } : {}),
     ...(params.availability.length > 0 ? { inventoryStatus: { in: params.availability } } : {}),
     ...(priceFilter ? { price: priceFilter } : {}),
     ...(params.onSaleOnly ? { oldPrice: { not: null } } : {}),
@@ -195,16 +180,6 @@ async function prismaCountForCatalog(
                 },
               },
             },
-            {
-              brand: {
-                translations: {
-                  some: {
-                    locale,
-                    name: { contains: localizedQuery },
-                  },
-                },
-              },
-            },
           ],
         }
       : {}),
@@ -212,7 +187,7 @@ async function prismaCountForCatalog(
   return db.product.count({ where });
 }
 
-async function sumPagesRating(paramsBase: CatalogSearchParams, categories: CategoryTreeRecord[]) {
+async function sumPagesRating(paramsBase: CatalogSearchParams) {
   const p1 = await getCatalogData({
     locale,
     params: { ...paramsBase, sort: "rating", page: 1 },
@@ -270,10 +245,6 @@ async function main() {
     select: { id: true, slug: true, createdAt: true },
   });
   const firstCat = categories[0];
-  const firstBrand = await db.brand.findFirst({
-    where: { products: { some: { status: "PUBLISHED" } } },
-    select: { slug: true },
-  });
   const priceBounds = await db.product.aggregate({
     where: { status: "PUBLISHED" },
     _min: { price: true },
@@ -290,12 +261,6 @@ async function main() {
     scenarios.push({
       name: `category=${firstCat.slug}`,
       raw: { sort: "rating", page: "1", category: firstCat.slug },
-    });
-  }
-  if (firstBrand?.slug) {
-    scenarios.push({
-      name: `brand=${firstBrand.slug}`,
-      raw: { sort: "rating", page: "1", brand: firstBrand.slug },
     });
   }
   scenarios.push({
@@ -326,7 +291,6 @@ async function main() {
     const inputs = await resolveWhereSqlInputs(categories, params);
     const whereSql = buildCatalogProductWhereSql({
       allowedCategoryIds: inputs.allowedCategoryIds,
-      brands: params.brands,
       availability: params.availability,
       minPriceStored: inputs.minPriceStored,
       maxPriceStored: inputs.maxPriceStored,
@@ -336,7 +300,7 @@ async function main() {
     });
     const prismaC = await prismaCountForCatalog(categories, params);
     const rawC = await rawSqlCount(whereSql);
-    const { totalItems, sum, totalPages, firstPageLen } = await sumPagesRating(params, categories);
+    const { totalItems, sum, totalPages, firstPageLen } = await sumPagesRating(params);
     const ratingPageIds = await ratingQueryIdCountForPage(whereSql, catalogPageSize, 0);
     const loadedFirst = (
       await getCatalogData({ locale, params: { ...params, sort: "rating", page: 1 } })

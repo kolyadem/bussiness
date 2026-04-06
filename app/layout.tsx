@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import Script from "next/script";
 import { Inter, Manrope } from "next/font/google";
 import { defaultLocale } from "@/lib/constants";
 import { resolveLocaleFromPathname } from "@/lib/storefront/seo";
@@ -71,14 +70,11 @@ export default async function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${manrope.variable} h-full antialiased`}
     >
-      <body className="min-h-full font-sans">
-        <Script
-          id="theme-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: themeInitScript }}
-        />
-        {children}
-      </body>
+      <head>
+        {/* Inline early theme init: avoids next/script + dangerouslySetInnerHTML quirks in React 19 / devtools noise */}
+        <script id="theme-init" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="min-h-full font-sans">{children}</body>
     </html>
   );
 }

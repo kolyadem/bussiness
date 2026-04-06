@@ -38,14 +38,12 @@ export default async function EditAdminProductPage({
       <AdminProductForm
         locale={locale}
         canViewFinancials={canViewFinancials}
-        brands={options.brands}
         categories={options.categories}
         initialValues={{
           productId: product.id,
           slug: product.slug,
           sku: product.sku,
           categoryId: product.categoryId,
-          brandId: product.brandId,
           status: product.status,
           price: storedMinorUnitsToDisplayPrice(product.price, product.currency),
           purchasePrice:

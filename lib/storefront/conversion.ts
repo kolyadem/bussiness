@@ -1,7 +1,9 @@
 import { db } from "@/lib/db";
 import type { AppLocale } from "@/lib/constants";
+import { isPrismaRecoverableBuildTimeError } from "@/lib/prisma-build";
 import { calculateUnitFinancials } from "@/lib/commerce/finance";
-import { mapProduct, productInclude } from "@/lib/storefront/queries";
+import { mapProduct } from "@/lib/storefront/queries";
+import { productInclude } from "@/lib/storefront/product-includes";
 import type { ProductRecord } from "@/lib/storefront/types";
 
 export type SmartBadge = "POPULAR" | "VALUE" | "BEST_CHOICE";
@@ -171,6 +173,7 @@ export async function getProductRecommendationCollections(
   product: ProductRecord,
   locale: AppLocale,
 ): Promise<RecommendationCollections> {
+  try {
   const candidates = await db.product.findMany({
     where: {
       status: "PUBLISHED",
@@ -239,6 +242,16 @@ export async function getProductRecommendationCollections(
     betterVariant: betterVariantRecord ? decoratedMap.get(betterVariantRecord.id) ?? null : null,
     valueChoice: valueChoiceRecord ? decoratedMap.get(valueChoiceRecord.id) ?? null : null,
   };
+  } catch (error) {
+    if (isPrismaRecoverableBuildTimeError(error)) {
+      return {
+        similar: [],
+        betterVariant: null,
+        valueChoice: null,
+      };
+    }
+    throw error;
+  }
 }
 
 const CATEGORY_COMPLEMENTS: Record<string, string[]> = {

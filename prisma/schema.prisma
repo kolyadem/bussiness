@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 enum SiteMode {
@@ -478,7 +478,7 @@ model CompatibilityRule {
 
 model SiteSettings {
   id              String   @id @default(cuid())
-  siteMode        SiteMode @default(STORE)
+  siteMode        SiteMode @default(PC_BUILD)
   brandName       String
   shortBrandName  String?
   logoText        String

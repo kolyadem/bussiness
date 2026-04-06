@@ -9,7 +9,6 @@ import {
   PackageCheck,
   ReceiptText,
   Settings,
-  Shapes,
   ShieldCheck,
   SlidersHorizontal,
   Workflow,
@@ -22,7 +21,6 @@ import { cn } from "@/lib/utils";
 const icons = {
   dashboard: LayoutGrid,
   products: Package,
-  brands: Shapes,
   categories: FolderTree,
   banners: ImageIcon,
   orders: PackageCheck,
@@ -75,17 +73,6 @@ export function AdminSidebar({
         en: "Products",
       }),
     },
-    capabilities.canManageCatalogTaxonomy
-      ? {
-          href: "/admin/brands",
-          key: "brands",
-          label: sidebarText(locale, {
-            uk: "Бренди",
-            ru: "Бренды",
-            en: "Brands",
-          }),
-        }
-      : null,
     capabilities.canManageCatalogTaxonomy
       ? {
           href: "/admin/categories",

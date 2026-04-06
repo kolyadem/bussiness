@@ -1,6 +1,5 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
-import { isPrismaRecoverableBuildTimeError } from "@/lib/prisma-build";
 import { normalizeSiteMode } from "@/lib/site-mode";
 
 export { SITE_MODES, type SiteMode, isPcBuildSiteMode } from "@/lib/site-mode";
@@ -13,10 +12,11 @@ export const getSiteSettingsRecord = cache(async () => {
       },
     });
   } catch (error) {
-    if (isPrismaRecoverableBuildTimeError(error)) {
-      return null;
+    // Site settings are optional: never crash the storefront (missing table, wrong DATABASE_URL, driver quirks).
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[site-config] SiteSettings query failed; using defaults.", error);
     }
-    throw error;
+    return null;
   }
 });
 

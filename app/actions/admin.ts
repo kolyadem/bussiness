@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { z } from "zod";
 import { SITE_MODES } from "@/lib/site-mode";
 import {
@@ -32,6 +33,7 @@ import {
   normalizeTechnicalAttributeInput,
 } from "@/lib/configurator/technical-attributes";
 import { locales, type AppLocale } from "@/lib/constants";
+import { getDefaultBrandId } from "@/lib/commerce/default-brand";
 import { db } from "@/lib/db";
 import { parseJson, slugify } from "@/lib/utils";
 
@@ -138,12 +140,6 @@ function buildProductConflictMessage(locale: AppLocale, error: unknown) {
   });
 }
 
-const localizedBrandSchema = z.object({
-  locale: z.enum(locales),
-  name: z.string().trim().min(2).max(120),
-  summary: z.string().trim().max(240).optional(),
-});
-
 const localizedCategorySchema = z.object({
   locale: z.enum(locales),
   name: z.string().trim().min(2).max(120),
@@ -155,14 +151,6 @@ const localizedBannerSchema = z.object({
   title: z.string().trim().min(2).max(180),
   subtitle: z.string().trim().max(300).optional(),
   ctaLabel: z.string().trim().max(80).optional(),
-});
-
-const brandBaseSchema = z.object({
-  locale: z.enum(locales),
-  slug: z.string().trim().min(2).max(120),
-  logo: z.string().trim().nullable(),
-  website: z.string().trim().nullable(),
-  sortOrder: z.coerce.number().int().min(0),
 });
 
 const categoryBaseSchema = z.object({
@@ -221,29 +209,18 @@ const siteSettingsSchema = z.object({
   heroCtaHref: z.string().trim().min(1).max(180),
 });
 
-function buildLocalizedBrandTranslations(formData: FormData) {
-  const translations = locales.map((locale) => ({
-    locale,
-    name: String(formData.get(`name:${locale}`) ?? "").trim(),
-    summary: String(formData.get(`summary:${locale}`) ?? "").trim(),
-  }));
-  const parsed = z.array(localizedBrandSchema).safeParse(translations);
-
-  if (!parsed.success) {
-    return null;
-  }
-
-  return parsed.data.map((item) => ({
-    ...item,
-    summary: item.summary || null,
-  }));
-}
-
 function buildLocalizedCategoryTranslations(formData: FormData) {
-  const translations = locales.map((locale) => ({
+  const perLocale = locales.map((locale) => ({
     locale,
     name: String(formData.get(`name:${locale}`) ?? "").trim(),
     description: String(formData.get(`description:${locale}`) ?? "").trim(),
+  }));
+  /** If only one tab was filled (e.g. UK), reuse that name for RU/EN so validation passes. */
+  const seedName = perLocale.find((row) => row.name.length >= 2)?.name ?? "";
+  const translations = perLocale.map((row) => ({
+    locale: row.locale,
+    name: row.name.length >= 2 ? row.name : seedName,
+    description: row.description,
   }));
   const parsed = z.array(localizedCategorySchema).safeParse(translations);
 
@@ -255,6 +232,16 @@ function buildLocalizedCategoryTranslations(formData: FormData) {
     ...item,
     description: item.description || null,
   }));
+}
+
+function resolveCategorySlug(formData: FormData, translations: NonNullable<ReturnType<typeof buildLocalizedCategoryTranslations>>) {
+  const raw = String(formData.get("slug") ?? "").trim();
+  if (raw.length > 0) {
+    return slugify(raw);
+  }
+  const uk = translations.find((t) => t.locale === "uk")?.name?.trim() ?? "";
+  const any = translations.find((t) => t.name.trim().length >= 2)?.name.trim() ?? "";
+  return slugify(uk || any);
 }
 
 function buildLocalizedBannerTranslations(formData: FormData) {
@@ -538,12 +525,23 @@ async function buildProductPayload(
     } as const;
   }
 
+  let brandIdForIngest: string;
+  if (existingProductId) {
+    const row = await db.product.findUnique({
+      where: { id: existingProductId },
+      select: { brandId: true },
+    });
+    brandIdForIngest = row?.brandId ?? (await getDefaultBrandId());
+  } else {
+    brandIdForIngest = await getDefaultBrandId();
+  }
+
   const normalized = normalizeProductIngestPayload({
     locale: String(formData.get("locale") ?? "uk"),
     slug: normalizedSlug,
     sku: String(formData.get("sku") ?? ""),
     categoryId: String(formData.get("categoryId") ?? "").trim(),
-    brandId: String(formData.get("brandId") ?? "").trim(),
+    brandId: brandIdForIngest,
     status: String(formData.get("status") ?? "DRAFT"),
     price: String(formData.get("price") ?? ""),
     purchasePrice: normalizeOptionalText(formData.get("purchasePrice")),
@@ -612,13 +610,13 @@ export async function createProductAction(
 
   const relations = await validateProductRelationTargets(payload.data);
 
-  if (!relations.brandExists || !relations.categoryExists) {
+  if (!relations.categoryExists) {
     return {
       status: "error",
       message: adminText(locale, {
-        uk: "Бренд або категорію не знайдено.",
-        ru: "Бренд или категория не найдены.",
-        en: "Brand or category was not found.",
+        uk: "Категорію не знайдено.",
+        ru: "Категория не найдена.",
+        en: "Category was not found.",
       }),
     };
   }
@@ -628,11 +626,9 @@ export async function createProductAction(
 
     redirect(`/${payload.data.locale}/admin/products/${product.id}/edit?created=1`);
   } catch (error) {
-    return {
-      status: "error",
-      message: buildProductConflictMessage(locale, error),
-    };
-
+    if (isRedirectError(error)) {
+      throw error;
+    }
     if (isUniqueConstraintError(error)) {
       return {
         status: "error",
@@ -646,11 +642,7 @@ export async function createProductAction(
 
     return {
       status: "error",
-      message: adminText(locale, {
-        uk: "Не вдалося створити товар.",
-        ru: "Не удалось создать товар.",
-        en: "Unable to create product.",
-      }),
+      message: buildProductConflictMessage(locale, error),
     };
   }
 }
@@ -690,13 +682,13 @@ export async function updateProductFormAction(
 
   const relations = await validateProductRelationTargets(payload.data);
 
-  if (!relations.brandExists || !relations.categoryExists) {
+  if (!relations.categoryExists) {
     return {
       status: "error",
       message: adminText(locale, {
-        uk: "Бренд або категорію не знайдено.",
-        ru: "Бренд или категория не найдены.",
-        en: "Brand or category was not found.",
+        uk: "Категорію не знайдено.",
+        ru: "Категория не найдена.",
+        en: "Category was not found.",
       }),
     };
   }
@@ -720,6 +712,9 @@ export async function updateProductFormAction(
 
     redirect(`/${payload.data.locale}/admin/products/${productId}/edit?saved=1`);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     return {
       status: "error",
       message: buildProductConflictMessage(locale, error),
@@ -751,13 +746,13 @@ export async function updateProductAction(
 
   const relations = await validateProductRelationTargets(payload.data);
 
-  if (!relations.brandExists || !relations.categoryExists) {
+  if (!relations.categoryExists) {
     return {
       status: "error",
       message: adminText(locale, {
-        uk: "Бренд або категорію не знайдено.",
-        ru: "Бренд или категория не найдены.",
-        en: "Brand or category was not found.",
+        uk: "Категорію не знайдено.",
+        ru: "Категория не найдена.",
+        en: "Category was not found.",
       }),
     };
   }
@@ -776,6 +771,9 @@ export async function updateProductAction(
 
     redirect(`/${payload.data.locale}/admin/products/${productId}/edit?saved=1`);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     if (isUniqueConstraintError(error)) {
       return {
         status: "error",
@@ -971,7 +969,7 @@ export async function updateSiteSettingsAction(
   await requireAdminOnlyAccess(locale);
 
   const parsed = siteSettingsSchema.safeParse({
-    siteMode: String(formData.get("siteMode") ?? SITE_MODES.store),
+    siteMode: String(formData.get("siteMode") ?? SITE_MODES.pcBuild),
     brandName: String(formData.get("brandName") ?? "").trim(),
     shortBrandName: normalizeOptionalText(formData.get("shortBrandName")),
     logoText: normalizeOptionalText(formData.get("logoText")),
@@ -1122,6 +1120,9 @@ export async function createBannerAction(
 
     redirect(`/${parsed.data.locale}/admin/banners/${banner.id}/edit?created=1`);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return {
         status: "error",
@@ -1204,6 +1205,9 @@ export async function updateBannerAction(
 
     redirect(`/${parsed.data.locale}/admin/banners/${bannerId}/edit?saved=1`);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return {
         status: "error",
@@ -1256,178 +1260,6 @@ export async function deleteBannerAction(formData: FormData) {
   redirect(`/${locale}/admin/banners?deleted=1`);
 }
 
-export async function createBrandAction(
-  _prevState: EntityFormState,
-  formData: FormData,
-): Promise<EntityFormState> {
-  const locale = (String(formData.get("locale") ?? "uk") as AppLocale) || "uk";
-  await requireAdminAccess(locale);
-
-  const translations = buildLocalizedBrandTranslations(formData);
-  const baseParsed = brandBaseSchema.safeParse({
-    locale: String(formData.get("locale") ?? "uk"),
-    slug: slugify(String(formData.get("slug") ?? "")),
-    logo: normalizeOptionalText(formData.get("logo")),
-    website: normalizeOptionalText(formData.get("website")),
-    sortOrder: String(formData.get("sortOrder") ?? "0"),
-  });
-
-  if (!translations || !baseParsed.success) {
-    return {
-      status: "error",
-      message: adminText(locale, {
-        uk: "Перевірте поля бренду перед збереженням.",
-        ru: "Проверьте поля бренда перед сохранением.",
-        en: "Check brand fields before saving.",
-      }),
-    };
-  }
-
-  try {
-    const brand = await db.brand.create({
-      data: {
-        slug: baseParsed.data.slug,
-        logo: baseParsed.data.logo,
-        website: baseParsed.data.website,
-        sortOrder: baseParsed.data.sortOrder,
-        translations: {
-          create: translations,
-        },
-      },
-    });
-
-    redirect(`/${baseParsed.data.locale}/admin/brands/${brand.id}/edit?created=1`);
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return {
-        status: "error",
-        message: adminText(locale, {
-          uk: "Slug бренду має бути унікальним.",
-          ru: "Slug бренда должен быть уникальным.",
-          en: "Brand slug must be unique.",
-        }),
-      };
-    }
-
-    return {
-      status: "error",
-      message: adminText(locale, {
-        uk: "Не вдалося створити бренд.",
-        ru: "Не удалось создать бренд.",
-        en: "Unable to create brand.",
-      }),
-    };
-  }
-}
-
-export async function updateBrandAction(
-  brandId: string,
-  _prevState: EntityFormState,
-  formData: FormData,
-): Promise<EntityFormState> {
-  const locale = (String(formData.get("locale") ?? "uk") as AppLocale) || "uk";
-  await requireAdminAccess(locale);
-
-  const translations = buildLocalizedBrandTranslations(formData);
-  const baseParsed = brandBaseSchema.safeParse({
-    locale: String(formData.get("locale") ?? "uk"),
-    slug: slugify(String(formData.get("slug") ?? "")),
-    logo: normalizeOptionalText(formData.get("logo")),
-    website: normalizeOptionalText(formData.get("website")),
-    sortOrder: String(formData.get("sortOrder") ?? "0"),
-  });
-
-  if (!translations || !baseParsed.success) {
-    return {
-      status: "error",
-      message: adminText(locale, {
-        uk: "Перевірте поля бренду перед збереженням.",
-        ru: "Проверьте поля бренда перед сохранением.",
-        en: "Check brand fields before saving.",
-      }),
-    };
-  }
-
-  try {
-    await db.brand.update({
-      where: {
-        id: brandId,
-      },
-      data: {
-        slug: baseParsed.data.slug,
-        logo: baseParsed.data.logo,
-        website: baseParsed.data.website,
-        sortOrder: baseParsed.data.sortOrder,
-        translations: {
-          deleteMany: {},
-          create: translations,
-        },
-      },
-    });
-
-    redirect(`/${baseParsed.data.locale}/admin/brands/${brandId}/edit?saved=1`);
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return {
-        status: "error",
-        message: adminText(locale, {
-          uk: "Slug бренду має бути унікальним.",
-          ru: "Slug бренда должен быть уникальным.",
-          en: "Brand slug must be unique.",
-        }),
-      };
-    }
-
-    return {
-      status: "error",
-      message: adminText(locale, {
-        uk: "Не вдалося оновити бренд.",
-        ru: "Не удалось обновить бренд.",
-        en: "Unable to update brand.",
-      }),
-    };
-  }
-}
-
-export async function deleteBrandAction(formData: FormData) {
-  const locale = (String(formData.get("locale") ?? "uk") as AppLocale) || "uk";
-  await requireAdminAccess(locale);
-  const brandId = String(formData.get("brandId") ?? "").trim();
-
-  if (!brandId) {
-    redirect(`/${locale}/admin/brands`);
-  }
-
-  const brand = await db.brand.findUnique({
-    where: {
-      id: brandId,
-    },
-    select: {
-      _count: {
-        select: {
-          products: true,
-        },
-      },
-    },
-  });
-
-  if (!brand) {
-    redirect(`/${locale}/admin/brands`);
-  }
-
-  if (brand._count.products > 0) {
-    redirect(`/${locale}/admin/brands?error=brand-in-use`);
-  }
-
-  await db.brand.delete({
-    where: {
-      id: brandId,
-    },
-  });
-
-  redirect(`/${locale}/admin/brands?deleted=1`);
-}
-
 export async function createCategoryAction(
   _prevState: EntityFormState,
   formData: FormData,
@@ -1436,21 +1268,33 @@ export async function createCategoryAction(
   await requireAdminAccess(locale);
 
   const translations = buildLocalizedCategoryTranslations(formData);
+  if (!translations) {
+    return {
+      status: "error",
+      message: adminText(locale, {
+        uk: "Перевірте назви категорії (мінімум 2 символи хоча б для однієї мови).",
+        ru: "Проверьте названия категории (минимум 2 символа хотя бы для одного языка).",
+        en: "Enter a category name (at least 2 characters in one language).",
+      }),
+    };
+  }
+
+  const resolvedSlug = resolveCategorySlug(formData, translations);
   const baseParsed = categoryBaseSchema.safeParse({
     locale: String(formData.get("locale") ?? "uk"),
-    slug: slugify(String(formData.get("slug") ?? "")),
+    slug: resolvedSlug,
     parentId: normalizeOptionalText(formData.get("parentId")),
     image: normalizeOptionalText(formData.get("image")),
     sortOrder: String(formData.get("sortOrder") ?? "0"),
   });
 
-  if (!translations || !baseParsed.success) {
+  if (!baseParsed.success) {
     return {
       status: "error",
       message: adminText(locale, {
-        uk: "Перевірте поля категорії перед збереженням.",
-        ru: "Проверьте поля категории перед сохранением.",
-        en: "Check category fields before saving.",
+        uk: "Перевірте slug (мінімум 2 символи) або назву для автогенерації slug.",
+        ru: "Проверьте slug (минимум 2 символа) или название для автогенерации.",
+        en: "Check slug (min 2 characters) or name to auto-generate slug.",
       }),
     };
   }
@@ -1470,6 +1314,9 @@ export async function createCategoryAction(
 
     redirect(`/${baseParsed.data.locale}/admin/categories/${category.id}/edit?created=1`);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return {
         status: "error",
@@ -1501,21 +1348,33 @@ export async function updateCategoryAction(
   await requireAdminAccess(locale);
 
   const translations = buildLocalizedCategoryTranslations(formData);
+  if (!translations) {
+    return {
+      status: "error",
+      message: adminText(locale, {
+        uk: "Перевірте назви категорії (мінімум 2 символи хоча б для однієї мови).",
+        ru: "Проверьте названия категории (минимум 2 символа хотя бы для одного языка).",
+        en: "Enter a category name (at least 2 characters in one language).",
+      }),
+    };
+  }
+
+  const resolvedSlug = resolveCategorySlug(formData, translations);
   const baseParsed = categoryBaseSchema.safeParse({
     locale: String(formData.get("locale") ?? "uk"),
-    slug: slugify(String(formData.get("slug") ?? "")),
+    slug: resolvedSlug,
     parentId: normalizeOptionalText(formData.get("parentId")),
     image: normalizeOptionalText(formData.get("image")),
     sortOrder: String(formData.get("sortOrder") ?? "0"),
   });
 
-  if (!translations || !baseParsed.success) {
+  if (!baseParsed.success) {
     return {
       status: "error",
       message: adminText(locale, {
-        uk: "Перевірте поля категорії перед збереженням.",
-        ru: "Проверьте поля категории перед сохранением.",
-        en: "Check category fields before saving.",
+        uk: "Перевірте slug (мінімум 2 символи) або назву для автогенерації slug.",
+        ru: "Проверьте slug (минимум 2 символа) или название для автогенерации.",
+        en: "Check slug (min 2 characters) or name to auto-generate slug.",
       }),
     };
   }
@@ -1561,6 +1420,9 @@ export async function updateCategoryAction(
 
     redirect(`/${baseParsed.data.locale}/admin/categories/${categoryId}/edit?saved=1`);
   } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return {
         status: "error",

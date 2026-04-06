@@ -22,10 +22,10 @@ export async function generateMetadata({
     locale,
     "homeSeoTitle",
     locale === "uk"
-      ? "Преміальний каталог техніки, готових ПК та периферії."
+      ? "Збірка ПК, комплектуючі та периферія — конфігуратор і каталог."
       : locale === "ru"
-        ? "Премиальный каталог техники, готовых ПК и периферии."
-        : "Premium catalog of electronics, prebuilt PCs and peripherals.",
+        ? "Сборка ПК, комплектующие и периферия — конфигуратор и каталог."
+        : "PC builds, components, and peripherals — configurator and catalog.",
     "",
   );
 }
@@ -43,6 +43,10 @@ export default async function LocaleHome({
   const isPcBuild = siteMode === SITE_MODES.pcBuild;
   const hero = data.heroBanners[0];
   const heroTranslation = hero ? pickByLocale(hero.translations, locale) : null;
+  const fallbackHeroArt = "/hero/orbit.svg";
+  const heroBgSrc = hero?.image ?? fallbackHeroArt;
+  const heroTitleDefault = t("homeHeroTitle");
+  const heroSubtitleDefault = t("homeHeroSubtitle");
   const featuredProducts = data.featuredProducts.slice(0, 4).map((product) => mapProduct(product, locale));
   const promoBanners = data.promoBanners.slice(0, 2).map((banner) => {
     const translation = pickByLocale(banner.translations, locale);
@@ -112,16 +116,24 @@ export default async function LocaleHome({
         dangerouslySetInnerHTML={{ __html: sanitizeJsonLd(websiteStructuredData) }}
       />
       <section className="relative overflow-hidden rounded-[2.6rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-6 py-12 shadow-[var(--shadow-soft)] backdrop-blur-2xl sm:px-8 sm:py-16 lg:px-10 lg:py-18 xl:px-12 xl:py-20">
-        {hero?.image ? (
-          <div className="pointer-events-none absolute inset-0 opacity-[0.1]">
-            <Image
-              src={hero.image}
-              alt={heroTranslation?.title ?? data.settings?.heroTitle ?? "Hero"}
-              fill
-              className="object-cover"
-            />
-          </div>
-        ) : null}
+        <div
+          className={`pointer-events-none absolute inset-0 ${hero?.image ? "opacity-[0.12]" : "opacity-[0.2]"}`}
+          aria-hidden
+        >
+          <Image
+            src={heroBgSrc}
+            alt=""
+            fill
+            className="object-cover"
+            sizes="100vw"
+            priority
+            unoptimized={heroBgSrc.endsWith(".svg")}
+          />
+        </div>
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[color:var(--color-accent)]/[0.12] via-transparent to-[color:var(--color-surface)]/85"
+          aria-hidden
+        />
 
         <div className="relative mx-auto flex max-w-5xl flex-col items-center text-center">
           <h1 className="font-heading text-4xl font-semibold tracking-[-0.06em] text-[color:var(--color-text)] sm:text-5xl lg:text-6xl">
@@ -131,11 +143,11 @@ export default async function LocaleHome({
                 : locale === "ru"
                   ? "Соберём ПК под ваш бюджет и задачи"
                   : "We build a PC around your budget and goals"
-              : heroTranslation?.title ?? data.settings?.heroTitle}
+              : (heroTranslation?.title ?? data.settings?.heroTitle ?? heroTitleDefault)}
           </h1>
           {!isPcBuild ? (
             <p className="mt-5 max-w-2xl text-sm leading-8 text-[color:var(--color-text-soft)]">
-              {heroTranslation?.subtitle ?? data.settings?.heroSubtitle}
+              {heroTranslation?.subtitle ?? data.settings?.heroSubtitle ?? heroSubtitleDefault}
             </p>
           ) : null}
           <div className="mt-8 flex w-full flex-col gap-3 sm:mt-10 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">

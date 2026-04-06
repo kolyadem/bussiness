@@ -10,7 +10,6 @@ import { formatPrice } from "@/lib/utils";
 type ProductRow = {
   id: string;
   name: string;
-  brandName: string;
   categoryName: string;
   heroImage: string;
   sku: string;
@@ -36,7 +35,6 @@ type BulkAction =
   | "UNPUBLISH"
   | "MOVE_TO_DRAFT"
   | "ASSIGN_CATEGORY"
-  | "ASSIGN_BRAND"
   | "DELETE"
   | "SET_PRICE"
   | "SET_STOCK"
@@ -48,7 +46,6 @@ const BULK_ACTIONS: BulkAction[] = [
   "UNPUBLISH",
   "MOVE_TO_DRAFT",
   "ASSIGN_CATEGORY",
-  "ASSIGN_BRAND",
   "SET_PRICE",
   "SET_STOCK",
   "ADJUST_STOCK",
@@ -75,8 +72,6 @@ function bulkActionLabel(action: BulkAction, locale: "uk" | "ru" | "en") {
       return locale === "uk" ? "У чернетку" : locale === "ru" ? "В черновик" : "Move to draft";
     case "ASSIGN_CATEGORY":
       return locale === "uk" ? "Призначити категорію" : locale === "ru" ? "Назначить категорию" : "Assign category";
-    case "ASSIGN_BRAND":
-      return locale === "uk" ? "Призначити бренд" : locale === "ru" ? "Назначить бренд" : "Assign brand";
     case "DELETE":
       return locale === "uk" ? "Видалити" : locale === "ru" ? "Удалить" : "Delete";
     case "SET_PRICE":
@@ -94,19 +89,16 @@ export function AdminProductCatalogTable({
   locale,
   canViewFinancials,
   products,
-  brands,
   categories,
 }: {
   locale: "uk" | "ru" | "en";
   canViewFinancials: boolean;
   products: ProductRow[];
-  brands: Option[];
   categories: Option[];
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkAction, setBulkAction] = useState<BulkAction>("PUBLISH");
   const [pending, setPending] = useState(false);
-  const [brandId, setBrandId] = useState(brands[0]?.id ?? "");
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
   const [value, setValue] = useState("");
 
@@ -122,7 +114,6 @@ export function AdminProductCatalogTable({
     return {
       productIds,
       action: bulkAction,
-      brandId: bulkAction === "ASSIGN_BRAND" ? brandId : undefined,
       categoryId: bulkAction === "ASSIGN_CATEGORY" ? categoryId : undefined,
       price: bulkAction === "SET_PRICE" ? Number(value) : undefined,
       stock: bulkAction === "SET_STOCK" ? Number(value) : undefined,
@@ -295,14 +286,6 @@ export function AdminProductCatalogTable({
                 </option>
               ))}
             </select>
-          ) : bulkAction === "ASSIGN_BRAND" ? (
-            <select value={brandId} onChange={(event) => setBrandId(event.target.value)} className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]">
-              {brands.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
           ) : bulkAction === "SET_PRICE" || bulkAction === "SET_STOCK" || bulkAction === "ADJUST_STOCK" || bulkAction === "ADJUST_PRICE_PERCENT" ? (
             <input
               value={value}
@@ -364,7 +347,6 @@ export function AdminProductCatalogTable({
                       </div>
                       <div>
                         <p className="font-medium text-[color:var(--color-text)]">{product.name}</p>
-                        <p className="mt-1 text-sm text-[color:var(--color-text-soft)]">{product.brandName}</p>
                         <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[color:var(--color-text-soft)]">
                           {product.sku} · {product.categoryName}
                         </p>

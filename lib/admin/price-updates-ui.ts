@@ -270,7 +270,6 @@ export function mapConfidenceLabel(locale: string, raw: string): string {
 
 /** Parsed retailer availability — human-readable (uk / ru / en). */
 export function mapRetailAvailabilityLabel(locale: string, raw: string): string {
-  const loc = priceUpdatesUiLocale(locale);
   switch (raw) {
     case "in_stock":
       return priceUpdatesT(locale, "availInStock");

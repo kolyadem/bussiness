@@ -160,30 +160,18 @@ export function isUniqueConstraintError(error: unknown) {
 }
 
 export async function validateProductRelationTargets(input: {
-  brandId: string;
   categoryId: string;
 }) {
-  const [brand, category] = await Promise.all([
-    db.brand.findUnique({
-      where: {
-        id: input.brandId,
-      },
-      select: {
-        id: true,
-      },
-    }),
-    db.category.findUnique({
-      where: {
-        id: input.categoryId,
-      },
-      select: {
-        id: true,
-      },
-    }),
-  ]);
+  const category = await db.category.findUnique({
+    where: {
+      id: input.categoryId,
+    },
+    select: {
+      id: true,
+    },
+  });
 
   return {
-    brandExists: Boolean(brand),
     categoryExists: Boolean(category),
   };
 }

@@ -1,7 +1,0 @@
-ALTER TABLE "Product" ADD COLUMN "purchasePrice" INTEGER;
-
-ALTER TABLE "Order" ADD COLUMN "totalCost" INTEGER;
-
-ALTER TABLE "Order" ADD COLUMN "grossProfit" INTEGER;
-
-ALTER TABLE "OrderItem" ADD COLUMN "unitCost" INTEGER;

@@ -10,7 +10,7 @@ import { Link } from "@/lib/i18n/routing";
 import type { AppLocale } from "@/lib/constants";
 import { getSiteExperienceCopy } from "@/lib/site-experience";
 import { SITE_MODES } from "@/lib/site-mode";
-import { getSiteMode } from "@/lib/site-config";
+import { getSiteMode, getSiteSettingsRecord } from "@/lib/site-config";
 import { getProductRecommendationCollections } from "@/lib/storefront/conversion";
 import { formatPrice } from "@/lib/utils";
 import {
@@ -92,10 +92,11 @@ export default async function ProductPage({
     notFound();
   }
 
-  const [recommendations, recentlyViewed, siteMode] = await Promise.all([
+  const [recommendations, recentlyViewed, siteMode, siteSettings] = await Promise.all([
     getProductRecommendationCollections(product, locale),
     getRecentlyViewedProducts(product.id),
     getSiteMode(),
+    getSiteSettingsRecord(),
   ]);
   const experience = getSiteExperienceCopy(locale, siteMode);
   const isPcBuild = siteMode === SITE_MODES.pcBuild;
@@ -116,7 +117,7 @@ export default async function ProductPage({
     sku: mapped.sku,
     brand: {
       "@type": "Brand",
-      name: mapped.brand.name,
+      name: siteSettings?.brandName ?? mapped.category.name,
     },
     category: mapped.category.name,
     offers: {
@@ -229,7 +230,7 @@ export default async function ProductPage({
           <ProductMediaGallery
             images={productImages}
             name={mapped.name}
-            brandName={mapped.brand.name}
+            watermarkText={siteSettings?.watermarkText ?? mapped.category.name}
           />
 
           <div className="grid gap-4 sm:grid-cols-3">
@@ -255,9 +256,6 @@ export default async function ProductPage({
         <div className="space-y-6">
           <section className="rounded-[2.4rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] p-6 shadow-[var(--shadow-strong)] sm:p-8">
             <div className="flex flex-wrap gap-2">
-              <span className="rounded-full border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-soft)]">
-                {mapped.brand.name}
-              </span>
               <span className="rounded-full border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[color:var(--color-text)]">
                 {mapped.category.name}
               </span>

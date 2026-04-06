@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { defaultLocale, locales, type AppLocale } from "@/lib/constants";
 import { db } from "@/lib/db";
+import { isPrismaRecoverableBuildTimeError } from "@/lib/prisma-build";
 
 export const USER_ROLES = {
   admin: "ADMIN",
@@ -186,29 +187,36 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> 
   };
 
   if (user.id) {
-    const dbUser = await db.user.findUnique({
-      where: {
-        id: user.id,
-      },
-      select: {
-        id: true,
-        login: true,
-        email: true,
-        name: true,
-        role: true,
-        canAccessPriceUpdates: true,
-      },
-    });
+    try {
+      const dbUser = await db.user.findUnique({
+        where: {
+          id: user.id,
+        },
+        select: {
+          id: true,
+          login: true,
+          email: true,
+          name: true,
+          role: true,
+          canAccessPriceUpdates: true,
+        },
+      });
 
-    if (dbUser) {
-      return {
-        id: dbUser.id,
-        login: dbUser.login,
-        email: dbUser.email,
-        name: dbUser.name,
-        role: normalizeRole(dbUser.role),
-        canAccessPriceUpdates: Boolean(dbUser.canAccessPriceUpdates),
-      };
+      if (dbUser) {
+        return {
+          id: dbUser.id,
+          login: dbUser.login,
+          email: dbUser.email,
+          name: dbUser.name,
+          role: normalizeRole(dbUser.role),
+          canAccessPriceUpdates: Boolean(dbUser.canAccessPriceUpdates),
+        };
+      }
+    } catch (error) {
+      if (isPrismaRecoverableBuildTimeError(error)) {
+        return null;
+      }
+      throw error;
     }
 
     return null;

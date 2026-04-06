@@ -1,7 +1,9 @@
 import { cache } from "react";
+import type { Review } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isPrismaRecoverableBuildTimeError, withPrismaFallback } from "@/lib/prisma-build";
 import { defaultLocale, inventoryLabels, type AppLocale } from "@/lib/constants";
 import { getSiteSettingsRecord } from "@/lib/site-config";
 import {
@@ -26,33 +28,9 @@ import type {
   ProductRecord,
   WishlistItemRecord,
 } from "@/lib/storefront/types";
+import { productInclude, productListInclude } from "@/lib/storefront/product-includes";
 
-export const productInclude = {
-  translations: true,
-  attributes: {
-    include: {
-      attribute: true,
-    },
-  },
-  brand: {
-    include: {
-      translations: true,
-    },
-  },
-  category: {
-    include: {
-      translations: true,
-    },
-  },
-  reviews: {
-    where: {
-      status: "APPROVED",
-    },
-    orderBy: {
-      createdAt: "desc" as const,
-    },
-  },
-} as const;
+export { productInclude, productListInclude };
 
 const catalogPageSize = 9;
 const catalogSortOptions = ["newest", "price-asc", "price-desc", "rating"] as const;
@@ -65,7 +43,6 @@ export type CatalogSearchParams = {
   q: string;
   category: string | null;
   subcategory: string | null;
-  brands: string[];
   availability: CatalogAvailabilityOption[];
   minPrice: number | null;
   maxPrice: number | null;
@@ -106,13 +83,6 @@ export function parseCatalogSearchParams(rawParams: CatalogSearchParamsInput): C
   const q = getFirstSearchParamValue(rawParams.q).trim();
   const category = getFirstSearchParamValue(rawParams.category).trim() || null;
   const subcategory = getFirstSearchParamValue(rawParams.subcategory).trim() || null;
-  const brands = Array.from(
-    new Set(
-      getSearchParamList(rawParams.brand)
-        .map((value) => value.trim())
-        .filter(Boolean),
-    ),
-  );
   const availability = Array.from(
     new Set(
       getSearchParamList(rawParams.availability).filter((value): value is CatalogAvailabilityOption =>
@@ -129,7 +99,6 @@ export function parseCatalogSearchParams(rawParams: CatalogSearchParamsInput): C
     q,
     category,
     subcategory,
-    brands,
     availability,
     minPrice,
     maxPrice,
@@ -185,7 +154,6 @@ function buildCatalogOrderBy(sort: CatalogSortOption) {
  */
 function buildCatalogProductWhereSql(params: {
   allowedCategoryIds: string[] | null;
-  brands: string[];
   availability: CatalogAvailabilityOption[];
   minPriceStored: number | null;
   maxPriceStored: number | null;
@@ -200,14 +168,6 @@ function buildCatalogProductWhereSql(params: {
       Prisma.sql`p."categoryId" IN (${Prisma.join(
         params.allowedCategoryIds.map((id) => Prisma.sql`${id}`),
       )})`,
-    );
-  }
-
-  if (params.brands.length > 0) {
-    parts.push(
-      Prisma.sql`p."brandId" IN (SELECT "id" FROM "Brand" WHERE "slug" IN (${Prisma.join(
-        params.brands.map((slug) => Prisma.sql`${slug}`),
-      )}))`,
     );
   }
 
@@ -241,12 +201,6 @@ function buildCatalogProductWhereSql(params: {
           WHERE pt."productId" = p."id" AND pt."locale" = ${loc}
           AND pt."name" LIKE '%' || ${q} || '%'
         )
-        OR EXISTS (
-          SELECT 1 FROM "Brand" b
-          INNER JOIN "BrandTranslation" bt ON bt."brandId" = b."id"
-          WHERE b."id" = p."brandId" AND bt."locale" = ${loc}
-          AND bt."name" LIKE '%' || ${q} || '%'
-        )
       )`,
     );
   }
@@ -276,8 +230,8 @@ async function queryCatalogRatingPageIds(params: {
   return rows.map((row) => row.id);
 }
 
-/** Min/max catalog prices in display units without scanning every row (see storedMinorUnitsToDisplayPrice). */
-async function getPublishedPriceDisplayRange(): Promise<{ min: number; max: number }> {
+/** Min/max catalog prices — deduped per request via React cache(). */
+const getPublishedPriceDisplayRangeCached = cache(async (): Promise<{ min: number; max: number }> => {
   const rows = await db.product.groupBy({
     by: ["currency"],
     where: {
@@ -320,83 +274,151 @@ async function getPublishedPriceDisplayRange(): Promise<{ min: number; max: numb
     min: Number.isFinite(minDisplay) ? Math.floor(minDisplay) : 0,
     max: Number.isFinite(maxDisplay) ? Math.ceil(maxDisplay) : 0,
   };
+});
+
+const getCategoryTreeCached = cache(async () => {
+  return db.category.findMany({
+    include: {
+      translations: true,
+      children: {
+        include: {
+          translations: true,
+        },
+        orderBy: {
+          sortOrder: "asc",
+        },
+      },
+    },
+    orderBy: {
+      sortOrder: "asc",
+    },
+  }) as Promise<CategoryTreeRecord[]>;
+});
+
+async function getAverageRatingsForProductIds(ids: string[]): Promise<Map<string, number>> {
+  const unique = [...new Set(ids)].filter(Boolean);
+  if (unique.length === 0) {
+    return new Map();
+  }
+
+  const rows = await db.review.groupBy({
+    by: ["productId"],
+    where: {
+      productId: { in: unique },
+      status: "APPROVED",
+    },
+    _avg: { rating: true },
+  });
+
+  return new Map(rows.map((row) => [row.productId, row._avg.rating ?? 0]));
+}
+
+async function withListProductRatings<T extends { id: string }>(
+  rows: T[],
+): Promise<Array<T & { reviews: Review[]; _avgRating?: number }>> {
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const ratings = await getAverageRatingsForProductIds(rows.map((row) => row.id));
+
+  return rows.map((row) => ({
+    ...row,
+    reviews: [] as Review[],
+    _avgRating: ratings.get(row.id) ?? undefined,
+  })) as Array<T & { reviews: Review[]; _avgRating?: number }>;
 }
 
 export const getSiteSettings = getSiteSettingsRecord;
 
 export async function getHomepageData(locale: AppLocale) {
-  const [settings, banners, categories, featuredProducts] = await Promise.all([
-    getSiteSettings(),
-    db.banner.findMany({
-      where: {
-        isActive: true,
-      },
-      include: {
-        translations: true,
-      },
-      orderBy: {
-        sortOrder: "asc",
-      },
-    }),
-    db.category.findMany({
-      include: {
-        translations: true,
-      },
-      orderBy: {
-        sortOrder: "asc",
-      },
-      take: 12,
-    }),
-    db.product.findMany({
-      where: {
-        status: "PUBLISHED",
-      },
-      include: productInclude,
-      take: 8,
-      orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
-    }),
-  ]);
+  try {
+    const settings = await getSiteSettings();
+    const featuredProductIds = settings ? parseJson<string[]>(settings.featuredProductIds, []) : [];
 
-  const featuredCategorySlugs = settings
-    ? parseJson<string[]>(settings.featuredCategorySlugs, [])
-    : [];
-  const featuredProductIds = settings
-    ? parseJson<string[]>(settings.featuredProductIds, [])
-    : [];
-  const heroBanners = banners.filter((banner) => banner.type === "HERO");
-  const promoBanners = banners.filter((banner) => banner.type === "PROMO");
-  const selectedCategories =
-    featuredCategorySlugs.length > 0
-      ? categories.filter((category) => featuredCategorySlugs.includes(category.slug))
-      : categories.slice(0, 3);
-  const selectedProducts =
-    featuredProductIds.length > 0
-      ? (
-          await db.product.findMany({
+    const [banners, categories, featuredRows] = await Promise.all([
+      db.banner.findMany({
+        where: {
+          isActive: true,
+        },
+        include: {
+          translations: true,
+        },
+        orderBy: {
+          sortOrder: "asc",
+        },
+      }),
+      db.category.findMany({
+        include: {
+          translations: true,
+        },
+        orderBy: {
+          sortOrder: "asc",
+        },
+        take: 12,
+      }),
+      featuredProductIds.length === 0
+        ? db.product.findMany({
+            where: {
+              status: "PUBLISHED",
+            },
+            include: productListInclude,
+            take: 8,
+            orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
+          })
+        : db.product.findMany({
             where: {
               status: "PUBLISHED",
               id: {
                 in: featuredProductIds,
               },
             },
-            include: productInclude,
-          })
-        ).sort(
-          (left, right) =>
-            featuredProductIds.indexOf(left.id) - featuredProductIds.indexOf(right.id),
-        )
-      : featuredProducts;
+            include: productListInclude,
+          }),
+    ]);
 
-  return {
-    settings,
-    banners,
-    heroBanners,
-    promoBanners,
-    categories,
-    featuredCategories: selectedCategories,
-    featuredProducts: selectedProducts,
-    locale,
-  };
+    const featuredCategorySlugs = settings
+      ? parseJson<string[]>(settings.featuredCategorySlugs, [])
+      : [];
+    const heroBanners = banners.filter((banner) => banner.type === "HERO");
+    const promoBanners = banners.filter((banner) => banner.type === "PROMO");
+    const selectedCategories =
+      featuredCategorySlugs.length > 0
+        ? categories.filter((category) => featuredCategorySlugs.includes(category.slug))
+        : categories.slice(0, 3);
+    const orderedFeatured =
+      featuredProductIds.length > 0
+        ? featuredProductIds
+            .map((id) => featuredRows.find((row) => row.id === id))
+            .filter((row): row is NonNullable<typeof row> => Boolean(row))
+        : featuredRows;
+    const selectedProducts = await withListProductRatings(orderedFeatured);
+
+    return {
+      settings,
+      banners,
+      heroBanners,
+      promoBanners,
+      categories,
+      featuredCategories: selectedCategories,
+      featuredProducts: selectedProducts,
+      locale,
+    };
+  } catch (error) {
+    if (isPrismaRecoverableBuildTimeError(error)) {
+      return {
+        settings: null,
+        banners: [],
+        heroBanners: [],
+        promoBanners: [],
+        categories: [],
+        featuredCategories: [],
+        featuredProducts: [],
+        locale,
+      };
+    }
+    throw error;
+  }
 }
 
 export async function getCatalogData({
@@ -406,39 +428,19 @@ export async function getCatalogData({
   locale: AppLocale;
   params: CatalogSearchParams;
 }) {
-  const [categories, brands, priceRange] = await Promise.all([
-    db.category.findMany({
-      include: {
-        translations: true,
-        children: {
-          include: {
-            translations: true,
-          },
-          orderBy: {
-            sortOrder: "asc",
-          },
-        },
-      },
-      orderBy: {
-        sortOrder: "asc",
-      },
-    }) as Promise<CategoryTreeRecord[]>,
-    db.brand.findMany({
+  try {
+  const [categories, priceRange, publishedCategoryCounts] = await Promise.all([
+    getCategoryTreeCached(),
+    getPublishedPriceDisplayRangeCached(),
+    db.product.groupBy({
+      by: ["categoryId"],
       where: {
-        products: {
-          some: {
-            status: "PUBLISHED",
-          },
-        },
+        status: "PUBLISHED",
       },
-      include: {
-        translations: true,
-      },
-      orderBy: {
-        sortOrder: "asc",
+      _count: {
+        categoryId: true,
       },
     }),
-    getPublishedPriceDisplayRange(),
   ]);
 
   const selectedCategory = params.category
@@ -467,7 +469,6 @@ export async function getCatalogData({
   const where = {
     status: "PUBLISHED",
     ...(allowedCategoryIds ? { categoryId: { in: allowedCategoryIds } } : {}),
-    ...(params.brands.length > 0 ? { brand: { slug: { in: params.brands } } } : {}),
     ...(params.availability.length > 0 ? { inventoryStatus: { in: params.availability } } : {}),
     ...(priceFilter ? { price: priceFilter } : {}),
     ...(params.onSaleOnly ? { oldPrice: { not: null } } : {}),
@@ -485,32 +486,11 @@ export async function getCatalogData({
                 },
               },
             },
-            {
-              brand: {
-                translations: {
-                  some: {
-                    locale,
-                    name: {
-                      contains: localizedQuery,
-                    },
-                  },
-                },
-              },
-            },
           ],
         }
       : {}),
   };
 
-  const publishedCategoryCounts = await db.product.groupBy({
-    by: ["categoryId"],
-    where: {
-      status: "PUBLISHED",
-    },
-    _count: {
-      categoryId: true,
-    },
-  });
   const baseCategoryCounts = Object.fromEntries(
     publishedCategoryCounts.map((item) => [item.categoryId, item._count.categoryId]),
   ) as Record<string, number>;
@@ -527,12 +507,11 @@ export async function getCatalogData({
   const totalItems = await db.product.count({ where });
   const totalPages = Math.max(1, Math.ceil(totalItems / catalogPageSize));
   const currentPage = Math.min(params.page, totalPages);
-  const products =
+  const productRows =
     params.sort === "rating"
       ? await (async () => {
           const whereSql = buildCatalogProductWhereSql({
             allowedCategoryIds,
-            brands: params.brands,
             availability: params.availability,
             minPriceStored,
             maxPriceStored,
@@ -555,25 +534,25 @@ export async function getCatalogData({
                 in: ids,
               },
             },
-            include: productInclude,
+            include: productListInclude,
           });
           const byId = new Map(fetched.map((p) => [p.id, p] as const));
           return ids
             .map((id) => byId.get(id))
-            .filter((p): p is ProductRecord => Boolean(p));
+            .filter((row): row is NonNullable<typeof row> => row != null);
         })()
       : await db.product.findMany({
           where,
-          include: productInclude,
+          include: productListInclude,
           orderBy: buildCatalogOrderBy(params.sort),
           skip: (currentPage - 1) * catalogPageSize,
           take: catalogPageSize,
         });
+  const products = await withListProductRatings(productRows);
   return {
     locale,
     categories,
     categoryCounts,
-    brands,
     products,
     selectedCategory,
     selectedSubcategory,
@@ -591,20 +570,53 @@ export async function getCatalogData({
     },
     priceRange,
   };
+  } catch (error) {
+    if (isPrismaRecoverableBuildTimeError(error)) {
+      return {
+        locale,
+        categories: [] as CategoryTreeRecord[],
+        categoryCounts: {} as Record<string, number>,
+        products: [] as ProductRecord[],
+        selectedCategory: null,
+        selectedSubcategory: null,
+        filters: {
+          ...params,
+          page: 1,
+        },
+        pagination: {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+          pageSize: catalogPageSize,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        },
+        priceRange: { min: 0, max: 0 },
+      };
+    }
+    throw error;
+  }
 }
 
 export const getProductBySlug = cache(async (slug: string) => {
-  return db.product.findFirst({
-    where: {
-      slug,
-      status: "PUBLISHED",
-    },
-    include: productInclude,
-  });
+  try {
+    return await db.product.findFirst({
+      where: {
+        slug,
+        status: "PUBLISHED",
+      },
+      include: productInclude,
+    });
+  } catch (error) {
+    if (isPrismaRecoverableBuildTimeError(error)) {
+      return null;
+    }
+    throw error;
+  }
 });
 
 export async function getRelatedProducts(product: ProductRecord) {
-  return db.product.findMany({
+  const rows = await db.product.findMany({
     where: {
       status: "PUBLISHED",
       categoryId: product.categoryId,
@@ -612,80 +624,143 @@ export async function getRelatedProducts(product: ProductRecord) {
         not: product.id,
       },
     },
-    include: productInclude,
+    include: productListInclude,
     take: 4,
   });
+
+  return withListProductRatings(rows);
 }
 
 export async function getRecentlyViewedProducts(currentProductId: string) {
-  const ids = (await getRecentlyViewedProductIds()).filter((id) => id !== currentProductId);
+  return withPrismaFallback(async () => {
+    const ids = (await getRecentlyViewedProductIds()).filter((id) => id !== currentProductId);
 
-  if (ids.length === 0) {
-    return [];
-  }
+    if (ids.length === 0) {
+      return [];
+    }
 
-  const products = await db.product.findMany({
-    where: {
-      status: "PUBLISHED",
-      id: {
-        in: ids,
+    const products = await db.product.findMany({
+      where: {
+        status: "PUBLISHED",
+        id: {
+          in: ids,
+        },
       },
-    },
-    include: productInclude,
-  });
+      include: productListInclude,
+    });
 
-  const order = new Map(ids.map((id, index) => [id, index] satisfies [string, number]));
+    const order = new Map(ids.map((id, index) => [id, index] satisfies [string, number]));
 
-  return products.sort((left, right) => (order.get(left.id) ?? 999) - (order.get(right.id) ?? 999)).slice(0, 4);
+    const sorted = products
+      .sort((left, right) => (order.get(left.id) ?? 999) - (order.get(right.id) ?? 999))
+      .slice(0, 4);
+
+    return withListProductRatings(sorted);
+  }, []);
 }
 
 export async function getWishlistItems() {
-  const owner = await resolveStorefrontOwner();
+  return withPrismaFallback(async () => {
+    const owner = await resolveStorefrontOwner();
 
-  return getOwnedListItems({
-    model: "wishlistItem",
-    owner,
-    orderBy: {
-      createdAt: "desc",
-    },
-  }) as Promise<WishlistItemRecord[]>;
+    const items = (await getOwnedListItems({
+      model: "wishlistItem",
+      owner,
+      orderBy: {
+        createdAt: "desc",
+      },
+    })) as WishlistItemRecord[];
+
+    if (items.length === 0) {
+      return items;
+    }
+
+    const ratings = await getAverageRatingsForProductIds(items.map((item) => item.product.id));
+
+    return items.map((item) => ({
+      ...item,
+      product: {
+        ...item.product,
+        reviews: [] as Review[],
+        _avgRating: ratings.get(item.product.id) ?? undefined,
+      },
+    }));
+  }, []);
 }
 
 export async function getCompareItems() {
-  const owner = await resolveStorefrontOwner();
+  return withPrismaFallback(async () => {
+    const owner = await resolveStorefrontOwner();
 
-  return getOwnedListItems({
-    model: "compareItem",
-    owner,
-    orderBy: {
-      createdAt: "asc",
-    },
-  }) as Promise<CompareItemRecord[]>;
+    const items = (await getOwnedListItems({
+      model: "compareItem",
+      owner,
+      orderBy: {
+        createdAt: "asc",
+      },
+    })) as CompareItemRecord[];
+
+    if (items.length === 0) {
+      return items;
+    }
+
+    const ratings = await getAverageRatingsForProductIds(items.map((item) => item.product.id));
+
+    return items.map((item) => ({
+      ...item,
+      product: {
+        ...item.product,
+        reviews: [] as Review[],
+        _avgRating: ratings.get(item.product.id) ?? undefined,
+      },
+    }));
+  }, []);
 }
 
 export async function getCart() {
-  const owner = await resolveStorefrontOwner();
+  return withPrismaFallback(async () => {
+    const owner = await resolveStorefrontOwner();
 
-  return getOwnedCart(owner, {
-    include: {
-      items: {
-        include: {
-          product: {
-            include: productInclude,
+    const cart = (await getOwnedCart(owner, {
+      include: {
+        items: {
+          include: {
+            product: {
+              include: productListInclude,
+            },
+          },
+          orderBy: {
+            id: "desc",
           },
         },
-        orderBy: {
-          id: "desc",
-        },
       },
-    },
-  }) as Promise<{
-    id: string;
-    items: CartItemRecord[];
-  } | null>;
+    })) as {
+      id: string;
+      items: CartItemRecord[];
+    } | null;
+
+    if (!cart?.items.length) {
+      return cart;
+    }
+
+    const ratings = await getAverageRatingsForProductIds(cart.items.map((item) => item.product.id));
+
+    return {
+      ...cart,
+      items: cart.items.map((item) => ({
+        ...item,
+        product: {
+          ...item.product,
+          reviews: [] as Review[],
+          _avgRating: ratings.get(item.product.id) ?? undefined,
+        },
+      })),
+    };
+  }, null);
 }
 
 export async function getAccountSurfaceData(locale: AppLocale) {
+  try {
   const sessionId = await getSessionId();
   const viewer = await getAuthenticatedUser();
   const ownerClauses = [
@@ -706,7 +781,7 @@ export async function getAccountSurfaceData(locale: AppLocale) {
             items: {
               include: {
                 product: {
-                  include: productInclude,
+                  include: productListInclude,
                 },
               },
             },
@@ -739,7 +814,7 @@ export async function getAccountSurfaceData(locale: AppLocale) {
                 items: {
                   include: {
                     product: {
-                      include: productInclude,
+                      include: productListInclude,
                     },
                   },
                 },
@@ -772,7 +847,47 @@ export async function getAccountSurfaceData(locale: AppLocale) {
       : Promise.resolve([]),
   ]);
 
-  const buildSummaries = builds.map((build) => ({
+  const accountSurfaceProductIds = [
+    ...new Set([
+      ...builds.flatMap((b) => b.items.map((i) => i.product.id)),
+      ...requests.flatMap((r) => r.build.items.map((i) => i.product.id)),
+    ]),
+  ];
+  const accountSurfaceRatings =
+    accountSurfaceProductIds.length > 0
+      ? await getAverageRatingsForProductIds(accountSurfaceProductIds)
+      : new Map<string, number>();
+
+  function enrichAccountSurfaceProduct<T extends { id: string }>(
+    product: T,
+  ): T & { reviews: Review[]; _avgRating?: number } {
+    return {
+      ...product,
+      reviews: [] as Review[],
+      _avgRating: accountSurfaceRatings.get(product.id) ?? undefined,
+    };
+  }
+
+  const buildsWithRatings = builds.map((build) => ({
+    ...build,
+    items: build.items.map((item) => ({
+      ...item,
+      product: enrichAccountSurfaceProduct(item.product),
+    })),
+  }));
+
+  const requestsWithRatings = requests.map((request) => ({
+    ...request,
+    build: {
+      ...request.build,
+      items: request.build.items.map((item) => ({
+        ...item,
+        product: enrichAccountSurfaceProduct(item.product),
+      })),
+    },
+  }));
+
+  const buildSummaries = buildsWithRatings.map((build) => ({
     id: build.id,
     name: build.name,
     slug: build.slug,
@@ -789,7 +904,7 @@ export async function getAccountSurfaceData(locale: AppLocale) {
     })),
   }));
 
-  const buildRequestSummaries = requests.map((request) => {
+  const buildRequestSummaries = requestsWithRatings.map((request) => {
     const snapshotItems = parseBuildRequestItemsSnapshot(request.itemsSnapshot);
     const items =
       snapshotItems.length > 0
@@ -867,6 +982,23 @@ export async function getAccountSurfaceData(locale: AppLocale) {
     orders: storefrontOrders,
     buildRequests: buildRequestSummaries,
   };
+  } catch (error) {
+    if (isPrismaRecoverableBuildTimeError(error)) {
+      return {
+        locale,
+        isAuthenticated: false,
+        viewer: null,
+        wishlist: [],
+        compareCount: 0,
+        cartItemsCount: 0,
+        cartSubtotal: 0,
+        builds: [],
+        orders: [],
+        buildRequests: [],
+      };
+    }
+    throw error;
+  }
 }
 
 export function pickByLocale<
@@ -881,14 +1013,15 @@ export function pickByLocale<
   );
 }
 
-export function mapProduct(product: ProductRecord, locale: AppLocale) {
+export function mapProduct(product: ProductRecord & { _avgRating?: number }, locale: AppLocale) {
   const translation = pickByLocale(product.translations, locale);
-  const brandTranslation = pickByLocale(product.brand.translations, locale);
   const categoryTranslation = pickByLocale(product.category.translations, locale);
   const rating =
-    product.reviews.length > 0
-      ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
-      : 0;
+    typeof product._avgRating === "number"
+      ? product._avgRating
+      : product.reviews.length > 0
+        ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
+        : 0;
 
   return {
     id: product.id,
@@ -911,10 +1044,6 @@ export function mapProduct(product: ProductRecord, locale: AppLocale) {
       inventoryLabels[
         product.inventoryStatus as keyof typeof inventoryLabels
       ]?.[locale] ?? product.inventoryStatus,
-    brand: {
-      name: brandTranslation.name,
-      slug: product.brand.slug,
-    },
     category: {
       name: categoryTranslation.name,
       slug: product.category.slug,

@@ -12,7 +12,6 @@ const bulkSchema = z.object({
     "UNPUBLISH",
     "MOVE_TO_DRAFT",
     "ASSIGN_CATEGORY",
-    "ASSIGN_BRAND",
     "DELETE",
     "SET_PRICE",
     "SET_STOCK",
@@ -20,7 +19,6 @@ const bulkSchema = z.object({
     "ADJUST_PRICE_PERCENT",
   ]),
   categoryId: z.string().trim().optional(),
-  brandId: z.string().trim().optional(),
   price: z.coerce.number().finite().optional(),
   stock: z.coerce.number().int().optional(),
   delta: z.coerce.number().finite().optional(),
@@ -67,10 +65,6 @@ export async function POST(request: Request) {
 
   if (action === "ASSIGN_CATEGORY" && !parsed.data.categoryId) {
     return NextResponse.json({ error: "categoryId is required" }, { status: 400 });
-  }
-
-  if (action === "ASSIGN_BRAND" && !parsed.data.brandId) {
-    return NextResponse.json({ error: "brandId is required" }, { status: 400 });
   }
 
   if (action === "SET_PRICE" && typeof parsed.data.price !== "number") {
@@ -173,34 +167,6 @@ export async function POST(request: Request) {
       },
       data: {
         categoryId: parsed.data.categoryId!,
-      },
-    });
-
-    return NextResponse.json({ ok: true, processedCount: result.count });
-  }
-
-  if (action === "ASSIGN_BRAND") {
-    const brand = await db.brand.findUnique({
-      where: {
-        id: parsed.data.brandId!,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!brand) {
-      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
-    }
-
-    const result = await db.product.updateMany({
-      where: {
-        id: {
-          in: productIds,
-        },
-      },
-      data: {
-        brandId: parsed.data.brandId!,
       },
     });
 

@@ -5,8 +5,9 @@ export const SITE_MODES = {
 
 export type SiteMode = (typeof SITE_MODES)[keyof typeof SITE_MODES];
 
+/** Default storefront experience: PC configurator / components for builds. Explicit `STORE` keeps classic catalog-first UX. */
 export function normalizeSiteMode(value: string | null | undefined): SiteMode {
-  return value === SITE_MODES.pcBuild ? SITE_MODES.pcBuild : SITE_MODES.store;
+  return value === SITE_MODES.store ? SITE_MODES.store : SITE_MODES.pcBuild;
 }
 
 export function isPcBuildSiteMode(siteMode: SiteMode) {

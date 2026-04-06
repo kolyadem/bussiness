@@ -8,7 +8,6 @@ function createCatalogHref(filters: CatalogSearchParams, page: number) {
   if (filters.q) params.set("q", filters.q);
   if (filters.category) params.set("category", filters.category);
   if (filters.subcategory) params.set("subcategory", filters.subcategory);
-  for (const brand of filters.brands) params.append("brand", brand);
   for (const availability of filters.availability) params.append("availability", availability);
   if (typeof filters.minPrice === "number") params.set("minPrice", String(filters.minPrice));
   if (typeof filters.maxPrice === "number") params.set("maxPrice", String(filters.maxPrice));

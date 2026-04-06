@@ -9,6 +9,9 @@ export const messages: Record<AppLocale, Record<string, string>> = {
     navCompare: "Порівняння",
     navCart: "Кошик",
     heroBadge: "premium electronics store",
+    homeHeroTitle: "Техніка, зібрана без випадкових компромісів",
+    homeHeroSubtitle:
+      "Преміальний каталог компонентів, готових ПК і периферії — чистий UX і актуальні дані.",
     heroButton: "Перейти до каталогу",
     heroSecondary: "Подивитися обране",
     featured: "Рекомендовані моделі",
@@ -111,6 +114,9 @@ export const messages: Record<AppLocale, Record<string, string>> = {
     navCompare: "Сравнение",
     navCart: "Корзина",
     heroBadge: "premium electronics store",
+    homeHeroTitle: "Техника, собранная без случайных компромиссов",
+    homeHeroSubtitle:
+      "Премиальный каталог компонентов, готовых ПК и периферии — чистый UX и актуальные данные.",
     heroButton: "Перейти в каталог",
     heroSecondary: "Открыть избранное",
     featured: "Рекомендуемые модели",
@@ -213,6 +219,9 @@ export const messages: Record<AppLocale, Record<string, string>> = {
     navCompare: "Compare",
     navCart: "Cart",
     heroBadge: "premium electronics store",
+    homeHeroTitle: "Tech assembled without accidental compromises",
+    homeHeroSubtitle:
+      "A premium catalog of components, prebuilt PCs and peripherals — clean UX and live data.",
     heroButton: "Browse catalog",
     heroSecondary: "Open wishlist",
     featured: "Featured hardware",

@@ -32,7 +32,6 @@ export async function generateMetadata({
     !parsedSearchParams.q &&
     !parsedSearchParams.category &&
     !parsedSearchParams.subcategory &&
-    parsedSearchParams.brands.length === 0 &&
     parsedSearchParams.availability.length === 0 &&
     parsedSearchParams.minPrice === null &&
     parsedSearchParams.maxPrice === null &&
