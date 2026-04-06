@@ -61,3 +61,21 @@ export const db = new Proxy({} as PrismaClient, {
     return value;
   },
 });
+
+/**
+ * For CLI/bootstrap scripts only: disconnect pool + client if they were created.
+ * Avoids calling `db.$disconnect()` through the Proxy when no query ran (e.g. skipped owner bootstrap).
+ */
+export async function disconnectPrisma(): Promise<void> {
+  try {
+    if (globalThis.luminaPrismaClientV2) {
+      await globalThis.luminaPrismaClientV2.$disconnect();
+    }
+  } finally {
+    if (globalThis.luminaPgPool) {
+      await globalThis.luminaPgPool.end();
+    }
+    globalThis.luminaPgPool = undefined;
+    globalThis.luminaPrismaClientV2 = undefined;
+  }
+}

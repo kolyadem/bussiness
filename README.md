@@ -14,6 +14,7 @@ The project already includes:
 
 ## Stack
 
+- **Node.js 20.x** (see `.nvmrc` and `package.json` → `engines` — pinned to major 20 for Vercel)
 - Next.js 16 App Router
 - React 19
 - TypeScript
@@ -146,7 +147,7 @@ npm run start
 
 ## Deploy Notes
 
-- See [`docs/vercel-deploy.md`](docs/vercel-deploy.md) for Vercel env and build. The Vercel build runs **`prisma migrate deploy` → `prisma generate` → `npm run bootstrap:owner` → `next build`**: owner/admin is created or updated from **`MAIN_ADMIN_*`** when **`MAIN_ADMIN_PASSWORD`** is set (no duplicates; idempotent).
+- See [`docs/vercel-deploy.md`](docs/vercel-deploy.md). **Vercel build** runs **`prisma generate` → `npm run bootstrap:owner` → `next build`** (migrations are **not** run on each deploy — run **`npm run db:migrate`** separately against production `DATABASE_URL` to avoid Postgres advisory-lock issues). Owner bootstrap uses **`MAIN_ADMIN_*`** when set.
 - Set `AUTH_SECRET`, `AUTH_URL`, `NEXTAUTH_URL` and `NEXT_PUBLIC_BASE_URL` to the real public origin before deployment.
 - Do not rely on `prisma db push` for production schema changes.
 - Keep `AUTH_SECRET` stable between releases.

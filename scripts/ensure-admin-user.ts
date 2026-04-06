@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { ensureOwnerAccount } from "@/lib/admin/ensure-owner-account";
-import { db } from "@/lib/db";
+import { disconnectPrisma } from "@/lib/db";
 
 async function main() {
   const result = await ensureOwnerAccount({ requirePassword: true });
@@ -18,5 +18,5 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await db.$disconnect();
+    await disconnectPrisma();
   });

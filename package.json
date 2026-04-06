@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=20.9.0 <21"
   },
   "scripts": {
     "dev": "next dev",
@@ -12,6 +12,7 @@
     "dev:clean": "npm run clean:next && npm run dev",
     "dev:webpack:clean": "npm run clean:next && npm run dev:webpack",
     "build": "prisma generate && next build",
+    "build:vercel": "prisma generate && npm run bootstrap:owner && next build",
     "build:with-migrate": "prisma migrate deploy && prisma generate && npm run bootstrap:owner && next build",
     "start": "next start",
     "lint": "eslint",
@@ -64,7 +65,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
-    "tsx": "^4.21.0",
     "typescript": "^5"
   },
   "prisma": {
