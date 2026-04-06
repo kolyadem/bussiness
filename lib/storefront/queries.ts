@@ -1,3 +1,5 @@
+import { cache } from "react";
+import { Prisma } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { defaultLocale, inventoryLabels, type AppLocale } from "@/lib/constants";
@@ -177,12 +179,147 @@ function buildCatalogOrderBy(sort: CatalogSortOption) {
   }
 }
 
-function getAverageRating(product: ProductRecord) {
-  if (product.reviews.length === 0) {
-    return 0;
+/**
+ * SQL WHERE matching Prisma `where` in getCatalogData (same filters as db.product.count/findMany).
+ * Values are passed as bound parameters (Prisma.sql) — no string concatenation of user input.
+ */
+function buildCatalogProductWhereSql(params: {
+  allowedCategoryIds: string[] | null;
+  brands: string[];
+  availability: CatalogAvailabilityOption[];
+  minPriceStored: number | null;
+  maxPriceStored: number | null;
+  onSaleOnly: boolean;
+  localizedQuery: string;
+  locale: AppLocale;
+}): Prisma.Sql {
+  const parts: Prisma.Sql[] = [Prisma.sql`p."status" = 'PUBLISHED'`];
+
+  if (params.allowedCategoryIds && params.allowedCategoryIds.length > 0) {
+    parts.push(
+      Prisma.sql`p."categoryId" IN (${Prisma.join(
+        params.allowedCategoryIds.map((id) => Prisma.sql`${id}`),
+      )})`,
+    );
   }
 
-  return product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length;
+  if (params.brands.length > 0) {
+    parts.push(
+      Prisma.sql`p."brandId" IN (SELECT "id" FROM "Brand" WHERE "slug" IN (${Prisma.join(
+        params.brands.map((slug) => Prisma.sql`${slug}`),
+      )}))`,
+    );
+  }
+
+  if (params.availability.length > 0) {
+    parts.push(
+      Prisma.sql`p."inventoryStatus" IN (${Prisma.join(
+        params.availability.map((status) => Prisma.sql`${status}`),
+      )})`,
+    );
+  }
+
+  if (params.minPriceStored !== null) {
+    parts.push(Prisma.sql`p."price" >= ${params.minPriceStored}`);
+  }
+  if (params.maxPriceStored !== null) {
+    parts.push(Prisma.sql`p."price" <= ${params.maxPriceStored}`);
+  }
+
+  if (params.onSaleOnly) {
+    parts.push(Prisma.sql`p."oldPrice" IS NOT NULL`);
+  }
+
+  if (params.localizedQuery.length > 0) {
+    const q = params.localizedQuery;
+    const loc = params.locale;
+    parts.push(
+      Prisma.sql`(
+        p."sku" LIKE '%' || ${q} || '%'
+        OR EXISTS (
+          SELECT 1 FROM "ProductTranslation" pt
+          WHERE pt."productId" = p."id" AND pt."locale" = ${loc}
+          AND pt."name" LIKE '%' || ${q} || '%'
+        )
+        OR EXISTS (
+          SELECT 1 FROM "Brand" b
+          INNER JOIN "BrandTranslation" bt ON bt."brandId" = b."id"
+          WHERE b."id" = p."brandId" AND bt."locale" = ${loc}
+          AND bt."name" LIKE '%' || ${q} || '%'
+        )
+      )`,
+    );
+  }
+
+  return Prisma.join(parts, " AND ");
+}
+
+async function queryCatalogRatingPageIds(params: {
+  whereSql: Prisma.Sql;
+  limit: number;
+  offset: number;
+}): Promise<string[]> {
+  const rows = await db.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT p."id"
+    FROM "Product" p
+    LEFT JOIN (
+      SELECT "productId", AVG("rating") AS avg_rating
+      FROM "Review"
+      WHERE "status" = 'APPROVED'
+      GROUP BY "productId"
+    ) rev ON rev."productId" = p."id"
+    WHERE ${params.whereSql}
+    ORDER BY COALESCE(rev.avg_rating, 0) DESC, p."createdAt" DESC
+    LIMIT ${params.limit} OFFSET ${params.offset}
+  `);
+
+  return rows.map((row) => row.id);
+}
+
+/** Min/max catalog prices in display units without scanning every row (see storedMinorUnitsToDisplayPrice). */
+async function getPublishedPriceDisplayRange(): Promise<{ min: number; max: number }> {
+  const rows = await db.product.groupBy({
+    by: ["currency"],
+    where: {
+      status: "PUBLISHED",
+    },
+    _min: {
+      price: true,
+    },
+    _max: {
+      price: true,
+    },
+  });
+
+  if (rows.length === 0) {
+    return {
+      min: 0,
+      max: 0,
+    };
+  }
+
+  let minDisplay = Infinity;
+  let maxDisplay = -Infinity;
+
+  for (const row of rows) {
+    if (row._min.price != null) {
+      minDisplay = Math.min(
+        minDisplay,
+        storedMinorUnitsToDisplayPrice(row._min.price, row.currency),
+      );
+    }
+    if (row._max.price != null) {
+      maxDisplay = Math.max(
+        maxDisplay,
+        storedMinorUnitsToDisplayPrice(row._max.price, row.currency),
+      );
+    }
+  }
+
+  return {
+    min: Number.isFinite(minDisplay) ? Math.floor(minDisplay) : 0,
+    max: Number.isFinite(maxDisplay) ? Math.ceil(maxDisplay) : 0,
+  };
 }
 
 export const getSiteSettings = getSiteSettingsRecord;
@@ -269,7 +406,7 @@ export async function getCatalogData({
   locale: AppLocale;
   params: CatalogSearchParams;
 }) {
-  const [categories, brands, publishedPrices] = await Promise.all([
+  const [categories, brands, priceRange] = await Promise.all([
     db.category.findMany({
       include: {
         translations: true,
@@ -301,15 +438,7 @@ export async function getCatalogData({
         sortOrder: "asc",
       },
     }),
-    db.product.findMany({
-      where: {
-        status: "PUBLISHED",
-      },
-      select: {
-        price: true,
-        currency: true,
-      },
-    }),
+    getPublishedPriceDisplayRange(),
   ]);
 
   const selectedCategory = params.category
@@ -400,22 +529,39 @@ export async function getCatalogData({
   const currentPage = Math.min(params.page, totalPages);
   const products =
     params.sort === "rating"
-      ? (
-          await db.product.findMany({
-            where,
+      ? await (async () => {
+          const whereSql = buildCatalogProductWhereSql({
+            allowedCategoryIds,
+            brands: params.brands,
+            availability: params.availability,
+            minPriceStored,
+            maxPriceStored,
+            onSaleOnly: params.onSaleOnly,
+            localizedQuery,
+            locale,
+          });
+          const offset = (currentPage - 1) * catalogPageSize;
+          const ids = await queryCatalogRatingPageIds({
+            whereSql,
+            limit: catalogPageSize,
+            offset,
+          });
+          if (ids.length === 0) {
+            return [];
+          }
+          const fetched = await db.product.findMany({
+            where: {
+              id: {
+                in: ids,
+              },
+            },
             include: productInclude,
-          })
-        )
-          .sort((left, right) => {
-            const ratingDiff = getAverageRating(right) - getAverageRating(left);
-
-            if (ratingDiff !== 0) {
-              return ratingDiff;
-            }
-
-            return right.createdAt.getTime() - left.createdAt.getTime();
-          })
-          .slice((currentPage - 1) * catalogPageSize, currentPage * catalogPageSize)
+          });
+          const byId = new Map(fetched.map((p) => [p.id, p] as const));
+          return ids
+            .map((id) => byId.get(id))
+            .filter((p): p is ProductRecord => Boolean(p));
+        })()
       : await db.product.findMany({
           where,
           include: productInclude,
@@ -423,10 +569,6 @@ export async function getCatalogData({
           skip: (currentPage - 1) * catalogPageSize,
           take: catalogPageSize,
         });
-  const displayPrices = publishedPrices.map((product) =>
-    storedMinorUnitsToDisplayPrice(product.price, product.currency),
-  );
-
   return {
     locale,
     categories,
@@ -447,14 +589,11 @@ export async function getCatalogData({
       hasPreviousPage: currentPage > 1,
       hasNextPage: currentPage < totalPages,
     },
-    priceRange: {
-      min: displayPrices.length > 0 ? Math.floor(Math.min(...displayPrices)) : 0,
-      max: displayPrices.length > 0 ? Math.ceil(Math.max(...displayPrices)) : 0,
-    },
+    priceRange,
   };
 }
 
-export async function getProductBySlug(slug: string) {
+export const getProductBySlug = cache(async (slug: string) => {
   return db.product.findFirst({
     where: {
       slug,
@@ -462,7 +601,7 @@ export async function getProductBySlug(slug: string) {
     },
     include: productInclude,
   });
-}
+});
 
 export async function getRelatedProducts(product: ProductRecord) {
   return db.product.findMany({

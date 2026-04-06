@@ -25,6 +25,7 @@ import {
 } from "@/lib/storefront/configurator";
 import { addProductToOwnedCart, resolveStorefrontOwner } from "@/lib/storefront/persistence";
 import { mapProduct } from "@/lib/storefront/queries";
+import type { ProductRecord } from "@/lib/storefront/types";
 
 export const configuratorSelectionSortOptions = [
   "featured",
@@ -60,6 +61,38 @@ const configuratorProductInclude = {
     },
     orderBy: {
       createdAt: "desc" as const,
+    },
+  },
+} as const;
+
+/** Narrower include for slot selection list (same downstream logic; less DB payload). */
+const configuratorSlotSelectionInclude = {
+  translations: true,
+  attributes: {
+    include: {
+      attribute: {
+        select: {
+          code: true,
+        },
+      },
+    },
+  },
+  brand: {
+    include: {
+      translations: true,
+    },
+  },
+  category: {
+    include: {
+      translations: true,
+    },
+  },
+  reviews: {
+    where: {
+      status: "APPROVED",
+    },
+    select: {
+      rating: true,
     },
   },
 } as const;
@@ -647,7 +680,7 @@ export async function getConfiguratorProductsForSlot({
           }
         : {}),
     },
-    include: configuratorProductInclude,
+    include: configuratorSlotSelectionInclude,
     orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
   }),
     buildSlug ? getConfiguratorBuild(buildSlug, locale) : Promise.resolve(null),
@@ -663,8 +696,8 @@ export async function getConfiguratorProductsForSlot({
       ),
     )
     .map((product) => ({
-      ...mapProduct(product, locale),
-      technicalAttributes: getNormalizedTechnicalAttributeMap(product),
+      ...mapProduct(product as ProductRecord, locale),
+      technicalAttributes: getNormalizedTechnicalAttributeMap(product as ProductRecord),
     }))
     .filter((product) => (vendor ? matchesConfiguratorVendor(product, vendor) : true))
     .filter((product) =>

@@ -4,10 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:webpack": "next dev --webpack",
+    "clean:next": "node -e \"try { require('fs').rmSync('.next', { recursive: true, force: true }); } catch (e) { if (e.code !== 'ENOENT') throw e; }\"",
+    "dev:clean": "npm run clean:next && npm run dev",
+    "dev:webpack:clean": "npm run clean:next && npm run dev:webpack",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "verify": "npm run lint && npm run build",
+    "verify:b1": "tsx scripts/verify-b1-technical.ts",
     "test:preview-match": "tsx --test lib/admin/price-updates/preview-match.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -19,6 +24,7 @@
     "catalog:pilot": "tsx scripts/import-pilot-pc-components.ts",
     "catalog:bootstrap-pilot-categories": "tsx scripts/bootstrap-pilot-categories.ts",
     "catalog:import:phase1-mini": "tsx scripts/import-phase1-mini-batch.ts",
+    "catalog:safe-wipe": "tsx scripts/catalog-safe-wipe.ts",
     "preview:live-sample": "tsx scripts/preview-live-phase1-sample.ts",
     "data:patch-price-tracking": "tsx scripts/patch-price-tracking-metadata.ts"
   },

@@ -182,18 +182,34 @@ const bannerBaseSchema = z.object({
   sortOrder: z.coerce.number().int().min(0),
 });
 
+/** Empty string allowed; persisted as "" without DB migration. */
+const optionalSupportEmail = z.union([z.literal(""), z.string().trim().email()]);
+const optionalSupportPhone = z.union([z.literal(""), z.string().trim().min(5).max(40)]);
+const optionalAddress = z.union([z.literal(""), z.string().trim().min(2).max(200)]);
+
+/** Whitespace-only social URLs become null (no model change). */
+const optionalSocialUrl = z
+  .union([z.null(), z.string()])
+  .transform((value) => {
+    if (value == null) {
+      return null;
+    }
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  });
+
 const siteSettingsSchema = z.object({
   siteMode: z.enum([SITE_MODES.store, SITE_MODES.pcBuild]),
   brandName: z.string().trim().min(2).max(120),
   shortBrandName: z.string().trim().max(40).nullable(),
   logoText: z.string().trim().max(40).nullable(),
-  supportEmail: z.string().trim().email(),
-  supportPhone: z.string().trim().min(5).max(40),
-  address: z.string().trim().min(2).max(200),
-  facebookUrl: z.string().trim().nullable(),
-  instagramUrl: z.string().trim().nullable(),
-  telegramUrl: z.string().trim().nullable(),
-  youtubeUrl: z.string().trim().nullable(),
+  supportEmail: optionalSupportEmail,
+  supportPhone: optionalSupportPhone,
+  address: optionalAddress,
+  facebookUrl: optionalSocialUrl,
+  instagramUrl: optionalSocialUrl,
+  telegramUrl: optionalSocialUrl,
+  youtubeUrl: optionalSocialUrl,
   metaTitle: z.string().trim().max(180).nullable(),
   metaDescription: z.string().trim().max(300).nullable(),
   defaultCurrency: z.string().trim().min(3).max(3),

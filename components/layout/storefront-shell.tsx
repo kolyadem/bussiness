@@ -45,16 +45,21 @@ export async function StorefrontShell({
         currency: product.currency,
       };
     }) ?? [];
+  const facebookUrl = settings?.facebookUrl?.trim();
+  const instagramUrl = settings?.instagramUrl?.trim();
+  const youtubeUrl = settings?.youtubeUrl?.trim();
+  const telegramUrl = settings?.telegramUrl?.trim();
+  const supportPhoneTrimmed = settings?.supportPhone?.trim();
+
   const socials = [
-    settings?.facebookUrl ? { label: "Facebook", href: settings.facebookUrl } : null,
-    settings?.instagramUrl ? { label: "Instagram", href: settings.instagramUrl } : null,
-    settings?.youtubeUrl ? { label: "YouTube", href: settings.youtubeUrl } : null,
+    facebookUrl ? { label: "Facebook", href: facebookUrl } : null,
+    instagramUrl ? { label: "Instagram", href: instagramUrl } : null,
+    youtubeUrl ? { label: "YouTube", href: youtubeUrl } : null,
   ].filter(Boolean) as Array<{ label: string; href: string }>;
+  const whatsappHref = supportPhoneTrimmed ? buildWhatsAppHref(supportPhoneTrimmed) : null;
   const contactLinks = [
-    settings?.telegramUrl ? { label: "Telegram", href: settings.telegramUrl } : null,
-    settings?.supportPhone
-      ? { label: "WhatsApp", href: buildWhatsAppHref(settings.supportPhone) }
-      : null,
+    telegramUrl ? { label: "Telegram", href: telegramUrl } : null,
+    whatsappHref ? { label: "WhatsApp", href: whatsappHref } : null,
   ].filter((item): item is { label: string; href: string } => Boolean(item?.href));
 
   return (
@@ -76,9 +81,9 @@ export async function StorefrontShell({
       <Footer
         locale={locale}
         brandName={brandName}
-        supportEmail={settings?.supportEmail ?? "hello@luminatech.store"}
+        supportEmail={settings?.supportEmail ?? ""}
         supportPhone={settings?.supportPhone ?? ""}
-        address={settings?.address ?? "Kyiv"}
+        address={settings?.address ?? ""}
         socials={socials}
         contactLinks={contactLinks}
       />

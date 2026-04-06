@@ -56,26 +56,35 @@ export default async function LocaleHome({
       ctaLabel: translation.ctaLabel,
     };
   });
+  const supportEmailLd = data.settings?.supportEmail?.trim();
+  const supportPhoneLd = data.settings?.supportPhone?.trim();
+  const contactPointLd =
+    supportEmailLd || supportPhoneLd
+      ? [
+          {
+            "@type": "ContactPoint",
+            contactType: "customer support",
+            ...(supportEmailLd ? { email: supportEmailLd } : {}),
+            ...(supportPhoneLd ? { telephone: supportPhoneLd } : {}),
+          },
+        ]
+      : [];
+
   const organizationStructuredData = {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: data.settings?.brandName || "Lumina Tech",
     url: getAbsoluteUrl(`/${locale}`),
     logo: getAbsoluteUrl(data.settings?.logoPath || "/favicon.ico"),
-    contactPoint: [
-      {
-        "@type": "ContactPoint",
-        email: data.settings?.supportEmail,
-        telephone: data.settings?.supportPhone,
-        contactType: "customer support",
-      },
-    ],
+    ...(contactPointLd.length > 0 ? { contactPoint: contactPointLd } : {}),
     sameAs: [
       data.settings?.facebookUrl,
       data.settings?.instagramUrl,
       data.settings?.telegramUrl,
       data.settings?.youtubeUrl,
-    ].filter(Boolean),
+    ]
+      .map((url) => url?.trim())
+      .filter((url): url is string => Boolean(url)),
   };
   const websiteStructuredData = {
     "@context": "https://schema.org",
