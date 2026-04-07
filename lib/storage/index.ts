@@ -129,7 +129,7 @@ const vercelBlobStorageDriver: StorageDriver = {
     const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
     if (!token) {
       throw new Error(
-        "BLOB_READ_WRITE_TOKEN is required when STORAGE_DRIVER is vercel-blob. Add it in Vercel → Storage → Blob, or copy the token into env.",
+        "STORAGE_BLOB_TOKEN_MISSING",
       );
     }
 
@@ -170,6 +170,7 @@ const vercelBlobStorageDriver: StorageDriver = {
 };
 
 let externalFallbackWarningShown = false;
+let vercelBlobTokenMissingFallbackWarningShown = false;
 
 function getStorageDriver(): StorageDriver {
   if (STORAGE_DRIVER === "local") {
@@ -177,6 +178,18 @@ function getStorageDriver(): StorageDriver {
   }
 
   if (STORAGE_DRIVER === "vercel-blob" || STORAGE_DRIVER === "blob") {
+    const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+    if (!token) {
+      if (!vercelBlobTokenMissingFallbackWarningShown) {
+        vercelBlobTokenMissingFallbackWarningShown = true;
+        void logEvent(
+          "warn",
+          "STORAGE_DRIVER is vercel-blob but BLOB_READ_WRITE_TOKEN is missing; using local filesystem for uploads (set the token in production on Vercel)",
+          {},
+        );
+      }
+      return localStorageDriver;
+    }
     return vercelBlobStorageDriver;
   }
 

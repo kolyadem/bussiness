@@ -1,21 +1,16 @@
 "use client";
 
-import { useTransition } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { CatalogSearchParams } from "@/lib/storefront/queries";
+import { useCatalogNavigation } from "@/components/catalog/catalog-client-shell";
 import { cn } from "@/lib/utils";
 
 export function CatalogSort({
   sort,
-  locale,
 }: {
   sort: CatalogSearchParams["sort"];
   locale: string;
 }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const params = useSearchParams();
-  const [isPending, startNavigation] = useTransition();
+  const { isPending, navigate } = useCatalogNavigation();
 
   const sortLabels = {
     newest: "Спочатку нові",
@@ -25,25 +20,18 @@ export function CatalogSort({
   } satisfies Record<CatalogSearchParams["sort"], string>;
 
   const updateSort = (nextSort: string) => {
-    const current = new URLSearchParams(params.toString());
-
-    current.delete("page");
-
-    if (nextSort === "newest") {
-      current.delete("sort");
-    } else {
-      current.set("sort", nextSort);
-    }
-
-    const query = current.toString();
-    startNavigation(() => {
-      router.replace(query ? `${pathname}?${query}` : pathname);
+    navigate((current) => {
+      if (nextSort === "newest") {
+        current.delete("sort");
+      } else {
+        current.set("sort", nextSort);
+      }
     });
   };
 
   return (
     <div
-      className={cn("w-full min-w-0 sm:w-auto", isPending && "opacity-85")}
+      className={cn("w-full min-w-0 sm:w-auto", isPending && "opacity-80")}
       aria-busy={isPending}
     >
       <select

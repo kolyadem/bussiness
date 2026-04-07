@@ -94,7 +94,7 @@ function parseMetadataPayload(value: string) {
 
     return {
       success: true as const,
-      data: parsed as Record<string, string | number | boolean>,
+      data: parsed as Record<string, unknown>,
     };
   } catch {
     return {
@@ -280,14 +280,34 @@ async function wouldCreateCategoryCycle(categoryId: string, nextParentId: string
 }
 
 function buildLocalizedTranslations(formData: FormData) {
+  const name = String(formData.get(`name:${defaultLocale}`) ?? "").trim();
+  let shortDescription = String(formData.get(`shortDescription:${defaultLocale}`) ?? "").trim();
+  let description = String(formData.get(`description:${defaultLocale}`) ?? "").trim();
+  const seoTitle = String(formData.get(`seoTitle:${defaultLocale}`) ?? "").trim();
+  const seoDescription = String(formData.get(`seoDescription:${defaultLocale}`) ?? "").trim();
+
+  if (shortDescription.length < 2) {
+    shortDescription = (name.slice(0, 240) || "—").slice(0, 240);
+    if (shortDescription.length < 2) {
+      shortDescription = "—".repeat(2);
+    }
+  }
+
+  if (description.length < 2) {
+    description = shortDescription.length >= 2 ? shortDescription : name;
+    if (description.length < 2) {
+      description = `${name || "Товар"}. Детальний опис можна додати пізніше.`;
+    }
+  }
+
   const translations = [
     {
       locale: defaultLocale,
-      name: String(formData.get(`name:${defaultLocale}`) ?? "").trim(),
-      shortDescription: String(formData.get(`shortDescription:${defaultLocale}`) ?? "").trim(),
-      description: String(formData.get(`description:${defaultLocale}`) ?? "").trim(),
-      seoTitle: String(formData.get(`seoTitle:${defaultLocale}`) ?? "").trim(),
-      seoDescription: String(formData.get(`seoDescription:${defaultLocale}`) ?? "").trim(),
+      name,
+      shortDescription,
+      description,
+      seoTitle,
+      seoDescription,
     },
   ];
 
@@ -467,7 +487,7 @@ async function buildProductPayload(
   if (!heroImage) {
     return {
       error: adminText(locale, {
-        uk: "Додайте головне фото товару.",
+        uk: "Додайте хоча б одне фото (у галерею або окремо як головне).",
       }),
     } as const;
   }
@@ -480,6 +500,20 @@ async function buildProductPayload(
         uk: "Поле metadata повинно містити коректний JSON-об'єкт.",
       }),
     } as const;
+  }
+
+  const ptRozetka = String(formData.get("priceTrackingRozetkaUrl") ?? "").trim();
+  const ptTelemart = String(formData.get("priceTrackingTelemartUrl") ?? "").trim();
+  if (ptRozetka || ptTelemart) {
+    const existing =
+      metadataResult.data.priceTracking && typeof metadataResult.data.priceTracking === "object"
+        ? (metadataResult.data.priceTracking as Record<string, unknown>)
+        : {};
+    metadataResult.data.priceTracking = {
+      ...existing,
+      ...(ptRozetka ? { rozetkaUrl: ptRozetka } : {}),
+      ...(ptTelemart ? { telemartUrl: ptTelemart } : {}),
+    };
   }
 
   const specs = buildSpecsPayload(formData);
@@ -513,10 +547,26 @@ async function buildProductPayload(
     brandIdForIngest = await getDefaultBrandId();
   }
 
+  const rawSku = String(formData.get("sku") ?? "").trim();
+  let skuForIngest = rawSku;
+  if (rawSku.length < 2) {
+    if (!existingProductId) {
+      skuForIngest = `AUTO-${slugify(normalizedSlug || "item")
+        .replace(/-/g, "")
+        .slice(0, 24)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`.toUpperCase().slice(0, 64);
+    } else {
+      return {
+        error: adminText(locale, {
+          uk: "Вкажіть SKU (мінімум 2 символи).",
+        }),
+      } as const;
+    }
+  }
+
   const normalized = normalizeProductIngestPayload({
     locale: String(formData.get("locale") ?? "uk"),
     slug: normalizedSlug,
-    sku: String(formData.get("sku") ?? ""),
+    sku: skuForIngest,
     categoryId: String(formData.get("categoryId") ?? "").trim(),
     brandId: brandIdForIngest,
     status: String(formData.get("status") ?? "DRAFT"),
@@ -596,6 +646,11 @@ export async function createProductAction(
 
   try {
     const product = await createProductRecord(payload.data);
+    const intent = String(formData.get("intent") ?? "").trim();
+
+    if (intent === "saveAndNew") {
+      redirect(`/admin/products/new?created=1`);
+    }
 
     redirect(`/admin/products/${product.id}/edit?created=1`);
   } catch (error) {

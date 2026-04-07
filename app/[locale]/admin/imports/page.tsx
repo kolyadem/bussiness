@@ -165,7 +165,7 @@ export default async function AdminImportsPage({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-6">
+      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-5 md:p-6">
         <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
           {copy.title}
         </h2>
@@ -174,7 +174,7 @@ export default async function AdminImportsPage({
         </p>
       </section>
 
-      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
+      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 md:p-6 shadow-[var(--shadow-soft)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h3 className="text-xl font-semibold text-[color:var(--color-text)]">{copy.alertFeed}</h3>
@@ -238,7 +238,7 @@ export default async function AdminImportsPage({
               return (
                 <article
                   key={alert.id}
-                  className="rounded-[1.5rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-5"
+                  className="rounded-[1.5rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-4 md:p-5"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="space-y-3">
@@ -365,12 +365,12 @@ export default async function AdminImportsPage({
               <table className="min-w-full divide-y divide-[color:var(--color-line)]">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-[0.22em] text-[color:var(--color-text-soft)]">
-                    <th className="px-5 py-4">{copy.job}</th>
-                    <th className="px-5 py-4">{copy.source}</th>
-                    <th className="px-5 py-4">{copy.mode}</th>
-                    <th className="px-5 py-4">{copy.result}</th>
-                    <th className="px-5 py-4">{copy.updated}</th>
-                    <th className="px-5 py-4 text-right">{copy.open}</th>
+                    <th className="px-4 py-3">{copy.job}</th>
+                    <th className="px-4 py-3">{copy.source}</th>
+                    <th className="px-4 py-3">{copy.mode}</th>
+                    <th className="px-4 py-3">{copy.result}</th>
+                    <th className="px-4 py-3">{copy.updated}</th>
+                    <th className="px-4 py-3 text-right">{copy.open}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[color:var(--color-line)]">
@@ -387,7 +387,7 @@ export default async function AdminImportsPage({
 
                     return (
                       <tr key={job.id} className="align-top">
-                        <td className="px-5 py-4">
+                        <td className="px-4 py-3">
                           <div className="space-y-2">
                             <span
                               className={`inline-flex rounded-full px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] ${getImportJobStatusTone(status)}`}
@@ -399,16 +399,16 @@ export default async function AdminImportsPage({
                             </p>
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-sm text-[color:var(--color-text-soft)]">
+                        <td className="px-4 py-3 text-sm text-[color:var(--color-text-soft)]">
                           <p className="text-[color:var(--color-text)]">
                             {job.sourceConfig?.name ?? job.sourceFileName ?? job.sourceUrl ?? "Ad-hoc source"}
                           </p>
                           <p className="mt-1">{getImportSourceTypeLabel(sourceType, locale)}</p>
                         </td>
-                        <td className="px-5 py-4 text-sm text-[color:var(--color-text-soft)]">
+                        <td className="px-4 py-3 text-sm text-[color:var(--color-text-soft)]">
                           {getImportModeLabel(importMode, locale)}
                         </td>
-                        <td className="px-5 py-4 text-sm text-[color:var(--color-text-soft)]">
+                        <td className="px-4 py-3 text-sm text-[color:var(--color-text-soft)]">
                           <p>
                             {job.createdCount} / {job.updatedCount} / {job.skippedCount} / {job.failedCount}
                           </p>
@@ -416,10 +416,10 @@ export default async function AdminImportsPage({
                             {job.warningCount} warnings · {job.errorCount} errors
                           </p>
                         </td>
-                        <td className="px-5 py-4 text-sm text-[color:var(--color-text-soft)]">
+                        <td className="px-4 py-3 text-sm text-[color:var(--color-text-soft)]">
                           {job.updatedAt.toLocaleString(locale)}
                         </td>
-                        <td className="px-5 py-4 text-right">
+                        <td className="px-4 py-3 text-right">
                           <Link
                             href={`/admin/imports/${job.id}`}
                             className="text-sm font-medium text-[color:var(--color-accent-strong)] transition hover:text-[color:var(--color-text)]"

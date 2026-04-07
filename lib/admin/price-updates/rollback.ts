@@ -18,14 +18,25 @@ export async function rollbackPriceChangeHistory(input: {
   }
 
   await db.$transaction(async (tx) => {
+    const restoreData: {
+      price: number;
+      purchasePrice?: number | null;
+      inventoryStatus?: string;
+    } = {
+      price: row.previousPriceStored,
+    };
+
+    if (row.previousPurchasePriceStored !== undefined) {
+      restoreData.purchasePrice = row.previousPurchasePriceStored;
+    }
+
+    if (row.newInventoryStatus != null && row.previousInventoryStatus != null) {
+      restoreData.inventoryStatus = row.previousInventoryStatus;
+    }
+
     await tx.product.update({
       where: { id: row.productId },
-      data: {
-        price: row.previousPriceStored,
-        ...(row.newInventoryStatus != null && row.previousInventoryStatus != null
-          ? { inventoryStatus: row.previousInventoryStatus }
-          : {}),
-      },
+      data: restoreData,
     });
 
     await tx.priceChangeHistory.update({

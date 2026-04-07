@@ -92,10 +92,11 @@ export default async function AdminBuildRequestsPage({
     status,
     sort,
   });
+  const hasActiveFilters = Boolean(query) || status !== "ALL" || sort !== "created_desc";
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-6">
+      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-5 md:p-6">
         <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">{copy.title}</h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--color-text-soft)]">{copy.subtitle}</p>
         <p className="mt-4 text-sm text-[color:var(--color-text-soft)]">
@@ -151,11 +152,15 @@ export default async function AdminBuildRequestsPage({
             {copy.apply}
           </Button>
 
-          <Link href="/admin/build-requests" className="xl:min-w-32">
-            <Button type="button" variant="secondary" className="w-full">
-              {copy.reset}
-            </Button>
-          </Link>
+          {hasActiveFilters ? (
+            <Link href="/admin/build-requests" className="xl:min-w-32">
+              <Button type="button" variant="secondary" className="w-full">
+                {copy.reset}
+              </Button>
+            </Link>
+          ) : (
+            <div className="hidden xl:block" />
+          )}
         </form>
       </section>
 
@@ -175,7 +180,7 @@ export default async function AdminBuildRequestsPage({
             return (
               <article
                 key={request.id}
-                className="rounded-[1.8rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]"
+                className="rounded-[1.8rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-4 md:p-5 shadow-[var(--shadow-soft)]"
               >
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0 space-y-3">
@@ -258,7 +263,9 @@ export default async function AdminBuildRequestsPage({
                     </div>
 
                     <Link href={`/admin/build-requests/${request.id}`}>
-                      <Button variant="secondary">{copy.open}</Button>
+                      <Button variant="secondary" className="h-9 px-3 text-xs">
+                        {copy.open}
+                      </Button>
                     </Link>
                   </div>
                 </div>

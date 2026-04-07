@@ -1,4 +1,5 @@
 import { candidateToProductInventoryStatus } from "@/lib/admin/price-updates/availability-candidate";
+import { displayUahToStoredPrice } from "@/lib/admin/price-updates/pricing";
 import { db } from "@/lib/db";
 
 export type ApplyRunResult = {
@@ -62,9 +63,16 @@ export async function applyApprovedPriceLines(input: {
         line.candidateAvailability as "in_stock" | "out_of_stock" | "unknown",
       );
 
-      const updateData: { price: number; inventoryStatus?: string } = {
+      const purchasePriceStored =
+        line.basePriceUah != null ? displayUahToStoredPrice(line.basePriceUah) : null;
+
+      const updateData: { price: number; purchasePrice?: number; inventoryStatus?: string } = {
         price: line.newPriceStored!,
       };
+
+      if (purchasePriceStored != null) {
+        updateData.purchasePrice = purchasePriceStored;
+      }
 
       let previousInventoryStatus: string | null = null;
       let newInventoryStatus: string | null = null;
@@ -97,6 +105,8 @@ export async function applyApprovedPriceLines(input: {
           productId: product.id,
           previousPriceStored: line.priceBeforeStored,
           newPriceStored: line.newPriceStored!,
+          previousPurchasePriceStored: product.purchasePrice,
+          newPurchasePriceStored: purchasePriceStored,
           previousInventoryStatus,
           newInventoryStatus,
           appliedByUserId,

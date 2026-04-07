@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, LoaderCircle, Play, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -93,6 +94,7 @@ export function ImportCenter({
   locale: AppLocale;
   sourceConfigs: SourceConfigSummary[];
 }) {
+  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [selectedSourceConfigId, setSelectedSourceConfigId] = useState("");
   const [sourceKey, setSourceKey] = useState("");
@@ -203,7 +205,7 @@ export function ImportCenter({
         toast.success("Імпорт завершено");
 
         if (result.jobId) {
-          window.location.assign(`/admin/imports/${result.jobId}`);
+          router.push(`/admin/imports/${result.jobId}`);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Запит імпорту не вдався";

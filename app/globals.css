@@ -134,13 +134,19 @@ body::after {
 
 @media (min-width: 1280px) {
   .storefront-shell {
-    max-width: 104rem;
+    max-width: 106rem;
   }
 }
 
 @media (min-width: 1536px) {
   .storefront-shell {
-    max-width: 108rem;
+    max-width: 112rem;
+  }
+}
+
+@media (min-width: 1920px) {
+  .storefront-shell {
+    max-width: 118rem;
   }
 }
 

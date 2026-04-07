@@ -40,7 +40,7 @@ export function NavLinks({
             aria-current={active ? "page" : undefined}
             className={cn(
               "rounded-full text-sm transition duration-300",
-              mobile && "inline-flex min-h-11 shrink items-center justify-center px-3.5 sm:px-4",
+              mobile && "inline-flex min-h-10 shrink items-center justify-center px-3 sm:px-3.5",
               variant === "account"
                 ? cn(
                     "border px-3.5 py-2 text-[color:var(--color-text-soft)] sm:px-4",

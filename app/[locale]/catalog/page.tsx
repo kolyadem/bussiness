@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { CatalogClientShell } from "@/components/catalog/catalog-client-shell";
 import { CatalogFilters } from "@/components/catalog/catalog-filters";
+import { CatalogGridPending } from "@/components/catalog/catalog-grid-pending";
 import { CatalogPagination } from "@/components/catalog/catalog-pagination";
 import { CatalogSort } from "@/components/catalog/catalog-sort";
 import { ProductCard } from "@/components/catalog/product-card";
@@ -96,70 +98,71 @@ export default async function CatalogPage({
     selectedSubcategoryName ?? selectedCategoryName ?? "Підібрані товари";
 
   return (
-    <main className="storefront-shell mx-auto w-full px-4 py-8 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
-      <section className="rounded-[2.7rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-4 py-7 shadow-[var(--shadow-soft)] backdrop-blur-2xl sm:px-8 sm:py-10 lg:px-10 lg:py-12 xl:px-12">
-        <div className="space-y-8">
-          <div className="max-w-3xl">
-            <h1 className="font-heading text-4xl font-semibold tracking-[-0.05em] text-[color:var(--color-text)] sm:text-5xl">
-              {isPcBuild ? experience?.catalogTitle ?? t("catalogTitle") : t("catalogTitle")}
-            </h1>
-            <p className="mt-3 text-sm text-[color:var(--color-text-soft)]">{totalCountLabel}</p>
+    <CatalogClientShell>
+      <main className="storefront-shell mx-auto w-full px-4 py-8 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
+        <section className="rounded-[2.5rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-4 py-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl sm:px-7 sm:py-8 lg:px-9 lg:py-10 xl:px-10">
+          <div className="space-y-6">
+            <div className="max-w-3xl">
+              <h1 className="font-heading text-3xl font-semibold tracking-[-0.05em] text-[color:var(--color-text)] sm:text-4xl lg:text-5xl">
+                {isPcBuild ? experience?.catalogTitle ?? t("catalogTitle") : t("catalogTitle")}
+              </h1>
+              <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">{totalCountLabel}</p>
+            </div>
+
+            <CatalogFilters categories={categoryCards} filters={data.filters} locale={locale} priceRange={data.priceRange} />
           </div>
+        </section>
 
-          <CatalogFilters categories={categoryCards} filters={data.filters} locale={locale} />
-        </div>
-      </section>
-
-      <section className="mt-10 flex min-w-0 flex-col gap-4 rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-4 py-5 shadow-[var(--shadow-soft)] sm:flex-row sm:items-end sm:justify-between sm:px-5">
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-[0.24em] text-[color:var(--color-accent-strong)]">
-            {featuredLabel}
-          </p>
-          <h2 className="mt-2 break-words font-heading text-2xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)] sm:text-3xl">
+        <section className="mt-8 flex min-w-0 flex-col gap-4 rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-4 py-4 shadow-[var(--shadow-soft)] sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <p className="text-sm text-[color:var(--color-text-soft)]">
+            <span className="font-medium text-[color:var(--color-text)]">{featuredLabel}</span>
+            <span className="px-1.5 opacity-60">·</span>
             {totalCountLabel}
-          </h2>
-        </div>
-        <CatalogSort sort={data.filters.sort} locale={locale} />
-      </section>
+          </p>
+          <CatalogSort sort={data.filters.sort} locale={locale} />
+        </section>
 
-      <div className="mt-8">
-        {data.products.length === 0 ? (
-          <EmptyState
-            title={t("noResults")}
-            description={emptyDescription}
-            action={
-              isPcBuild ? (
-                <Link href="/configurator">
-                  <Button variant="secondary">
-                    {experience?.heroSecondary ?? "Відкрити configurator"}
-                  </Button>
-                </Link>
-              ) : (
-                <Link href="/catalog">
-                  <Button variant="secondary">{t("clearFilters")}</Button>
-                </Link>
-              )
-            }
-          />
-        ) : (
-          <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {data.products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={mapProduct(product, locale)}
-                locale={locale}
-                siteMode={siteMode}
+        <div className="mt-8">
+          <CatalogGridPending>
+            {data.products.length === 0 ? (
+              <EmptyState
+                title={t("noResults")}
+                description={emptyDescription}
+                action={
+                  isPcBuild ? (
+                    <Link href="/configurator">
+                      <Button variant="secondary">
+                        {experience?.heroSecondary ?? "Відкрити configurator"}
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link href="/catalog">
+                      <Button variant="secondary">{t("clearFilters")}</Button>
+                    </Link>
+                  )
+                }
               />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {data.pagination.totalItems > 0 ? (
-        <div className="mt-10">
-          <CatalogPagination pagination={data.pagination} filters={data.filters} locale={locale} />
+            ) : (
+              <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                {data.products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={mapProduct(product, locale)}
+                    locale={locale}
+                    siteMode={siteMode}
+                  />
+                ))}
+              </div>
+            )}
+          </CatalogGridPending>
         </div>
-      ) : null}
-    </main>
+
+        {data.pagination.totalItems > 0 ? (
+          <div className="mt-10">
+            <CatalogPagination pagination={data.pagination} filters={data.filters} locale={locale} />
+          </div>
+        ) : null}
+      </main>
+    </CatalogClientShell>
   );
 }

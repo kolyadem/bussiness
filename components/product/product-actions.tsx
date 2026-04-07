@@ -50,12 +50,14 @@ export function ProductActions({
   siteMode = SITE_MODES.store,
   productCategorySlug = null,
   context = "product",
+  purchasable = true,
 }: {
   productId: string;
   compact?: boolean;
   siteMode?: SiteMode;
   productCategorySlug?: string | null;
   context?: "catalog" | "product";
+  purchasable?: boolean;
 }) {
   const [pendingAction, setPendingAction] = useState<ActionType | null>(null);
   const [addedAction, setAddedAction] = useState<ActionType | null>(null);
@@ -126,6 +128,7 @@ export function ProductActions({
     <div className={`flex ${compact ? "gap-2" : "flex-col gap-3 sm:flex-row"}`}>
       <Button
         onClick={() => {
+          if (!purchasable) return;
           if (isPcBuild) {
             router.push(primaryHref);
             return;
@@ -133,7 +136,7 @@ export function ProductActions({
 
           run("cart");
         }}
-        disabled={!isPcBuild && pendingAction !== null}
+        disabled={!purchasable || (!isPcBuild && pendingAction !== null)}
         className={
           compact
             ? "h-11 flex-1 px-4 text-[13px]"
@@ -148,11 +151,13 @@ export function ProductActions({
           <ShoppingCart className="h-4 w-4" />
         )}
         <span className="ml-2">
-          {isPcBuild
-            ? pcBuildPrimaryLabel
-            : addedAction === "cart"
-              ? addedLabel
-              : t("addToCart")}
+          {!purchasable
+            ? "Скоро в продажу"
+            : isPcBuild
+              ? pcBuildPrimaryLabel
+              : addedAction === "cart"
+                ? addedLabel
+                : t("addToCart")}
         </span>
       </Button>
       <Button

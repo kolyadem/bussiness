@@ -237,6 +237,8 @@ model PriceChangeHistory {
   productId           String
   previousPriceStored Int
   newPriceStored      Int
+  previousPurchasePriceStored Int?
+  newPurchasePriceStored      Int?
   /// Set when apply changed Product.inventoryStatus (rollback restores when present)
   previousInventoryStatus String?
   newInventoryStatus      String?

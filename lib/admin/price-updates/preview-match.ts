@@ -1,7 +1,7 @@
 import { parseJson } from "@/lib/utils";
 import { extractJsonLdProductIdentities } from "@/lib/admin/price-updates/fetch-retail";
 
-export type MatchKind = "cpu" | "ssd" | "ram" | "case" | "other";
+export type MatchKind = "cpu" | "gpu" | "ssd" | "ram" | "case" | "motherboard" | "other";
 
 export type CatalogMatchInput = {
   categorySlug: string;
@@ -66,12 +66,17 @@ export function categorySlugToMatchKind(slug: string): MatchKind {
   switch (slug) {
     case "processors":
       return "cpu";
+    case "graphics-cards":
+      return "gpu";
     case "storage":
+    case "ssd":
       return "ssd";
     case "memory":
       return "ram";
     case "cases":
       return "case";
+    case "motherboards":
+      return "motherboard";
     default:
       return "other";
   }
@@ -79,6 +84,72 @@ export function categorySlugToMatchKind(slug: string): MatchKind {
 
 function stripSpacesUpper(s: string): string {
   return s.replace(/\s+/g, "").toUpperCase();
+}
+
+const GPU_CLASS_RE = /\b((?:RTX|GTX)\s*\d{4})(?:\s*(Ti))?(?:\s*(Super))?/i;
+
+function extractGpuClassToken(text: string): string | null {
+  const m = text.match(GPU_CLASS_RE);
+  if (!m) return null;
+  let token = m[1]!.replace(/\s+/g, "").toUpperCase();
+  if (m[2]) token += "TI";
+  if (m[3]) token += "SUPER";
+  return token;
+}
+
+function textContainsGpuClass(text: string, gpuClass: string): boolean {
+  const re = /\b((?:RTX|GTX)\s*\d{4})(?:\s*(Ti))?(?:\s*(Super))?/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    let token = m[1]!.replace(/\s+/g, "").toUpperCase();
+    if (m[2]) token += "TI";
+    if (m[3]) token += "SUPER";
+    if (token === gpuClass) return true;
+  }
+  return false;
+}
+
+const KNOWN_CHIPSETS = new Set([
+  "A520", "A620", "B450", "B550", "B560", "B650", "B660", "B760",
+  "H410", "H510", "H610", "H670", "X570", "X670", "Z490", "Z590", "Z690", "Z790",
+]);
+
+function extractChipsetToken(text: string): string | null {
+  const re = /\b([ABXHZ]\d{3})/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const tok = m[1]!.toUpperCase();
+    if (KNOWN_CHIPSETS.has(tok)) return tok;
+  }
+  return null;
+}
+
+function extractCpuModelToken(text: string): string | null {
+  const mX3d = text.match(/\b(\d{4}X3D)\b/i);
+  if (mX3d) return mX3d[1]!.toUpperCase();
+  const mX = text.match(/\b(\d{4}X)\b/i);
+  if (mX) return mX[1]!.toUpperCase();
+  const mIntel = text.match(/\b(i[3579]-\d{4,5}[A-Z]{0,2})\b/i);
+  if (mIntel) return mIntel[1]!.toUpperCase();
+  const mG = text.match(/\b(\d{4}G[E]?)\b/i);
+  if (mG) return mG[1]!.toUpperCase();
+  const mUltra = text.match(/\bUltra\s+([579])\b/i);
+  if (mUltra) return `ULTRA${mUltra[1]}`;
+  return null;
+}
+
+function ldBrandConflicts(
+  catalogBrandSlug: string,
+  catalogBrandName: string | null,
+  ldBrandName: string,
+): boolean {
+  const ldNorm = ldBrandName.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (ldNorm.length < 2) return false;
+  const slugNorm = catalogBrandSlug.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const nameNorm = (catalogBrandName ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (ldNorm === slugNorm || ldNorm.includes(slugNorm) || slugNorm.includes(ldNorm)) return false;
+  if (nameNorm && (ldNorm === nameNorm || ldNorm.includes(nameNorm) || nameNorm.includes(ldNorm))) return false;
+  return true;
 }
 
 /** Visible + machine text for substring checks (JSON-LD first; then light HTML strip). */
@@ -119,6 +190,8 @@ export function buildCatalogIdentity(input: CatalogMatchInput): {
   amdIntelPart: string | null;
   packagingHint: "box" | "tray" | "wof" | null;
   capacityNorm: string | null;
+  gpuClassToken: string | null;
+  chipsetToken: string | null;
 } {
   const kind = categorySlugToMatchKind(input.categorySlug);
   const meta = parseJson<Record<string, unknown>>(input.metadataJson, {});
@@ -168,10 +241,33 @@ export function buildCatalogIdentity(input: CatalogMatchInput): {
     name.match(/\b(100-\d{9,12}[A-Z]*)\b/i)?.[1]?.toUpperCase() ?? null;
 
   let cpuModelToken: string | null = null;
-  const m7800 = name.match(/\b(7800X3D|7900X3D|5800X3D|5600X3D)\b/i);
-  const mX = name.match(/\b(\d{4}X3D|\d{4}X)\b/i);
-  if (m7800) cpuModelToken = m7800[1]!.toUpperCase();
-  else if (mX) cpuModelToken = mX[1]!.toUpperCase();
+  const mX3d = name.match(/\b(\d{4}X3D)\b/i);
+  if (mX3d) {
+    cpuModelToken = mX3d[1]!.toUpperCase();
+  } else {
+    const mX = name.match(/\b(\d{4}X)\b/i);
+    if (mX) {
+      cpuModelToken = mX[1]!.toUpperCase();
+    } else {
+      const mIntel = name.match(/\b(i[3579]-\d{4,5}[A-Z]{0,2})\b/i);
+      if (mIntel) {
+        cpuModelToken = mIntel[1]!.toUpperCase();
+      } else {
+        const mG = name.match(/\b(\d{4}G[E]?)\b/i);
+        if (mG) {
+          cpuModelToken = mG[1]!.toUpperCase();
+        } else {
+          const mUltra = name.match(/\bCore\s*Ultra\s*([579])\b/i);
+          if (mUltra) {
+            cpuModelToken = `ULTRA${mUltra[1]}`;
+          }
+        }
+      }
+    }
+  }
+
+  const gpuClassToken = extractGpuClassToken(name);
+  const chipsetToken = extractChipsetToken(name);
 
   return {
     kind,
@@ -180,6 +276,8 @@ export function buildCatalogIdentity(input: CatalogMatchInput): {
     amdIntelPart: amdIntelPart ? stripSpacesUpper(amdIntelPart) : null,
     packagingHint,
     capacityNorm,
+    gpuClassToken,
+    chipsetToken,
   };
 }
 
@@ -238,16 +336,21 @@ function evaluateSide(
   const hayNorm = stripSpacesUpper(hay);
   const ld = extractJsonLdProductIdentities(html);
   const primaryName = ld[0]?.name ?? "";
-  const primaryLower = primaryName.toLowerCase();
 
   const brandOk = brandMatches(catalogInput.brandSlug, catalogInput.brandNameUk, hay);
+  const ldBrandName = ld[0]?.brandName ?? null;
+  const skipLdBrandCheck = kind === "gpu";
+  const brandConflict =
+    !skipLdBrandCheck && ldBrandName
+      ? ldBrandConflicts(catalogInput.brandSlug, catalogInput.brandNameUk, ldBrandName)
+      : false;
 
   if (kind === "ssd") {
     const catMpns = catalog.mpnCandidates.filter((m) => m.length >= 6);
     const found = extractMpnLikeTokens(hay).filter((t) => t.startsWith("MZ") || t.startsWith("WDS") || t.startsWith("CT"));
     const catalogHit = catMpns.some((c) => hayNorm.includes(c));
     if (catalogHit) {
-      return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: "SSD MPN match" };
+      return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: `SSD MPN ${catMpns[0]} match` };
     }
     if (catMpns.length > 0 && found.length > 0) {
       const overlap = found.some((f) => catMpns.includes(f));
@@ -259,7 +362,7 @@ function evaluateSide(
           weak: false,
           reject: true,
           rejectReason: `SSD part mismatch (catalog ${catMpns.join(", ")} vs page ${found.join(", ")})`,
-          detail: "ssd conflict",
+          detail: `SSD conflict: ${catMpns[0]} vs ${found[0]}`,
         };
       }
     }
@@ -270,7 +373,7 @@ function evaluateSide(
       medium: med,
       weak: brandOk,
       reject: false,
-      detail: med ? "SSD brand+capacity" : "SSD weak",
+      detail: med ? `SSD brand + capacity ${catalog.capacityNorm}` : (brandOk ? "SSD brand only" : "SSD: no signals"),
     };
   }
 
@@ -279,7 +382,7 @@ function evaluateSide(
     const found = extractMpnLikeTokens(hay).filter((t) => t.startsWith("CM") || t.startsWith("KF") || t.startsWith("CT"));
     const hit = catMpns.some((c) => hayNorm.includes(c));
     if (hit) {
-      return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: "RAM part match" };
+      return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: `RAM part ${catMpns[0]} match` };
     }
     if (catMpns.length > 0 && found.length > 0 && !found.some((f) => catMpns.includes(f))) {
       return {
@@ -289,7 +392,7 @@ function evaluateSide(
         weak: false,
         reject: true,
         rejectReason: `RAM part mismatch (catalog ${catMpns.join(", ")} vs page ${found.join(", ")})`,
-        detail: "ram conflict",
+        detail: `RAM conflict: ${catMpns[0]} vs ${found[0]}`,
       };
     }
     const med = brandOk && (memoryGbMatches(catalogInput.memoryCapacityGb, hay) || ddrGenMatches(hayNorm, catalogInput));
@@ -299,35 +402,35 @@ function evaluateSide(
       medium: med,
       weak: brandOk,
       reject: false,
-      detail: med ? "RAM brand+size/gen" : "RAM weak",
+      detail: med ? "RAM brand + size/gen" : (brandOk ? "RAM brand only" : "RAM: no signals"),
     };
   }
 
   if (kind === "cpu") {
     const part = catalog.amdIntelPart;
     if (part && hayNorm.includes(part)) {
-      return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: "CPU AMD/Intel part#" };
+      return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: `CPU part# ${part} match` };
     }
     const token = catalog.cpuModelToken;
     if (token && hayNorm.includes(stripSpacesUpper(token))) {
-      return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: "CPU model token" };
+      return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: `CPU model ${token} match` };
     }
     for (const m of catalog.mpnCandidates) {
       if (isIntelOrderingMpnCandidate(m) && hayNorm.includes(m)) {
-        return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: "CPU Intel ordering code" };
+        return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: `CPU ordering code ${m} match` };
       }
     }
-    if (token && primaryName.length > 0 && !hayNorm.includes(stripSpacesUpper(token))) {
-      const alt = primaryLower.match(/\b(7800x3d|7900x3d|5800x3d|5600x3d|5600x|9950x|9900x)\b/i);
-      if (alt && !primaryLower.includes(token.toLowerCase())) {
+    if (token && primaryName) {
+      const ldCpuToken = extractCpuModelToken(primaryName);
+      if (ldCpuToken && ldCpuToken !== token) {
         return {
           ok: true,
           strong: false,
           medium: false,
           weak: false,
           reject: true,
-          rejectReason: `CPU model mismatch (catalog ${token} vs JSON-LD title)`,
-          detail: "cpu conflict",
+          rejectReason: `CPU model mismatch (catalog ${token} vs JSON-LD ${ldCpuToken})`,
+          detail: `CPU conflict: ${token} vs ${ldCpuToken}`,
         };
       }
     }
@@ -339,7 +442,99 @@ function evaluateSide(
       medium: med,
       weak: brandOk,
       reject: false,
-      detail: med ? "CPU brand+socket" : "CPU weak",
+      detail: med ? `CPU brand + socket ${catalogInput.socket}` : (brandOk ? "CPU brand only" : "CPU: no signals"),
+    };
+  }
+
+  if (kind === "gpu") {
+    const catalogGpu = catalog.gpuClassToken;
+    if (catalogGpu) {
+      const ldGpu = primaryName ? extractGpuClassToken(primaryName) : null;
+      if (ldGpu === catalogGpu) {
+        return {
+          ok: true,
+          strong: brandOk,
+          medium: true,
+          weak: true,
+          reject: false,
+          detail: `GPU ${catalogGpu} confirmed in JSON-LD${brandOk ? " + brand" : ""}`,
+        };
+      }
+      if (ldGpu && ldGpu !== catalogGpu) {
+        return {
+          ok: true,
+          strong: false,
+          medium: false,
+          weak: false,
+          reject: true,
+          rejectReason: `GPU class mismatch (catalog ${catalogGpu} vs JSON-LD ${ldGpu})`,
+          detail: `GPU conflict: ${catalogGpu} vs ${ldGpu}`,
+        };
+      }
+      if (textContainsGpuClass(hay, catalogGpu)) {
+        return {
+          ok: true,
+          strong: false,
+          medium: brandOk,
+          weak: true,
+          reject: false,
+          detail: `GPU ${catalogGpu} in page text${brandOk ? " + brand" : ""}`,
+        };
+      }
+    }
+    return {
+      ok: true,
+      strong: false,
+      medium: false,
+      weak: brandOk,
+      reject: false,
+      detail: brandOk ? "GPU brand only, no class signal" : "GPU: no match signals",
+    };
+  }
+
+  if (kind === "motherboard") {
+    const catalogChipset = catalog.chipsetToken;
+    if (catalogChipset) {
+      const ldChipset = primaryName ? extractChipsetToken(primaryName) : null;
+      if (ldChipset === catalogChipset && brandOk) {
+        return {
+          ok: true,
+          strong: false,
+          medium: true,
+          weak: true,
+          reject: false,
+          detail: `Mobo chipset ${catalogChipset} + brand in JSON-LD`,
+        };
+      }
+      if (ldChipset && ldChipset !== catalogChipset) {
+        return {
+          ok: true,
+          strong: false,
+          medium: false,
+          weak: false,
+          reject: true,
+          rejectReason: `Chipset mismatch (catalog ${catalogChipset} vs JSON-LD ${ldChipset})`,
+          detail: `Mobo conflict: ${catalogChipset} vs ${ldChipset}`,
+        };
+      }
+      if (hayNorm.includes(catalogChipset) && brandOk) {
+        return {
+          ok: true,
+          strong: false,
+          medium: true,
+          weak: true,
+          reject: false,
+          detail: `Mobo chipset ${catalogChipset} + brand in page text`,
+        };
+      }
+    }
+    return {
+      ok: true,
+      strong: false,
+      medium: false,
+      weak: brandOk,
+      reject: false,
+      detail: brandOk ? "Motherboard brand only" : "Motherboard: no signals",
     };
   }
 
@@ -348,7 +543,7 @@ function evaluateSide(
     const foundFd = extractMpnLikeTokens(hay).filter((t) => t.includes("FD-"));
     const hit = codes.some((c) => hayNorm.includes(c));
     if (hit) {
-      return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: "Case FD code match" };
+      return { ok: true, strong: true, medium: true, weak: true, reject: false, detail: `Case FD code ${codes[0]} match` };
     }
     if (codes.length > 0 && foundFd.length > 0 && !foundFd.some((f) => codes.includes(f))) {
       return {
@@ -358,7 +553,7 @@ function evaluateSide(
         weak: false,
         reject: true,
         rejectReason: `Case FD code mismatch (catalog ${codes.join(", ")} vs ${foundFd.join(", ")})`,
-        detail: "case conflict",
+        detail: `Case conflict: ${codes[0]} vs ${foundFd[0]}`,
       };
     }
     const med = brandOk && /\bnorth\b|meshify|define|o11/i.test(hay);
@@ -368,18 +563,28 @@ function evaluateSide(
       medium: med,
       weak: brandOk,
       reject: false,
-      detail: med ? "Case brand+family" : "Case weak",
+      detail: med ? "Case brand + family" : (brandOk ? "Case brand only" : "Case: no signals"),
     };
   }
 
-  const med = brandOk;
+  if (brandConflict) {
+    return {
+      ok: true,
+      strong: false,
+      medium: false,
+      weak: false,
+      reject: true,
+      rejectReason: `Brand conflict (catalog: ${catalogInput.brandSlug}, JSON-LD: ${ldBrandName})`,
+      detail: `brand conflict: ${catalogInput.brandSlug} vs ${ldBrandName}`,
+    };
+  }
   return {
     ok: true,
     strong: false,
-    medium: med,
-    weak: med,
+    medium: false,
+    weak: brandOk,
     reject: false,
-    detail: "Other category: brand only",
+    detail: brandOk ? `${kind}: brand match only` : `${kind}: no match signals`,
   };
 }
 
@@ -426,6 +631,11 @@ function computePreviewMatch(input: {
   const rozetka = toSideDiagnostics("rozetka", rozetkaOk, rz);
   const telemart = toSideDiagnostics("telemart", telemartOk, tm);
 
+  const sideInfo = [
+    rz.ok ? `Rz: ${rz.detail}` : null,
+    tm.ok ? `Tm: ${tm.detail}` : null,
+  ].filter(Boolean).join(" | ");
+
   if (baseUah == null) {
     return {
       outcomePath: "no_base_price",
@@ -435,7 +645,7 @@ function computePreviewMatch(input: {
       result: {
         lineStatus: "MANUAL_REVIEW",
         confidence: "NONE",
-        matchNote: `No base price from Rozetka/Telemart (missing URLs, fetch error, or unparsed page). ${fetchNote}`.trim(),
+        matchNote: `No base price (missing URLs, fetch error, or unparsed page). ${sideInfo ? `[${sideInfo}] ` : ""}${fetchNote}`.trim(),
       },
     };
   }
@@ -452,7 +662,7 @@ function computePreviewMatch(input: {
       result: {
         lineStatus: "REJECTED",
         confidence: "NONE",
-        matchNote: `${reason} ${fetchNote}`.trim(),
+        matchNote: `${reason} [${sideInfo}] ${fetchNote}`.trim(),
       },
     };
   }
@@ -470,7 +680,7 @@ function computePreviewMatch(input: {
       result: {
         lineStatus: "APPROVED_CANDIDATE",
         confidence: "HIGH",
-        matchNote: `JSON-LD / identity: strong match on both retailers (${identity.kind}). ${fetchNote}`.trim(),
+        matchNote: `Strong match on both (${identity.kind}). ${sideInfo}. ${fetchNote}`.trim(),
       },
     };
   }
@@ -484,7 +694,7 @@ function computePreviewMatch(input: {
       result: {
         lineStatus: "APPROVED_CANDIDATE",
         confidence: "MEDIUM",
-        matchNote: `Strong identity signal on at least one retailer (${identity.kind}). ${fetchNote}`.trim(),
+        matchNote: `Strong signal on 1 retailer (${identity.kind}). ${sideInfo}. ${fetchNote}`.trim(),
       },
     };
   }
@@ -499,7 +709,7 @@ function computePreviewMatch(input: {
       result: {
         lineStatus: "MANUAL_REVIEW",
         confidence: "MEDIUM",
-        matchNote: `Partial match (medium signals only). Confirm MPN/model on live pages. ${fetchNote}`.trim(),
+        matchNote: `Partial match (${identity.kind}). ${sideInfo}. Confirm on live pages. ${fetchNote}`.trim(),
       },
     };
   }
@@ -512,7 +722,7 @@ function computePreviewMatch(input: {
     result: {
       lineStatus: "MANUAL_REVIEW",
       confidence: "LOW",
-      matchNote: `Weak or insufficient identity match for ${identity.kind}. ${fetchNote}`.trim(),
+      matchNote: `Weak match for ${identity.kind}. ${sideInfo}. ${fetchNote}`.trim(),
     },
   };
 }

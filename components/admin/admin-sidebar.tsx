@@ -117,8 +117,11 @@ export function AdminSidebar({
   }>;
 
   return (
-    <nav className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-soft)]">
-      <div className="grid gap-2">
+    <nav
+      aria-label="Адмін-меню"
+      className="rounded-[1.4rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-2 shadow-[var(--shadow-soft)]"
+    >
+      <div className="grid gap-1">
         {items.map((item) => {
           const Icon = icons[item.key];
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -127,15 +130,16 @@ export function AdminSidebar({
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex gap-3 rounded-[1.2rem] px-4 py-3 text-sm font-medium transition",
+                "flex items-center gap-2.5 rounded-[1rem] px-3 py-2.5 text-sm font-medium transition",
                 isActive
                   ? "border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] text-[color:var(--color-text)] shadow-[0_14px_28px_rgba(24,184,255,0.12)]"
                   : "border border-transparent text-[color:var(--color-text-soft)] hover:border-[color:var(--color-line-strong)] hover:bg-[color:var(--color-surface-elevated)] hover:text-[color:var(--color-text)]",
               )}
             >
-              <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
+              <Icon className="h-4 w-4 shrink-0 opacity-90" />
+              <span className="leading-snug">{item.label}</span>
             </Link>
           );
         })}

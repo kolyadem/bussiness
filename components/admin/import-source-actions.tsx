@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useState } from "react";
+import { useRouter } from "next/navigation";
 import { LoaderCircle, Pause, Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ export function ImportSourceActions({
   isActive: boolean;
   isSyncing: boolean;
 }) {
+  const router = useRouter();
   const [pending, setPending] = useState<null | "toggle" | "run">(null);
 
   function updateSource(nextIsActive: boolean) {
@@ -40,7 +42,7 @@ export function ImportSourceActions({
         toast.success(
           nextIsActive ? "Джерело знову активне" : "Джерело поставлено на паузу",
         );
-        window.location.reload();
+        router.refresh();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Не вдалося оновити джерело");
       } finally {
@@ -68,9 +70,9 @@ export function ImportSourceActions({
         toast.success("Запуск імпорту розпочато");
 
         if (payload?.jobId) {
-          window.location.assign(`/admin/imports/${payload.jobId}`);
+          router.push(`/admin/imports/${payload.jobId}`);
         } else {
-          window.location.reload();
+          router.refresh();
         }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Не вдалося запустити джерело");

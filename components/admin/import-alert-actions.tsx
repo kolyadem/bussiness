@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ export function ImportAlertActions({
   status: "ACTIVE" | "ACKNOWLEDGED" | "RESOLVED";
   disabled?: boolean;
 }) {
+  const router = useRouter();
   const [pending, setPending] = useState(false);
   const alreadyAcknowledged = status === "ACKNOWLEDGED";
 
@@ -44,7 +46,7 @@ export function ImportAlertActions({
             }
 
             toast.success("Сигнал підтверджено");
-            window.location.reload();
+            router.refresh();
           } catch (error) {
             toast.error(error instanceof Error ? error.message : "Не вдалося підтвердити сигнал");
           } finally {

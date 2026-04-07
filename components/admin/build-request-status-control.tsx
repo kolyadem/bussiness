@@ -1,6 +1,7 @@
 "use client";
 
-import { startTransition, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,13 @@ export function BuildRequestStatusControl({
   locale: AppLocale;
   value: BuildRequestStatus;
 }) {
+  const router = useRouter();
   const [status, setStatus] = useState<BuildRequestStatus>(value);
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    setStatus(value);
+  }, [value]);
 
   return (
     <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -60,7 +66,7 @@ export function BuildRequestStatusControl({
               }
 
               toast.success("Статус заявки оновлено");
-              window.location.reload();
+              router.refresh();
             } catch {
               toast.error("Не вдалося змінити статус");
             } finally {

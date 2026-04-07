@@ -56,13 +56,13 @@ export default async function AdminPriceUpdatesPage({
   }));
 
   return (
-    <div className="space-y-10">
-      <div>
+    <div className="space-y-6">
+      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-5 md:p-6">
         <h1 className="text-2xl font-semibold text-[color:var(--color-text)]">
           {priceUpdatesT(locale, "listTitle")}
         </h1>
         <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">{priceUpdatesT(locale, "listIntro")}</p>
-      </div>
+      </section>
 
       <PriceUpdateSafetyNotice locale={locale} />
 

@@ -45,6 +45,7 @@ export default async function AdminPriceUpdateRunPage({
     skuSnapshot: line.skuSnapshot,
     nameSnapshot: line.nameSnapshot,
     userApproved: line.userApproved,
+    priceBeforeStored: line.priceBeforeStored,
     newPriceStored: line.newPriceStored,
     priceBeforeDisplay: formatPrice(line.priceBeforeStored, locale, line.currencySnapshot),
     newPriceDisplay:

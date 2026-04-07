@@ -76,7 +76,7 @@ export async function Header({
             <ThemeToggle />
           </div>
         </div>
-        <div className="flex flex-wrap justify-center gap-2 px-3 pb-3 pt-0 sm:justify-start sm:px-5 sm:pb-4 lg:hidden lg:px-6 xl:px-7">
+        <div className="flex flex-wrap items-center justify-center gap-1.5 px-3 pb-2.5 pt-0 sm:justify-start sm:gap-2 sm:px-5 sm:pb-3 lg:hidden lg:px-6 xl:px-7">
           <NavLinks items={navItems} mobile />
         </div>
       </div>

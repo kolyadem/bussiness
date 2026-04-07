@@ -6,6 +6,7 @@ import {
   pickAdminTranslation,
   requireAdminAccess,
 } from "@/lib/admin";
+import { getPriceTrackingUrls } from "@/lib/admin/price-updates/metadata";
 import { calculateUnitFinancials } from "@/lib/commerce/finance";
 import type { AppLocale } from "@/lib/constants";
 
@@ -34,9 +35,12 @@ export default async function AdminProductsPage({
           id: product.id,
           name: translation.name,
           categoryName: category.name,
+          categoryId: product.categoryId,
           heroImage: product.heroImage,
           sku: product.sku,
+          slug: product.slug,
           status: product.status,
+          inventoryStatus: product.inventoryStatus,
           price: product.price,
           purchasePrice: canViewFinancials ? product.purchasePrice : null,
           unitFinancials: canViewFinancials
@@ -54,6 +58,8 @@ export default async function AdminProductsPage({
           currency: product.currency,
           stock: product.stock,
           updatedAt: product.updatedAt.toISOString(),
+          hasRozetkaUrl: Boolean(getPriceTrackingUrls(product.metadata).rozetkaUrl),
+          hasTelemartUrl: Boolean(getPriceTrackingUrls(product.metadata).telemartUrl),
         };
       })}
       categories={options.categories.map((category) => ({

@@ -2,7 +2,7 @@ import type { AppLocale } from "@/lib/constants";
 import { Link } from "@/lib/i18n/routing";
 import { calculateUnitFinancials } from "@/lib/commerce/finance";
 import { SITE_MODES, type SiteMode } from "@/lib/site-mode";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, formatPriceOrPlaceholder, isPlaceholderPrice } from "@/lib/utils";
 import { ProductImageFrame } from "@/components/ui/product-image-frame";
 import { ProductActions } from "@/components/product/product-actions";
 import { ArrowUpRight, Star } from "lucide-react";
@@ -23,9 +23,9 @@ function getBadgeLabel(badge: SmartBadge, _locale: AppLocale) {
 function getBadgeTone(badge: SmartBadge) {
   switch (badge) {
     case "POPULAR":
-      return "border border-amber-400/20 bg-amber-400/12 text-amber-600";
+      return "border border-amber-400/20 bg-amber-400/12 text-amber-600 dark:text-amber-200";
     case "VALUE":
-      return "border border-emerald-400/20 bg-emerald-400/12 text-emerald-600";
+      return "border border-emerald-400/20 bg-emerald-400/12 text-emerald-600 dark:text-emerald-200";
     case "BEST_CHOICE":
       return "border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] text-[color:var(--color-text)]";
   }
@@ -145,11 +145,6 @@ export function ProductCard({
 
       <div className="relative mt-4 flex flex-1 flex-col gap-4">
         <div className="space-y-2">
-          {product.category ? (
-            <p className="text-[11px] uppercase tracking-[0.22em] text-[color:var(--color-accent-strong)]">
-              {product.category.name}
-            </p>
-          ) : null}
           <Link
             href={`/product/${product.slug}`}
             className="line-clamp-2 font-heading text-xl font-semibold leading-tight tracking-[-0.03em] text-[color:var(--color-text)] transition hover:text-[color:var(--color-accent-strong)]"
@@ -168,7 +163,7 @@ export function ProductCard({
                 {labels.price}
               </p>
               <p className="mt-1 break-words font-heading text-2xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
-                {formatPrice(product.price, locale, product.currency)}
+                {formatPriceOrPlaceholder(product.price, locale, product.currency)}
               </p>
             </div>
             {oldPrice ? (
@@ -192,6 +187,7 @@ export function ProductCard({
               siteMode={siteMode}
               productCategorySlug={product.category?.slug ?? null}
               context="catalog"
+              purchasable={!isPlaceholderPrice(product.price)}
             />
           ) : null}
           {footer}

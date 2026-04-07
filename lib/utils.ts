@@ -67,6 +67,22 @@ export function storedMinorUnitsToUahKopecks(value: number, currency: string): n
   return Math.round(value * USD_TO_UAH_RATE);
 }
 
+export function isPlaceholderPrice(value: number): boolean {
+  return value <= 0;
+}
+
+export function formatPriceOrPlaceholder(
+  value: number,
+  locale: string,
+  currency: string = STOREFRONT_CURRENCY,
+  placeholder = "Ціну уточнюйте",
+): string {
+  if (isPlaceholderPrice(value)) {
+    return placeholder;
+  }
+  return formatPrice(value, locale, currency);
+}
+
 export function parseJson<T>(value: string, fallback: T): T {
   try {
     return JSON.parse(value) as T;

@@ -12,7 +12,7 @@ import { getSiteExperienceCopy } from "@/lib/site-experience";
 import { SITE_MODES } from "@/lib/site-mode";
 import { getSiteMode, getSiteSettingsRecord } from "@/lib/site-config";
 import { getProductRecommendationCollections } from "@/lib/storefront/conversion";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, formatPriceOrPlaceholder, isPlaceholderPrice } from "@/lib/utils";
 import {
   buildAlternates,
   buildRobots,
@@ -265,15 +265,15 @@ export default async function ProductPage({
                 </p>
                 <div className="mt-3 flex flex-wrap items-end gap-3">
                   <p className="font-heading text-4xl font-semibold tracking-[-0.05em] text-[color:var(--color-text)]">
-                    {formatPrice(mapped.price, locale, mapped.currency)}
+                    {formatPriceOrPlaceholder(mapped.price, locale, mapped.currency)}
                   </p>
-                  {mapped.oldPrice ? (
+                  {!isPlaceholderPrice(mapped.price) && mapped.oldPrice ? (
                     <p className="pb-1 text-lg text-[color:var(--color-text-soft)] line-through">
                       {formatPrice(mapped.oldPrice, locale, mapped.currency)}
                     </p>
                   ) : null}
                 </div>
-                {savings ? (
+                {!isPlaceholderPrice(mapped.price) && savings ? (
                   <p className="mt-3 text-sm text-[color:var(--color-accent-strong)]">
                     {`Економія ${formatPrice(savings, locale, mapped.currency)}`}
                   </p>
@@ -318,6 +318,7 @@ export default async function ProductPage({
                   siteMode={siteMode}
                   productCategorySlug={mapped.category.slug}
                   context="product"
+                  purchasable={!isPlaceholderPrice(mapped.price)}
                 />
               </div>
             </div>
@@ -356,7 +357,7 @@ export default async function ProductPage({
         </div>
       </section>
 
-      <section className="mt-12 grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
+      <section className="mt-10 grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
         <div className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
           <h2 className="text-2xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
             {t("productDescription")}
@@ -403,7 +404,7 @@ export default async function ProductPage({
       </section>
 
       {recentlyViewed.length > 0 ? (
-        <section className="mt-12">
+        <section className="mt-10">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
@@ -428,7 +429,7 @@ export default async function ProductPage({
       ) : null}
 
       {recommendations.similar.length > 0 ? (
-        <section className="mt-12">
+        <section className="mt-10">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
@@ -448,7 +449,7 @@ export default async function ProductPage({
       ) : null}
 
       {recommendations.betterVariant || recommendations.valueChoice ? (
-        <section className="mt-12">
+        <section className="mt-10">
           <div className="mb-6">
             <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
               Розумний вибір

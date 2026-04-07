@@ -54,7 +54,7 @@ const L = {
   thRozetka: "Rozetka, ₴",
   thTelemart: "Telemart, ₴",
   thBase: "База для розрахунку",
-  thNew: "Нова ціна (+3%)",
+  thNew: "Нова ціна (з націнкою)",
   thStatus: "Статус перевірки",
   thConfidence: "Впевненість",
   thMatchNote: "Коментар перевірки",

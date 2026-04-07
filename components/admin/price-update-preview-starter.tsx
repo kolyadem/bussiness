@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   priceUpdatesT,
   priceUpdatesTFormat,
@@ -44,7 +45,7 @@ export function PriceUpdatePreviewStarter({ locale }: { locale: string }) {
   return (
     <form
       onSubmit={onSubmit}
-      className="mb-8 flex flex-col gap-4 rounded-[1.5rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-5"
+      className="mb-6 flex flex-col gap-4 rounded-[1.5rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-5"
     >
       <h2 className="text-lg font-semibold text-[color:var(--color-text)]">
         {priceUpdatesT(locale, "newPreviewTitle")}
@@ -79,13 +80,11 @@ export function PriceUpdatePreviewStarter({ locale }: { locale: string }) {
           />
         </label>
       </div>
-      <button
-        type="submit"
-        disabled={busy}
-        className="inline-flex w-fit items-center justify-center rounded-[1.2rem] bg-[color:var(--color-accent)] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-      >
-        {busy ? priceUpdatesT(locale, "btnRunning") : priceUpdatesT(locale, "btnRunPreview")}
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <Button type="submit" disabled={busy}>
+          {busy ? priceUpdatesT(locale, "btnRunning") : priceUpdatesT(locale, "btnRunPreview")}
+        </Button>
+      </div>
     </form>
   );
 }

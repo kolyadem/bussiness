@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { AppLocale } from "@/lib/constants";
 import { AdminDashboardTrends } from "@/components/admin/admin-dashboard-trends";
+import { Button } from "@/components/ui/button";
 import {
   canViewAdminFinancials,
   getAdminCapabilities,
@@ -139,8 +140,8 @@ export default async function AdminDashboardPage({
   ];
 
   return (
-    <div className="space-y-8">
-      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-6">
+    <div className="space-y-6">
+      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] p-5 md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
             <h2 className="text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
@@ -152,22 +153,54 @@ export default async function AdminDashboardPage({
             {viewer.name ?? viewer.email ?? viewer.login}
           </div>
         </div>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Link href="/admin/orders">
+            <Button variant="secondary" className="h-9 px-3 text-xs">
+              {copy.ordersLink}
+            </Button>
+          </Link>
+          <Link href="/admin/products">
+            <Button variant="secondary" className="h-9 px-3 text-xs">
+              {copy.productsLink}
+            </Button>
+          </Link>
+          {capabilities.canManageImports ? (
+            <Link href="/admin/imports">
+              <Button variant="secondary" className="h-9 px-3 text-xs">
+                {copy.importsLink}
+              </Button>
+            </Link>
+          ) : null}
+          {capabilities.canManagePriceUpdates ? (
+            <Link href="/admin/price-updates">
+              <Button variant="secondary" className="h-9 px-3 text-xs">
+                Оновлення цін
+              </Button>
+            </Link>
+          ) : null}
+          <Link href="/admin/build-requests">
+            <Button variant="secondary" className="h-9 px-3 text-xs">
+              {copy.buildRequests}
+            </Button>
+          </Link>
+        </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
         {kpis.map((item) => {
           const Icon = item.icon;
 
           return (
             <article
               key={item.label}
-              className="rounded-[1.7rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]"
+              className="rounded-[1.7rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-soft)]"
             >
               <div className="flex items-center justify-between gap-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">{item.label}</p>
                 <Icon className="h-4 w-4 text-[color:var(--color-accent-strong)]" />
               </div>
-              <p className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
+              <p className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)] xl:text-3xl">
                 {item.value}
               </p>
             </article>
@@ -363,57 +396,43 @@ export default async function AdminDashboardPage({
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <article className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
-          <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
-            {canSeeFinancials ? copy.ownerTools : copy.managerTools}
-          </h3>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <Link
-              href="/admin/orders"
-              className="rounded-[1.5rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-5 transition hover:border-[color:var(--color-accent-line)]"
-            >
-              <h4 className="text-lg font-semibold text-[color:var(--color-text)]">{copy.ordersLink}</h4>
-              <p className="mt-2 text-sm leading-7 text-[color:var(--color-text-soft)]">
-                {copy.recentOrdersSubtitle}
-              </p>
-            </Link>
-            <Link
-              href="/admin/products"
-              className="rounded-[1.5rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-5 transition hover:border-[color:var(--color-accent-line)]"
-            >
-              <h4 className="text-lg font-semibold text-[color:var(--color-text)]">{copy.productsLink}</h4>
-              <p className="mt-2 text-sm leading-7 text-[color:var(--color-text-soft)]">
-                {copy.topSellingSubtitle}
-              </p>
-            </Link>
-            {capabilities.canManageUsers ? (
-              <Link
-                href="/admin/users"
-                className="rounded-[1.5rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-5 transition hover:border-[color:var(--color-accent-line)]"
-              >
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-[color:var(--color-accent-strong)]" />
-                  <h4 className="text-lg font-semibold text-[color:var(--color-text)]">{copy.users}</h4>
-                </div>
-                <p className="mt-2 text-sm leading-7 text-[color:var(--color-text-soft)]">{copy.usersText}</p>
-              </Link>
-            ) : null}
-            {capabilities.canManageImports ? (
-              <Link
-                href="/admin/imports"
-                className="rounded-[1.5rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-5 transition hover:border-[color:var(--color-accent-line)]"
-              >
-                <div className="flex items-center gap-2">
-                  <Workflow className="h-4 w-4 text-[color:var(--color-accent-strong)]" />
-                  <h4 className="text-lg font-semibold text-[color:var(--color-text)]">{copy.importsLink}</h4>
-                </div>
-                <p className="mt-2 text-sm leading-7 text-[color:var(--color-text-soft)]">
-                  {copy.importHealth}
-                </p>
-              </Link>
-            ) : null}
-          </div>
-        </article>
+        {capabilities.canManageUsers || capabilities.canManageImports ? (
+          <article className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
+            <h3 className="text-2xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
+              {canSeeFinancials ? copy.ownerTools : copy.managerTools}
+            </h3>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              {capabilities.canManageUsers ? (
+                <Link
+                  href="/admin/users"
+                  className="rounded-[1.5rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-5 transition hover:border-[color:var(--color-accent-line)]"
+                >
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-[color:var(--color-accent-strong)]" />
+                    <h4 className="text-lg font-semibold text-[color:var(--color-text)]">{copy.users}</h4>
+                  </div>
+                  <p className="mt-2 text-sm leading-7 text-[color:var(--color-text-soft)]">{copy.usersText}</p>
+                </Link>
+              ) : null}
+              {capabilities.canManageImports ? (
+                <Link
+                  href="/admin/imports"
+                  className="rounded-[1.5rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-5 transition hover:border-[color:var(--color-accent-line)]"
+                >
+                  <div className="flex items-center gap-2">
+                    <Workflow className="h-4 w-4 text-[color:var(--color-accent-strong)]" />
+                    <h4 className="text-lg font-semibold text-[color:var(--color-text)]">{copy.importsLink}</h4>
+                  </div>
+                  <p className="mt-2 text-sm leading-7 text-[color:var(--color-text-soft)]">
+                    {copy.importHealth}
+                  </p>
+                </Link>
+              ) : null}
+            </div>
+          </article>
+        ) : (
+          <div />
+        )}
 
         {importHealth ? (
           <aside className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">

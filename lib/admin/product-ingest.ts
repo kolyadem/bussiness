@@ -163,7 +163,18 @@ export const priceMatchMetadataSchema = z
   })
   .strict();
 
-export const metadataValueSchema = z.union([ingestSpecValueSchema, priceMatchMetadataSchema]);
+export const priceTrackingMetadataSchema = z
+  .object({
+    rozetkaUrl: z.string().url().optional(),
+    telemartUrl: z.string().url().optional(),
+  })
+  .strict();
+
+export const metadataValueSchema = z.union([
+  ingestSpecValueSchema,
+  priceMatchMetadataSchema,
+  priceTrackingMetadataSchema,
+]);
 
 export const ingestTranslationInputSchema = z.object({
   locale: z.enum(locales),

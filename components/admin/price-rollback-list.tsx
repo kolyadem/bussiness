@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { priceUpdatesT } from "@/lib/admin/price-updates-ui";
 
 export type RollbackRow = {
@@ -66,14 +67,15 @@ export function PriceRollbackList({ rows, locale }: { rows: RollbackRow[]; local
               <td className="p-3">{r.previousPriceDisplay}</td>
               <td className="p-3">{r.newPriceDisplay}</td>
               <td className="p-3">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   disabled={busyId === r.id}
                   onClick={() => rollback(r.id)}
-                  className="text-sm font-semibold text-red-600 disabled:opacity-50"
+                  className="h-9 px-3 text-xs text-red-600 hover:text-red-600"
                 >
                   {busyId === r.id ? priceUpdatesT(locale, "rollbackBusy") : priceUpdatesT(locale, "rollbackBtn")}
-                </button>
+                </Button>
               </td>
             </tr>
           ))}

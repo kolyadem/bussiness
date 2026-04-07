@@ -373,6 +373,17 @@ export function getTechnicalAttributeDefinitionsForCategorySlug(categorySlug: st
   );
 }
 
+/** Короткі підказки для вільних характеристик (ключ/значення) за категорією. */
+export function getSpecSuggestionLabelsForCategorySlug(
+  categorySlug: string | null | undefined,
+  locale: AppLocale,
+  max = 6,
+): string[] {
+  return getTechnicalAttributeDefinitionsForCategorySlug(categorySlug)
+    .slice(0, max)
+    .map((definition) => getTechnicalAttributeLabel(definition, locale));
+}
+
 export function getTechnicalAttributeLabel(
   definition: TechnicalAttributeDefinition,
   locale: AppLocale,

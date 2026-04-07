@@ -5,6 +5,7 @@ import { resolvePreviewMatch, type CatalogMatchInput } from "@/lib/admin/price-u
 import { mergeRetailAvailabilityCandidate } from "@/lib/admin/price-updates/availability-candidate";
 import {
   displayUahToStoredPrice,
+  getMarkupPercent,
   markupDisplayPriceUah,
   pickBasePrice,
 } from "@/lib/admin/price-updates/pricing";
@@ -61,6 +62,9 @@ export async function createPricePreviewRun(options: CreatePreviewOptions) {
       let rozetkaAvailRationale = "—";
       let telemartAvailRationale = "—";
 
+      const hasRzUrl = Boolean(urls.rozetkaUrl);
+      const hasTmUrl = Boolean(urls.telemartUrl);
+
       if (urls.rozetkaUrl) {
         const r = await fetchRetailPage(urls.rozetkaUrl);
         rozetkaPriceUah = r.uah;
@@ -86,8 +90,8 @@ export async function createPricePreviewRun(options: CreatePreviewOptions) {
       const mergedAvail = mergeRetailAvailabilityCandidate({
         rozetka: rozetkaAvailability as "in_stock" | "out_of_stock" | "unknown",
         telemart: telemartAvailability as "in_stock" | "out_of_stock" | "unknown",
-        hasRozetkaUrl: Boolean(urls.rozetkaUrl),
-        hasTelemartUrl: Boolean(urls.telemartUrl),
+        hasRozetkaUrl: hasRzUrl,
+        hasTelemartUrl: hasTmUrl,
       });
       const availabilityRationale = [
         `${mergedAvail.rationale}`,
@@ -95,11 +99,16 @@ export async function createPricePreviewRun(options: CreatePreviewOptions) {
         `Telemart: ${telemartAvailRationale}`,
       ].join(" | ");
 
-      if (!urls.rozetkaUrl && !urls.telemartUrl) {
-        fetchNote = "No priceTracking.rozetkaUrl / telemartUrl in Product.metadata.";
+      if (!hasRzUrl && !hasTmUrl) {
+        fetchNote = "⚠ Джерела не задані — немає rozetkaUrl / telemartUrl у metadata товару.";
+      } else {
+        const srcParts: string[] = [];
+        if (hasRzUrl) srcParts.push(rozetkaPriceUah != null ? "Rz URL ✓" : "Rz URL (fetch failed)");
+        if (hasTmUrl) srcParts.push(telemartPriceUah != null ? "Tm URL ✓" : "Tm URL (fetch failed)");
+        fetchNote = `Збережені джерела: ${srcParts.join(", ")}. ${fetchNote}`.trim();
       }
 
-      const { baseUah, baseSource } = pickBasePrice(rozetkaPriceUah, telemartPriceUah);
+      const { baseUah, baseSource, sourceDiverged, divergenceNote } = pickBasePrice(rozetkaPriceUah, telemartPriceUah);
       const markupUah = baseUah != null ? markupDisplayPriceUah(baseUah) : null;
       const newStored = markupUah != null ? displayUahToStoredPrice(markupUah) : null;
 
@@ -120,7 +129,7 @@ export async function createPricePreviewRun(options: CreatePreviewOptions) {
         memoryCapacityGb: p.memoryCapacityGb,
       };
 
-      const { lineStatus, confidence, matchNote } = resolvePreviewMatch({
+      let { lineStatus, confidence, matchNote } = resolvePreviewMatch({
         baseUah,
         catalog: catalogInput,
         rozetkaHtml,
@@ -129,6 +138,34 @@ export async function createPricePreviewRun(options: CreatePreviewOptions) {
         telemartOk,
         fetchNote: fetchNote.trim(),
       });
+
+      if (sourceDiverged) {
+        lineStatus = "MANUAL_REVIEW";
+        confidence = confidence === "HIGH" ? "MEDIUM" : confidence;
+        matchNote += ` ${divergenceNote}`;
+      }
+
+      if (newStored != null && p.price > 0) {
+        const deltaPercent = Math.abs((newStored - p.price) / p.price) * 100;
+        if (deltaPercent > 40) {
+          lineStatus = "MANUAL_REVIEW";
+          confidence = confidence === "HIGH" ? "MEDIUM" : confidence;
+          matchNote += ` ⚠ Зміна ціни >40% (${deltaPercent.toFixed(0)}%) — потребує ручної перевірки.`;
+        }
+        if (baseUah != null && baseUah < 100) {
+          lineStatus = "MANUAL_REVIEW";
+          matchNote += " ⚠ Підозріло низька ціна джерела (<100 ₴).";
+        }
+        if (baseUah != null && baseUah > 200_000) {
+          lineStatus = "MANUAL_REVIEW";
+          matchNote += " ⚠ Підозріло висока ціна джерела (>200 000 ₴).";
+        }
+      }
+
+      if (baseUah != null) {
+        const pct = getMarkupPercent(baseUah);
+        matchNote = `Націнка +${pct}% (база ${baseUah} ₴). ${matchNote}`.trim();
+      }
 
       await tx.priceUpdateLine.create({
         data: {

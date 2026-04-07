@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useState } from "react";
+import { useRouter } from "next/navigation";
 import { LoaderCircle, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ export function ImportRerunButton({
   jobId: string;
   locale: AppLocale;
 }) {
+  const router = useRouter();
   const [pending, setPending] = useState(false);
 
   return (
@@ -43,9 +45,9 @@ export function ImportRerunButton({
             toast.success("Повторний запуск імпорту розпочато");
 
             if (payload?.jobId) {
-              window.location.assign(`/admin/imports/${payload.jobId}`);
+              router.push(`/admin/imports/${payload.jobId}`);
             } else {
-              window.location.reload();
+              router.refresh();
             }
           } catch (error) {
             toast.error(
