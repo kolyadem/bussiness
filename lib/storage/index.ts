@@ -96,7 +96,12 @@ const localStorageDriver: StorageDriver = {
     const targetDir = relativeFolder ? path.join(LOCAL_STORAGE_ROOT, relativeFolder) : LOCAL_STORAGE_ROOT;
     await mkdir(targetDir, { recursive: true });
     const absolutePath = path.join(targetDir, filename);
-    await writeFile(absolutePath, input.buffer);
+    try {
+      await writeFile(absolutePath, input.buffer);
+    } catch (error) {
+      console.error("[storage] Failed to write uploaded file", error);
+      throw error;
+    }
 
     const relativeToPublic = path.relative(PUBLIC_DIR, absolutePath);
     const publicPath = `/${normalizePublicPath(relativeToPublic)}`;

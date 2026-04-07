@@ -32,6 +32,26 @@ function getMarginPercent(revenue: number, grossProfit: number | null) {
   return Number(((grossProfit / revenue) * 100).toFixed(2));
 }
 
+function roundMoney(value: number) {
+  return Number(value.toFixed(2));
+}
+
+export function calculateTieredMarkup(price: number): number {
+  const normalized = Math.max(0, price);
+
+  if (normalized < 1000) {
+    return roundMoney(normalized * 1.12);
+  }
+  if (normalized < 5000) {
+    return roundMoney(normalized * 1.07);
+  }
+  if (normalized < 10000) {
+    return roundMoney(normalized * 1.05);
+  }
+
+  return roundMoney(normalized * 1.03);
+}
+
 export function calculateUnitFinancials(input: {
   price: number;
   purchasePrice: number | null | undefined;

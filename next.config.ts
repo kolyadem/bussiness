@@ -16,6 +16,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    // Keep request bodies for proxy and server actions above product image limit.
+    proxyClientMaxBodySize: "12mb",
+    serverActions: {
+      bodySizeLimit: "12mb",
+    },
+  },
 };
 
 const withNextIntl = createNextIntlPlugin("./lib/i18n/request.ts");

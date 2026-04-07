@@ -9,7 +9,7 @@ import { createProductAction, updateProductFormAction } from "@/app/actions/admi
 import { AdminSubmitButton } from "@/components/admin/admin-submit-button";
 import { Button } from "@/components/ui/button";
 import { ProductImageFrame } from "@/components/ui/product-image-frame";
-import { calculateUnitFinancials } from "@/lib/commerce/finance";
+import { calculateTieredMarkup, calculateUnitFinancials } from "@/lib/commerce/finance";
 import {
   getSpecSuggestionLabelsForCategorySlug,
   getTechnicalAttributeDefinitionsForCategorySlug,
@@ -39,6 +39,8 @@ type ProductActionState = {
   status: "idle" | "error";
   message?: string;
 };
+
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 type GalleryItem = {
   token: string;
@@ -103,6 +105,7 @@ const PRODUCT_FORM_COPY = {
   unitProfitLabel: "Прибуток з одиниці",
   marginLabel: "Маржа",
   financeMissingCost: "Додайте закупівельну ціну, щоб бачити маржу та прибуток.",
+  autoPriceHint: "Ціна розрахована автоматично (можна змінити вручну).",
   descriptionSectionHint:
     "Повний текст для картки товару. SEO-поля можна залишити порожніми — тоді підставляться назва й короткий опис.",
   nameLabel: "Назва",
@@ -232,6 +235,11 @@ function formatDisplayCurrency(value: number) {
 }
 
 async function uploadProductImages(files: File[]) {
+  const tooLarge = files.find((file) => file.size > MAX_UPLOAD_BYTES);
+  if (tooLarge) {
+    throw new Error(`Файл "${tooLarge.name}" занадто великий (максимум 10 МБ).`);
+  }
+
   const formData = new FormData();
 
   files.forEach((file) => {
@@ -323,9 +331,15 @@ export function AdminProductForm({
     status: "idle",
   });
   const [priceInput, setPriceInput] = useState(initialValues?.price ?? 0);
+  const [priceFieldValue, setPriceFieldValue] = useState(String(initialValues?.price ?? 0));
   const [purchasePriceInput, setPurchasePriceInput] = useState<number | null>(
     initialValues?.purchasePrice ?? null,
   );
+  const initialPurchasePriceValue = initialValues?.purchasePrice;
+  const [purchasePriceFieldValue, setPurchasePriceFieldValue] = useState(
+    initialPurchasePriceValue != null ? String(initialPurchasePriceValue) : "",
+  );
+  const [isPriceManuallyEdited, setIsPriceManuallyEdited] = useState(false);
   const [specs, setSpecs] = useState<SpecRow[]>(
     initialValues?.specs.length ? initialValues.specs : [{ key: "", value: "" }],
   );
@@ -433,6 +447,27 @@ export function AdminProductForm({
     const normalized = slugify(value);
     setSlugTouched(normalized.length > 0);
     setSlugValue(normalized);
+  };
+
+  const handlePriceChange = (value: string, source: "manual" | "auto" = "manual") => {
+    setPriceFieldValue(value);
+    setPriceInput(value.trim().length > 0 ? Number(value) || 0 : 0);
+    if (source === "manual") {
+      setIsPriceManuallyEdited(true);
+    }
+  };
+
+  const handlePurchasePriceChange = (value: string) => {
+    setPurchasePriceFieldValue(value);
+
+    const normalizedPurchase = value.trim().length > 0 ? Number(value) || 0 : null;
+    setPurchasePriceInput(normalizedPurchase);
+
+    if (normalizedPurchase === null || isPriceManuallyEdited) {
+      return;
+    }
+
+    handlePriceChange(String(calculateTieredMarkup(normalizedPurchase)), "auto");
   };
 
   const handleGalleryInputChange = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -654,11 +689,14 @@ export function AdminProductForm({
               type="number"
               min="0"
               step="0.01"
-              defaultValue={initialValues?.price ?? 0}
-              onChange={(event) => setPriceInput(Number(event.target.value) || 0)}
+              value={priceFieldValue}
+              onChange={(event) => handlePriceChange(event.target.value, "manual")}
               required
               className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
             />
+            {!isPriceManuallyEdited ? (
+              <span className="text-xs leading-6 text-[color:var(--color-text-soft)]">{copy.autoPriceHint}</span>
+            ) : null}
           </label>
         </div>
 
@@ -721,12 +759,8 @@ export function AdminProductForm({
                   type="number"
                   min="0"
                   step="0.01"
-                  defaultValue={initialValues?.purchasePrice ?? ""}
-                  onChange={(event) =>
-                    setPurchasePriceInput(
-                      event.target.value.trim().length > 0 ? Number(event.target.value) || 0 : null,
-                    )
-                  }
+                  value={purchasePriceFieldValue}
+                  onChange={(event) => handlePurchasePriceChange(event.target.value)}
                   className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-4 text-[color:var(--color-text)] outline-none"
                 />
               </label>
