@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfiguratorOpenTracker } from "@/components/observability/configurator-open-tracker";
+import { ComponentsAvailabilityNotice } from "@/components/storefront/components-availability-notice";
 import { Button } from "@/components/ui/button";
 import { ProductImageFrame } from "@/components/ui/product-image-frame";
 import { getActionErrorMessage, readApiPayload } from "@/components/product/client-feedback";
@@ -569,6 +570,8 @@ export function ConfiguratorBuilder({
             ) : null}
           </div>
         </section>
+
+        <ComponentsAvailabilityNotice />
 
         <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[linear-gradient(180deg,var(--color-surface)_0%,var(--color-gradient-surface)_100%)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
           <div className="mb-5 flex items-center justify-between gap-3">

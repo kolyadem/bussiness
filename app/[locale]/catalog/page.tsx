@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { ComponentsAvailabilityNotice } from "@/components/storefront/components-availability-notice";
 import { CatalogClientShell } from "@/components/catalog/catalog-client-shell";
 import { CatalogFilters } from "@/components/catalog/catalog-filters";
 import { CatalogGridPending } from "@/components/catalog/catalog-grid-pending";
@@ -122,7 +123,9 @@ export default async function CatalogPage({
           </div>
         </section>
 
-        <section className="mt-8 flex min-w-0 flex-col gap-4 rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-4 py-4 shadow-[var(--shadow-soft)] sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <ComponentsAvailabilityNotice className="mt-6" />
+
+        <section className="mt-6 flex min-w-0 flex-col gap-4 rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-4 py-4 shadow-[var(--shadow-soft)] sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div className="min-w-0 space-y-1">
             <p className="text-sm text-[color:var(--color-text-soft)]">
               <span className="font-medium text-[color:var(--color-text)]">{featuredLabel}</span>

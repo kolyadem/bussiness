@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { ConfiguratorFeatureCard } from "@/components/configurator/configurator-feature-card";
+import { ComponentsAvailabilityNotice } from "@/components/storefront/components-availability-notice";
 import { ProductCard } from "@/components/catalog/product-card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/i18n/routing";
@@ -167,6 +168,8 @@ export default async function LocaleHome({
           </div>
         </div>
       </section>
+
+      <ComponentsAvailabilityNotice className="mt-8" />
 
       <section className="mt-10">
         <ConfiguratorFeatureCard locale={locale} siteMode={siteMode} />
