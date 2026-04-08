@@ -1,9 +1,7 @@
 import path from "node:path";
-import sharp from "sharp";
 import { isManagedStoragePath, removeFileFromStorage, uploadFileToStorage } from "@/lib/storage";
 
 const ALLOWED_UPLOAD_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_IMAGE_WIDTH_PX = 2000;
 
 async function saveProductImageBuffer(
   buffer: Buffer,
@@ -14,6 +12,7 @@ async function saveProductImageBuffer(
     buffer,
     fileName: `product${extension}`,
     contentType,
+    forceLocal: true,
   });
 
   return uploaded.path;
@@ -25,49 +24,16 @@ export async function saveUploadedProductImage(file: File) {
     throw new Error("IMAGE_TYPE_UNSUPPORTED");
   }
 
+  const extensionByMime: Record<string, string> = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+  };
+
   const bytes = await file.arrayBuffer();
   const sourceBuffer = Buffer.from(bytes);
-
-  try {
-    let pipeline = sharp(sourceBuffer, { failOn: "error" }).rotate().resize({
-      width: MAX_IMAGE_WIDTH_PX,
-      withoutEnlargement: true,
-    });
-
-    let outputExtension = ".jpg";
-    let outputType = "image/jpeg";
-
-    if (inputType === "image/png") {
-      pipeline = pipeline.png({
-        compressionLevel: 0,
-      });
-      outputExtension = ".png";
-      outputType = "image/png";
-    } else if (inputType === "image/webp") {
-      pipeline = pipeline.webp({
-        quality: 95,
-      });
-      outputExtension = ".webp";
-      outputType = "image/webp";
-    } else {
-      pipeline = pipeline.jpeg({
-        quality: 95,
-      });
-      outputExtension = ".jpg";
-      outputType = "image/jpeg";
-    }
-
-    const optimizedBuffer = await pipeline.toBuffer();
-    return saveProductImageBuffer(optimizedBuffer, outputExtension, outputType);
-  } catch (error) {
-    console.error("[product-assets] Failed to optimize product image", {
-      fileName: file.name,
-      fileType: inputType,
-      size: file.size,
-      message: error instanceof Error ? error.message : String(error),
-    });
-    throw new Error("IMAGE_PROCESSING_FAILED");
-  }
+  const extension = extensionByMime[inputType];
+  return saveProductImageBuffer(sourceBuffer, extension, inputType);
 }
 
 function resolveRemoteImageExtension(url: string, contentType: string | null) {

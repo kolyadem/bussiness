@@ -40,16 +40,22 @@ function mapUploadFailure(error: unknown): { message: string; status: number } {
       status: 500,
     };
   }
+  if (msg.includes("ENOSPC")) {
+    return {
+      message: "На сервері закінчився вільний простір для збереження зображень.",
+      status: 507,
+    };
+  }
+  if (msg.includes("EROFS")) {
+    return {
+      message: "Директорія завантажень недоступна для запису (read-only файловая система).",
+      status: 500,
+    };
+  }
   if (msg === "IMAGE_TYPE_UNSUPPORTED") {
     return {
       message: "Підтримуються лише формати JPEG, PNG або WebP.",
       status: 415,
-    };
-  }
-  if (msg === "IMAGE_PROCESSING_FAILED") {
-    return {
-      message: "Файл не є валідним зображенням або пошкоджений.",
-      status: 422,
     };
   }
   return {

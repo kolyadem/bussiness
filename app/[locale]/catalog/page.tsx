@@ -91,6 +91,15 @@ export default async function CatalogPage({
 
   const resultWord = "товарів";
   const totalCountLabel = `${data.pagination.totalItems} ${resultWord}`;
+  const pagination = data.pagination;
+  const catalogPageSummary =
+    pagination.totalPages > 1 && pagination.totalItems > 0
+      ? (() => {
+          const from = (pagination.currentPage - 1) * pagination.pageSize + 1;
+          const to = Math.min(pagination.currentPage * pagination.pageSize, pagination.totalItems);
+          return `Сторінка ${pagination.currentPage} з ${pagination.totalPages} · товари ${from}–${to} з ${pagination.totalItems}`;
+        })()
+      : null;
   const emptyDescription = isPcBuild
     ? "Спробуйте іншу категорію комплектуючих, приберіть частину фільтрів або перейдіть до configurator для поетапного підбору."
     : "Спробуйте змінити категорію, прибрати частину фільтрів або повернутися до всього каталогу.";
@@ -114,11 +123,16 @@ export default async function CatalogPage({
         </section>
 
         <section className="mt-8 flex min-w-0 flex-col gap-4 rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-4 py-4 shadow-[var(--shadow-soft)] sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <p className="text-sm text-[color:var(--color-text-soft)]">
-            <span className="font-medium text-[color:var(--color-text)]">{featuredLabel}</span>
-            <span className="px-1.5 opacity-60">·</span>
-            {totalCountLabel}
-          </p>
+          <div className="min-w-0 space-y-1">
+            <p className="text-sm text-[color:var(--color-text-soft)]">
+              <span className="font-medium text-[color:var(--color-text)]">{featuredLabel}</span>
+              <span className="px-1.5 opacity-60">·</span>
+              {totalCountLabel}
+            </p>
+            {catalogPageSummary ? (
+              <p className="text-xs text-[color:var(--color-text-soft)]">{catalogPageSummary}</p>
+            ) : null}
+          </div>
           <CatalogSort sort={data.filters.sort} locale={locale} />
         </section>
 
@@ -143,7 +157,7 @@ export default async function CatalogPage({
                 }
               />
             ) : (
-              <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              <div className="catalog-product-grid">
                 {data.products.map((product) => (
                   <ProductCard
                     key={product.id}
@@ -159,7 +173,7 @@ export default async function CatalogPage({
 
         {data.pagination.totalItems > 0 ? (
           <div className="mt-10">
-            <CatalogPagination pagination={data.pagination} filters={data.filters} locale={locale} />
+            <CatalogPagination pagination={data.pagination} filters={data.filters} />
           </div>
         ) : null}
       </main>

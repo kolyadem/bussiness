@@ -8,6 +8,7 @@ export type StorageUploadInput = {
   fileName?: string;
   contentType?: string | null;
   folder?: string;
+  forceLocal?: boolean;
 };
 
 export type StorageUploadResult = {
@@ -89,12 +90,21 @@ function isVercelBlobPublicUrl(assetPath: string): boolean {
 
 const localStorageDriver: StorageDriver = {
   async upload(input) {
-    await ensureLocalRoot();
     const extension = getExtension(input.fileName, input.contentType);
     const filename = `${Date.now()}-${crypto.randomUUID()}${extension}`;
     const relativeFolder = input.folder?.trim().replace(/^\/+|\/+$/g, "") || "";
     const targetDir = relativeFolder ? path.join(LOCAL_STORAGE_ROOT, relativeFolder) : LOCAL_STORAGE_ROOT;
-    await mkdir(targetDir, { recursive: true });
+    try {
+      await ensureLocalRoot();
+      await mkdir(targetDir, { recursive: true });
+    } catch (error) {
+      console.error("[storage] Failed to ensure upload directory", {
+        targetDir,
+        rootDir: LOCAL_STORAGE_ROOT,
+        error,
+      });
+      throw error;
+    }
     const absolutePath = path.join(targetDir, filename);
     try {
       await writeFile(absolutePath, input.buffer);
@@ -213,6 +223,9 @@ function getStorageDriver(): StorageDriver {
 }
 
 export async function uploadFileToStorage(input: StorageUploadInput) {
+  if (input.forceLocal) {
+    return localStorageDriver.upload(input);
+  }
   return getStorageDriver().upload(input);
 }
 

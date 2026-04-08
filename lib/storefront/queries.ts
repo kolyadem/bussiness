@@ -87,7 +87,9 @@ function normalizePositiveNumber(value: string) {
 export function parseCatalogSearchParams(rawParams: CatalogSearchParamsInput): CatalogSearchParams {
   const q = getFirstSearchParamValue(rawParams.q).trim();
   const category = getFirstSearchParamValue(rawParams.category).trim() || null;
-  const subcategory = getFirstSearchParamValue(rawParams.subcategory).trim() || null;
+  const subcategoryRaw = getFirstSearchParamValue(rawParams.subcategory).trim() || null;
+  /** Subcategory is only meaningful together with a parent category (see getCatalogData). */
+  const subcategory = category && subcategoryRaw ? subcategoryRaw : null;
   const availability = Array.from(
     new Set(
       getSearchParamList(rawParams.availability).filter((value): value is CatalogAvailabilityOption =>
@@ -115,31 +117,48 @@ export function parseCatalogSearchParams(rawParams: CatalogSearchParamsInput): C
   };
 }
 
-function collectDescendantCategoryIds(categories: CategoryTreeRecord[], rootId: string): string[] {
-  const categoryById = new Map(
-    categories.map((category) => [category.id, category] satisfies [string, CategoryTreeRecord]),
-  );
+export type CategoryParentEdge = { id: string; parentId: string | null };
+
+/**
+ * Descendant IDs for a category root using only `parentId` edges (full tree depth).
+ * Matches the DB tree even if nested `children` relations are shallow in the Prisma include.
+ */
+export function collectDescendantCategoryIdsFromEdges(
+  edges: CategoryParentEdge[],
+  rootId: string,
+): string[] {
+  const childrenByParent = new Map<string | null, string[]>();
+  for (const row of edges) {
+    const key = row.parentId;
+    const list = childrenByParent.get(key) ?? [];
+    list.push(row.id);
+    childrenByParent.set(key, list);
+  }
+
   const collected = new Set<string>([rootId]);
   const queue = [rootId];
 
   while (queue.length > 0) {
     const currentId = queue.shift()!;
-    const current = categoryById.get(currentId);
-
-    if (!current) {
-      continue;
-    }
-
-    for (const child of current.children) {
-      if (!collected.has(child.id)) {
-        collected.add(child.id);
-        queue.push(child.id);
+    for (const childId of childrenByParent.get(currentId) ?? []) {
+      if (!collected.has(childId)) {
+        collected.add(childId);
+        queue.push(childId);
       }
     }
   }
 
   return Array.from(collected);
 }
+
+const getCategoryParentEdgesCached = cache(async (): Promise<CategoryParentEdge[]> => {
+  return db.category.findMany({
+    select: {
+      id: true,
+      parentId: true,
+    },
+  });
+});
 
 function buildCatalogOrderBy(sort: CatalogSortOption) {
   switch (sort) {
@@ -229,6 +248,28 @@ async function queryCatalogRatingPageIds(params: {
     ) rev ON rev."productId" = p."id"
     WHERE ${params.whereSql}
     ORDER BY COALESCE(rev.avg_rating, 0) DESC, p."createdAt" DESC
+    LIMIT ${params.limit} OFFSET ${params.offset}
+  `);
+
+  return rows.map((row) => row.id);
+}
+
+/** Stable pseudo-random order for full-catalog views: same seed ⇒ same order across pages (no duplicates). */
+function getDailyCatalogShuffleSeed(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+async function queryCatalogShuffledPageIds(params: {
+  whereSql: Prisma.Sql;
+  limit: number;
+  offset: number;
+  shuffleSeed: string;
+}): Promise<string[]> {
+  const rows = await db.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT p."id"
+    FROM "Product" p
+    WHERE ${params.whereSql}
+    ORDER BY md5(p."id" || ${params.shuffleSeed}::text)
     LIMIT ${params.limit} OFFSET ${params.offset}
   `);
 
@@ -434,7 +475,7 @@ export async function getCatalogData({
   params: CatalogSearchParams;
 }) {
   try {
-  const [categories, priceRange, publishedCategoryCounts] = await Promise.all([
+  const [categories, priceRange, publishedCategoryCounts, categoryEdges] = await Promise.all([
     getCategoryTreeCached(),
     getPublishedPriceDisplayRangeCached(),
     db.product.groupBy({
@@ -446,19 +487,30 @@ export async function getCatalogData({
         categoryId: true,
       },
     }),
+    getCategoryParentEdgesCached(),
   ]);
 
   const selectedCategory = params.category
     ? categories.find((category) => category.slug === params.category) ?? null
     : null;
-  const selectedSubcategory = params.subcategory
-    ? categories.find((category) => category.slug === params.subcategory) ?? null
-    : null;
+  const selectedSubcategory =
+    selectedCategory && params.subcategory
+      ? categories.find((category) => category.slug === params.subcategory) ?? null
+      : null;
   const localizedQuery = params.q.trim();
-  const allowedCategoryIds = selectedSubcategory
-    ? [selectedSubcategory.id]
+
+  let effectiveSubcategory = selectedSubcategory;
+  if (selectedCategory && selectedSubcategory) {
+    const descendants = collectDescendantCategoryIdsFromEdges(categoryEdges, selectedCategory.id);
+    if (!descendants.includes(selectedSubcategory.id)) {
+      effectiveSubcategory = null;
+    }
+  }
+
+  const allowedCategoryIds = effectiveSubcategory
+    ? [effectiveSubcategory.id]
     : selectedCategory
-      ? collectDescendantCategoryIds(categories, selectedCategory.id)
+      ? collectDescendantCategoryIdsFromEdges(categoryEdges, selectedCategory.id)
       : null;
   const minPriceStored =
     typeof params.minPrice === "number"
@@ -506,7 +558,7 @@ export async function getCatalogData({
   const categoryCounts = Object.fromEntries(
     categories.map((category) => [
       category.slug,
-      collectDescendantCategoryIds(categories, category.id).reduce(
+      collectDescendantCategoryIdsFromEdges(categoryEdges, category.id).reduce(
         (sum, categoryId) => sum + (baseCategoryCounts[categoryId] ?? 0),
         0,
       ),
@@ -516,6 +568,8 @@ export async function getCatalogData({
   const totalItems = await db.product.count({ where });
   const totalPages = Math.max(1, Math.ceil(totalItems / catalogPageSize));
   const currentPage = Math.min(params.page, totalPages);
+  const shuffleFullCatalog = allowedCategoryIds === null && params.sort === "newest";
+
   const productRows =
     params.sort === "rating"
       ? await (async () => {
@@ -550,13 +604,47 @@ export async function getCatalogData({
             .map((id) => byId.get(id))
             .filter((row): row is NonNullable<typeof row> => row != null);
         })()
-      : await db.product.findMany({
-          where,
-          include: productListInclude,
-          orderBy: buildCatalogOrderBy(params.sort),
-          skip: (currentPage - 1) * catalogPageSize,
-          take: catalogPageSize,
-        });
+      : shuffleFullCatalog
+        ? await (async () => {
+            const whereSql = buildCatalogProductWhereSql({
+              allowedCategoryIds,
+              availability: params.availability,
+              minPriceStored,
+              maxPriceStored,
+              onSaleOnly: params.onSaleOnly,
+              localizedQuery,
+              locale,
+            });
+            const offset = (currentPage - 1) * catalogPageSize;
+            const ids = await queryCatalogShuffledPageIds({
+              whereSql,
+              limit: catalogPageSize,
+              offset,
+              shuffleSeed: getDailyCatalogShuffleSeed(),
+            });
+            if (ids.length === 0) {
+              return [];
+            }
+            const fetched = await db.product.findMany({
+              where: {
+                id: {
+                  in: ids,
+                },
+              },
+              include: productListInclude,
+            });
+            const byId = new Map(fetched.map((p) => [p.id, p] as const));
+            return ids
+              .map((id) => byId.get(id))
+              .filter((row): row is NonNullable<typeof row> => row != null);
+          })()
+        : await db.product.findMany({
+            where,
+            include: productListInclude,
+            orderBy: buildCatalogOrderBy(params.sort),
+            skip: (currentPage - 1) * catalogPageSize,
+            take: catalogPageSize,
+          });
   const products = await withListProductRatings(productRows);
   return {
     locale,
@@ -564,9 +652,10 @@ export async function getCatalogData({
     categoryCounts,
     products,
     selectedCategory,
-    selectedSubcategory,
+    selectedSubcategory: effectiveSubcategory,
     filters: {
       ...params,
+      subcategory: effectiveSubcategory ? params.subcategory : null,
       page: currentPage,
     },
     pagination: {

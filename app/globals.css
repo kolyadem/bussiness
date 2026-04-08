@@ -126,6 +126,27 @@ body::after {
   pointer-events: none;
 }
 
+/**
+ * Catalog product grid: auto-fit + minmax avoids empty trailing columns when the last row
+ * is incomplete (fixed column counts leave dead cells on the right).
+ */
+.catalog-product-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+}
+
+.catalog-product-grid > * {
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .catalog-product-grid {
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  }
+}
+
 .storefront-shell {
   max-width: 100rem;
   width: 100%;

@@ -41,7 +41,7 @@ export function CatalogSkeleton() {
           <div className="h-56 animate-pulse rounded-[2rem] bg-[color:var(--color-surface-elevated)]" />
         </div>
       </section>
-      <section className="mt-8 grid gap-5 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      <section className="catalog-product-grid mt-8">
         {Array.from({ length: 6 }).map((_, index) => (
           <ProductCardSkeleton key={index} />
         ))}

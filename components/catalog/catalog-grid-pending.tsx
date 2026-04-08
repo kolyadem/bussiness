@@ -36,9 +36,9 @@ export function CatalogGridPending({ children }: { children: React.ReactNode }) 
   const { isPending } = useCatalogNavigation();
 
   return (
-    <div className="min-h-[32rem]">
+    <div className="min-w-0">
       {isPending ? (
-        <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="catalog-product-grid">
           {Array.from({ length: 6 }).map((_, i) => (
             <CardSkeleton key={i} />
           ))}

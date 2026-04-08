@@ -10,6 +10,7 @@ import { Prisma } from "@prisma/client";
 import { displayPriceToStoredMinorUnits, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 import { db } from "@/lib/db";
 import {
+  collectDescendantCategoryIdsFromEdges,
   getCatalogData,
   parseCatalogSearchParams,
   type CatalogSearchParams,
@@ -21,22 +22,30 @@ import type { CategoryTreeRecord } from "@/lib/storefront/types";
 const locale: AppLocale = "uk";
 const catalogPageSize = 9;
 
-function collectDescendantCategoryIds(categories: CategoryTreeRecord[], rootId: string): string[] {
-  const categoryById = new Map(categories.map((c) => [c.id, c] as const));
-  const collected = new Set<string>([rootId]);
-  const queue = [rootId];
-  while (queue.length > 0) {
-    const currentId = queue.shift()!;
-    const current = categoryById.get(currentId);
-    if (!current) continue;
-    for (const child of current.children) {
-      if (!collected.has(child.id)) {
-        collected.add(child.id);
-        queue.push(child.id);
-      }
+function resolveAllowedCategoryIds(
+  categories: CategoryTreeRecord[],
+  params: CatalogSearchParams,
+): string[] | null {
+  const edges = categories.map((c) => ({ id: c.id, parentId: c.parentId }));
+  const selectedCategory = params.category
+    ? categories.find((c) => c.slug === params.category) ?? null
+    : null;
+  const selectedSubcategory =
+    selectedCategory && params.subcategory
+      ? categories.find((c) => c.slug === params.subcategory) ?? null
+      : null;
+  let effectiveSubcategory = selectedSubcategory;
+  if (selectedCategory && selectedSubcategory) {
+    const descendants = collectDescendantCategoryIdsFromEdges(edges, selectedCategory.id);
+    if (!descendants.includes(selectedSubcategory.id)) {
+      effectiveSubcategory = null;
     }
   }
-  return Array.from(collected);
+  return effectiveSubcategory
+    ? [effectiveSubcategory.id]
+    : selectedCategory
+      ? collectDescendantCategoryIdsFromEdges(edges, selectedCategory.id)
+      : null;
 }
 
 /** Mirrors lib/storefront/queries.ts buildCatalogProductWhereSql */
@@ -109,18 +118,8 @@ async function resolveWhereSqlInputs(
   maxPriceStored: number | null;
   localizedQuery: string;
 }> {
-  const selectedCategory = params.category
-    ? categories.find((c) => c.slug === params.category) ?? null
-    : null;
-  const selectedSubcategory = params.subcategory
-    ? categories.find((c) => c.slug === params.subcategory) ?? null
-    : null;
   const localizedQuery = params.q.trim();
-  const allowedCategoryIds = selectedSubcategory
-    ? [selectedSubcategory.id]
-    : selectedCategory
-      ? collectDescendantCategoryIds(categories, selectedCategory.id)
-      : null;
+  const allowedCategoryIds = resolveAllowedCategoryIds(categories, params);
   const minPriceStored =
     typeof params.minPrice === "number"
       ? displayPriceToStoredMinorUnits(params.minPrice, STOREFRONT_CURRENCY_CODE)
@@ -143,18 +142,8 @@ async function prismaCountForCatalog(
   categories: CategoryTreeRecord[],
   params: CatalogSearchParams,
 ): Promise<number> {
-  const selectedCategory = params.category
-    ? categories.find((c) => c.slug === params.category) ?? null
-    : null;
-  const selectedSubcategory = params.subcategory
-    ? categories.find((c) => c.slug === params.subcategory) ?? null
-    : null;
   const localizedQuery = params.q.trim();
-  const allowedCategoryIds = selectedSubcategory
-    ? [selectedSubcategory.id]
-    : selectedCategory
-      ? collectDescendantCategoryIds(categories, selectedCategory.id)
-      : null;
+  const allowedCategoryIds = resolveAllowedCategoryIds(categories, params);
   const minPriceStored =
     typeof params.minPrice === "number"
       ? displayPriceToStoredMinorUnits(params.minPrice, STOREFRONT_CURRENCY_CODE)

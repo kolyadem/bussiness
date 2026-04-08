@@ -144,7 +144,7 @@ export function CatalogFilters({
 
       <div className="flex flex-wrap gap-2">
         <FilterChip
-          active={!filters.category}
+          active={!filters.category && !filters.subcategory}
           onClick={() =>
             navigate((current) => {
               current.delete("category");
