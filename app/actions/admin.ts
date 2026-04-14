@@ -6,6 +6,7 @@ import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { redirect } from "next/navigation";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import { SITE_MODES } from "@/lib/site-mode";
 import {
@@ -36,7 +37,12 @@ import { defaultLocale, locales, type AppLocale } from "@/lib/constants";
 import { getDefaultBrandId } from "@/lib/commerce/default-brand";
 import { db } from "@/lib/db";
 import { normalizePromoCodeKey } from "@/lib/storefront/promo-codes";
-import { parseJson, slugify, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
+import {
+  displayPriceToStoredMinorUnits,
+  parseJson,
+  slugify,
+  STOREFRONT_CURRENCY_CODE,
+} from "@/lib/utils";
 
 type ProductFormState = {
   status: "idle" | "error";
@@ -735,6 +741,9 @@ export async function updateProductFormAction(
         .map((assetPath) => safeDeleteUploadedProductAsset(assetPath)),
     );
 
+    revalidateTag("products", { expire: 0 });
+    revalidateTag("homepage", { expire: 0 });
+
     redirect(`/admin/products/${productId}/edit?saved=1`);
   } catch (error) {
     if (isRedirectError(error)) {
@@ -971,11 +980,32 @@ export async function updateSiteSettingsAction(
   const locale = defaultLocale;
   await requireAdminOnlyAccess(locale);
 
+  const current = await db.siteSettings.findFirst({
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+
+  const fallbackRequiredText = {
+    brandName: current?.brandName?.trim() || "Lumina Tech",
+    watermarkText: current?.watermarkText?.trim() || "LUMINA",
+    heroTitle: current?.heroTitle?.trim() || "Lumina Tech",
+    heroSubtitle:
+      current?.heroSubtitle?.trim() ||
+      "Сучасні комплектуючі, готові збірки та допомога з підбором ПК.",
+    heroCtaLabel: current?.heroCtaLabel?.trim() || "До каталогу",
+    heroCtaHref: current?.heroCtaHref?.trim() || "/catalog",
+    defaultCurrency: current?.defaultCurrency?.trim() || STOREFRONT_CURRENCY_CODE,
+    defaultLocale: current?.defaultLocale || "uk",
+  };
+
   const parsed = siteSettingsSchema.safeParse({
-    siteMode: String(formData.get("siteMode") ?? SITE_MODES.pcBuild),
-    assemblyBaseFeeUah: String(formData.get("assemblyBaseFeeUah") ?? "0"),
+    siteMode: String(formData.get("siteMode") ?? current?.siteMode ?? SITE_MODES.pcBuild),
+    assemblyBaseFeeUah: displayPriceToStoredMinorUnits(
+      Number(String(formData.get("assemblyBaseFeeUah") ?? "0").trim() || "0"),
+    ),
     assemblyPercent: String(formData.get("assemblyPercent") ?? "0"),
-    brandName: String(formData.get("brandName") ?? "").trim(),
+    brandName: String(formData.get("brandName") ?? "").trim() || fallbackRequiredText.brandName,
     shortBrandName: normalizeOptionalText(formData.get("shortBrandName")),
     logoText: normalizeOptionalText(formData.get("logoText")),
     supportEmail: String(formData.get("supportEmail") ?? "").trim(),
@@ -987,15 +1017,19 @@ export async function updateSiteSettingsAction(
     youtubeUrl: normalizeOptionalText(formData.get("youtubeUrl")),
     metaTitle: normalizeOptionalText(formData.get("metaTitle")),
     metaDescription: normalizeOptionalText(formData.get("metaDescription")),
-    defaultCurrency: String(formData.get("defaultCurrency") ?? STOREFRONT_CURRENCY_CODE)
-      .trim()
-      .toUpperCase(),
-    defaultLocale: String(formData.get("defaultLocale") ?? "uk"),
-    watermarkText: String(formData.get("watermarkText") ?? "").trim(),
-    heroTitle: String(formData.get("heroTitle") ?? "").trim(),
-    heroSubtitle: String(formData.get("heroSubtitle") ?? "").trim(),
-    heroCtaLabel: String(formData.get("heroCtaLabel") ?? "").trim(),
-    heroCtaHref: String(formData.get("heroCtaHref") ?? "").trim(),
+    defaultCurrency:
+      String(formData.get("defaultCurrency") ?? "")
+        .trim()
+        .toUpperCase() || fallbackRequiredText.defaultCurrency,
+    defaultLocale: String(formData.get("defaultLocale") ?? "").trim() || fallbackRequiredText.defaultLocale,
+    watermarkText:
+      String(formData.get("watermarkText") ?? "").trim() || fallbackRequiredText.watermarkText,
+    heroTitle: String(formData.get("heroTitle") ?? "").trim() || fallbackRequiredText.heroTitle,
+    heroSubtitle:
+      String(formData.get("heroSubtitle") ?? "").trim() || fallbackRequiredText.heroSubtitle,
+    heroCtaLabel:
+      String(formData.get("heroCtaLabel") ?? "").trim() || fallbackRequiredText.heroCtaLabel,
+    heroCtaHref: String(formData.get("heroCtaHref") ?? "").trim() || fallbackRequiredText.heroCtaHref,
   });
 
   if (!parsed.success) {
@@ -1006,12 +1040,6 @@ export async function updateSiteSettingsAction(
       }),
     };
   }
-
-  const current = await db.siteSettings.findFirst({
-    orderBy: {
-      updatedAt: "desc",
-    },
-  });
 
   const logoFile = formData.get("logoFile");
   const faviconFile = formData.get("faviconFile");
@@ -1062,6 +1090,9 @@ export async function updateSiteSettingsAction(
       data,
     });
   }
+
+  revalidateTag("site-settings", { expire: 0 });
+  revalidateTag("homepage", { expire: 0 });
 
   return {
     status: "success",
@@ -1299,6 +1330,8 @@ export async function createCategoryAction(
       },
     });
 
+    revalidateTag("categories", { expire: 0 });
+
     redirect(`/admin/categories/${category.id}/edit?created=1`);
   } catch (error) {
     if (isRedirectError(error)) {
@@ -1392,6 +1425,8 @@ export async function updateCategoryAction(
         },
       },
     });
+
+    revalidateTag("categories", { expire: 0 });
 
     redirect(`/admin/categories/${categoryId}/edit?saved=1`);
   } catch (error) {

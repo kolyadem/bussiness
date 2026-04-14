@@ -19,6 +19,7 @@ const createRequestSchema = z.object({
   deliveryBranch: z.string().optional(),
   telegramUsername: z.string().optional(),
   promoCode: z.string().optional(),
+  wantsAssembly: z.boolean().optional(),
 });
 
 export async function POST(
@@ -71,6 +72,7 @@ export async function POST(
         deliveryBranch: parsed.data.deliveryBranch ?? "",
         telegramUsername: parsed.data.telegramUsername ?? "",
         promoCode: parsed.data.promoCode ?? "",
+        wantsAssembly: parsed.data.wantsAssembly ?? true,
       },
     });
 

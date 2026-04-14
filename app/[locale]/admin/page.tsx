@@ -10,7 +10,7 @@ import {
   Workflow,
 } from "lucide-react";
 import type { AppLocale } from "@/lib/constants";
-import { AdminDashboardTrends } from "@/components/admin/admin-dashboard-trends";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import {
   canViewAdminFinancials,
@@ -30,6 +30,19 @@ import {
   getOrderStatusTone,
 } from "@/lib/storefront/orders";
 import { formatPrice, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
+
+const AdminDashboardTrends = dynamic(
+  () => import("@/components/admin/admin-dashboard-trends").then((mod) => mod.AdminDashboardTrends),
+  {
+    loading: () => (
+      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
+        <div className="h-7 w-64 rounded-full bg-[color:var(--color-surface-elevated)]" />
+        <div className="mt-3 h-4 w-full max-w-2xl rounded-full bg-[color:var(--color-surface-elevated)]" />
+        <div className="mt-6 h-[320px] rounded-[1.6rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)]" />
+      </section>
+    ),
+  },
+);
 
 function getCopy(isOwner: boolean) {
   return {

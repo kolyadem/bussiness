@@ -58,6 +58,8 @@ const buildRequestSchema = z
     deliveryBranch: z.string().trim().max(32).optional().or(z.literal("")),
     telegramUsername: z.string().trim().max(64).optional().or(z.literal("")),
     promoCode: z.string().trim().max(64).optional().or(z.literal("")),
+    /** Узгоджено з прев’ю конфігуратора: чи потрібна платна збірка ПК */
+    wantsAssembly: z.boolean().optional().default(true),
   })
   .superRefine((data, ctx) => {
     if (data.deliveryMethod === "NOVA_POSHTA_BRANCH") {
@@ -446,7 +448,7 @@ export async function createBuildRequestForBuild({
   });
   const assemblyFeeBefore = computePcAssemblyServiceFeeUah({
     componentsSubtotal: componentsFromBuild,
-    hasPcBuild: true,
+    hasPcBuild: parsed.data.wantsAssembly,
     ...resolveAssemblyFeeSettings(siteSettings),
   });
 

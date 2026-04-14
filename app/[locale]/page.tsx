@@ -225,7 +225,14 @@ export default async function LocaleHome({
             >
               {banner.image ? (
                 <div className="pointer-events-none absolute inset-0 opacity-[0.1]">
-                  <Image src={banner.image} alt={banner.title} fill className="object-cover" />
+                  <Image
+                    src={banner.image}
+                    alt=""
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    className="object-cover"
+                    loading="lazy"
+                  />
                 </div>
               ) : null}
               <div className="relative">

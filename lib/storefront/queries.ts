@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import type { PromoCode, Review } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/auth";
@@ -152,14 +153,14 @@ export function collectDescendantCategoryIdsFromEdges(
   return Array.from(collected);
 }
 
-const getCategoryParentEdgesCached = cache(async (): Promise<CategoryParentEdge[]> => {
-  return db.category.findMany({
-    select: {
-      id: true,
-      parentId: true,
-    },
-  });
-});
+const getCategoryParentEdgesCached = cache(
+  unstable_cache(
+    async (): Promise<CategoryParentEdge[]> =>
+      db.category.findMany({ select: { id: true, parentId: true } }),
+    ["category-parent-edges"],
+    { tags: ["categories"], revalidate: 300 },
+  ),
+);
 
 function buildCatalogOrderBy(sort: CatalogSortOption) {
   switch (sort) {
@@ -277,8 +278,10 @@ async function queryCatalogShuffledPageIds(params: {
   return rows.map((row) => row.id);
 }
 
-/** Min/max catalog prices — deduped per request via React cache(). */
-const getPublishedPriceDisplayRangeCached = cache(async (): Promise<{ min: number; max: number }> => {
+/** Min/max catalog prices — cached 2 min across requests; invalidated on product updates. */
+const getPublishedPriceDisplayRangeCached = cache(
+  unstable_cache(
+    async (): Promise<{ min: number; max: number }> => {
   const rows = await db.product.groupBy({
     by: ["currency"],
     where: {
@@ -317,30 +320,33 @@ const getPublishedPriceDisplayRangeCached = cache(async (): Promise<{ min: numbe
     }
   }
 
-  return {
-    min: Number.isFinite(minDisplay) ? Math.floor(minDisplay) : 0,
-    max: Number.isFinite(maxDisplay) ? Math.ceil(maxDisplay) : 0,
-  };
-});
+      return {
+        min: Number.isFinite(minDisplay) ? Math.floor(minDisplay) : 0,
+        max: Number.isFinite(maxDisplay) ? Math.ceil(maxDisplay) : 0,
+      };
+    },
+    ["catalog-price-range"],
+    { tags: ["products"], revalidate: 120 },
+  ),
+);
 
-const getCategoryTreeCached = cache(async () => {
-  return db.category.findMany({
-    include: {
-      translations: true,
-      children: {
+const getCategoryTreeCached = cache(
+  unstable_cache(
+    async () =>
+      db.category.findMany({
         include: {
           translations: true,
+          children: {
+            include: { translations: true },
+            orderBy: { sortOrder: "asc" },
+          },
         },
-        orderBy: {
-          sortOrder: "asc",
-        },
-      },
-    },
-    orderBy: {
-      sortOrder: "asc",
-    },
-  }) as Promise<CategoryTreeRecord[]>;
-});
+        orderBy: { sortOrder: "asc" },
+      }),
+    ["catalog-category-tree"],
+    { tags: ["categories"], revalidate: 300 },
+  ),
+);
 
 async function getAverageRatingsForProductIds(ids: string[]): Promise<Map<string, number>> {
   const unique = [...new Set(ids)].filter(Boolean);
@@ -378,7 +384,7 @@ async function withListProductRatings<T extends { id: string }>(
 
 export const getSiteSettings = getSiteSettingsRecord;
 
-export async function getHomepageData(locale: AppLocale) {
+async function fetchHomepageData(locale: AppLocale) {
   try {
     const settings = await getSiteSettings();
     const featuredProductIds = settings ? parseJson<string[]>(settings.featuredProductIds, []) : [];
@@ -468,6 +474,29 @@ export async function getHomepageData(locale: AppLocale) {
   }
 }
 
+/**
+ * Homepage data with cross-request persistent caching.
+ * Revalidates every 60 s; invalidated by admin product/settings saves.
+ */
+export const getHomepageData = unstable_cache(
+  fetchHomepageData,
+  ["homepage-data"],
+  { tags: ["homepage"], revalidate: 60 },
+);
+
+const getPublishedCategoryCountsCached = cache(
+  unstable_cache(
+    async () =>
+      db.product.groupBy({
+        by: ["categoryId"],
+        where: { status: "PUBLISHED" },
+        _count: { categoryId: true },
+      }),
+    ["catalog-category-counts"],
+    { tags: ["products"], revalidate: 120 },
+  ),
+);
+
 export async function getCatalogData({
   locale,
   params,
@@ -479,15 +508,7 @@ export async function getCatalogData({
   const [categories, priceRange, publishedCategoryCounts, categoryEdges] = await Promise.all([
     getCategoryTreeCached(),
     getPublishedPriceDisplayRangeCached(),
-    db.product.groupBy({
-      by: ["categoryId"],
-      where: {
-        status: "PUBLISHED",
-      },
-      _count: {
-        categoryId: true,
-      },
-    }),
+    getPublishedCategoryCountsCached(),
     getCategoryParentEdgesCached(),
   ]);
 
@@ -566,86 +587,58 @@ export async function getCatalogData({
     ]),
   ) as Record<string, number>;
 
-  const totalItems = await db.product.count({ where });
-  const totalPages = Math.max(1, Math.ceil(totalItems / catalogPageSize));
-  const currentPage = Math.min(params.page, totalPages);
   const shuffleFullCatalog = allowedCategoryIds === null && params.sort === "newest";
 
-  const productRows =
-    params.sort === "rating"
-      ? await (async () => {
-          const whereSql = buildCatalogProductWhereSql({
-            allowedCategoryIds,
-            availability: params.availability,
-            minPriceStored,
-            maxPriceStored,
-            onSaleOnly: params.onSaleOnly,
-            localizedQuery,
-            locale,
-          });
-          const offset = (currentPage - 1) * catalogPageSize;
-          const ids = await queryCatalogRatingPageIds({
-            whereSql,
-            limit: catalogPageSize,
-            offset,
-          });
-          if (ids.length === 0) {
-            return [];
-          }
-          const fetched = await db.product.findMany({
-            where: {
-              id: {
-                in: ids,
-              },
-            },
-            include: productListInclude,
-          });
-          const byId = new Map(fetched.map((p) => [p.id, p] as const));
-          return ids
-            .map((id) => byId.get(id))
-            .filter((row): row is NonNullable<typeof row> => row != null);
-        })()
-      : shuffleFullCatalog
-        ? await (async () => {
-            const whereSql = buildCatalogProductWhereSql({
-              allowedCategoryIds,
-              availability: params.availability,
-              minPriceStored,
-              maxPriceStored,
-              onSaleOnly: params.onSaleOnly,
-              localizedQuery,
-              locale,
-            });
-            const offset = (currentPage - 1) * catalogPageSize;
-            const ids = await queryCatalogShuffledPageIds({
+  // Run count and product fetch in parallel — saves a sequential DB round-trip.
+  // Product fetch uses unclamped params.page for skip; if page is out-of-range
+  // it returns an empty array (correct: no products on that page).
+  const pageForFetch = Math.max(1, params.page);
+
+  async function fetchPageProducts() {
+    if (params.sort === "rating" || shuffleFullCatalog) {
+      const whereSql = buildCatalogProductWhereSql({
+        allowedCategoryIds,
+        availability: params.availability,
+        minPriceStored,
+        maxPriceStored,
+        onSaleOnly: params.onSaleOnly,
+        localizedQuery,
+        locale,
+      });
+      const offset = (pageForFetch - 1) * catalogPageSize;
+      const ids =
+        params.sort === "rating"
+          ? await queryCatalogRatingPageIds({ whereSql, limit: catalogPageSize, offset })
+          : await queryCatalogShuffledPageIds({
               whereSql,
               limit: catalogPageSize,
               offset,
               shuffleSeed: getDailyCatalogShuffleSeed(),
             });
-            if (ids.length === 0) {
-              return [];
-            }
-            const fetched = await db.product.findMany({
-              where: {
-                id: {
-                  in: ids,
-                },
-              },
-              include: productListInclude,
-            });
-            const byId = new Map(fetched.map((p) => [p.id, p] as const));
-            return ids
-              .map((id) => byId.get(id))
-              .filter((row): row is NonNullable<typeof row> => row != null);
-          })()
-        : await db.product.findMany({
-            where,
-            include: productListInclude,
-            orderBy: buildCatalogOrderBy(params.sort),
-            skip: (currentPage - 1) * catalogPageSize,
-            take: catalogPageSize,
-          });
+      if (ids.length === 0) return [];
+      const fetched = await db.product.findMany({
+        where: { id: { in: ids } },
+        include: productListInclude,
+      });
+      const byId = new Map(fetched.map((p) => [p.id, p] as const));
+      return ids.map((id) => byId.get(id)).filter((row): row is NonNullable<typeof row> => row != null);
+    }
+    return db.product.findMany({
+      where,
+      include: productListInclude,
+      orderBy: buildCatalogOrderBy(params.sort),
+      skip: (pageForFetch - 1) * catalogPageSize,
+      take: catalogPageSize,
+    });
+  }
+
+  const [totalItems, productRows] = await Promise.all([
+    db.product.count({ where }),
+    fetchPageProducts(),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(totalItems / catalogPageSize));
+  const currentPage = Math.min(pageForFetch, totalPages);
+
   const products = await withListProductRatings(productRows);
   return {
     locale,
@@ -697,38 +690,47 @@ export async function getCatalogData({
   }
 }
 
-export const getProductBySlug = cache(async (slug: string) => {
-  try {
-    return await db.product.findFirst({
-      where: {
-        slug,
-        status: "PUBLISHED",
-      },
-      include: productInclude,
-    });
-  } catch (error) {
-    if (isPrismaRecoverableBuildTimeError(error)) {
-      return null;
-    }
-    throw error;
-  }
-});
+export const getProductBySlug = cache(
+  unstable_cache(
+    async (slug: string) => {
+      try {
+        return await db.product.findFirst({
+          where: {
+            slug,
+            status: "PUBLISHED",
+          },
+          include: productInclude,
+        });
+      } catch (error) {
+        if (isPrismaRecoverableBuildTimeError(error)) {
+          return null;
+        }
+        throw error;
+      }
+    },
+    ["product-by-slug"],
+    { tags: ["products"], revalidate: 120 },
+  ),
+);
 
-export async function getRelatedProducts(product: ProductRecord) {
+async function fetchRelatedProducts(categoryId: string, excludeId: string) {
   const rows = await db.product.findMany({
     where: {
       status: "PUBLISHED",
-      categoryId: product.categoryId,
-      id: {
-        not: product.id,
-      },
+      categoryId,
+      id: { not: excludeId },
     },
     include: productListInclude,
     take: 4,
   });
-
   return withListProductRatings(rows);
 }
+
+export const getRelatedProducts = unstable_cache(
+  fetchRelatedProducts,
+  ["related-products"],
+  { tags: ["products"], revalidate: 120 },
+);
 
 export async function getRecentlyViewedProducts(currentProductId: string) {
   return withPrismaFallback(async () => {

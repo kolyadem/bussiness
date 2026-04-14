@@ -30,6 +30,7 @@ export function ProductMediaGallery({
         watermark={watermarkText}
         className="rounded-[2.2rem] border-[color:var(--color-line)] bg-[color:var(--color-surface-strong)] shadow-[var(--shadow-strong)]"
         fillClassName="group-hover:scale-[1.08] sm:p-10"
+        sizes="(max-width: 1280px) 100vw, 50vw"
         priority
       />
 
@@ -54,6 +55,7 @@ export function ProductMediaGallery({
                 watermark={watermarkText}
                 className="rounded-[1rem] border-none bg-[color:var(--color-surface-strong)] shadow-none"
                 fillClassName="p-4"
+                sizes="15vw"
               />
             </button>
           ))}

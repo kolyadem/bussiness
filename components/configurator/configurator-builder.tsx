@@ -1,7 +1,6 @@
 "use client";
 
 import { startTransition, useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -39,7 +38,25 @@ import {
   type BuildRequestDeliveryMethod,
 } from "@/lib/storefront/build-requests";
 import { formatPrice, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
-import { resolveHeroImageSrc } from "@/lib/storefront/product-image";
+
+function formatAssemblyTariffHintUa(
+  locale: AppLocale,
+  assemblyBaseFeeUah: number,
+  assemblyPercent: number,
+) {
+  const base = Math.max(0, Math.floor(Number(assemblyBaseFeeUah) || 0));
+  const pct = Math.max(0, Math.min(100, Math.floor(Number(assemblyPercent) || 0)));
+  if (base > 0 && pct > 0) {
+    return `${formatPrice(base, locale, STOREFRONT_CURRENCY_CODE)} + ${pct}% \u0432\u0456\u0434 \u0432\u0430\u0440\u0442\u043e\u0441\u0442\u0456 \u043a\u043e\u043c\u043f\u043b\u0435\u043a\u0442\u0443\u044e\u0447\u0438\u0445`;
+  }
+  if (pct > 0) {
+    return `${pct}% \u0432\u0456\u0434 \u0432\u0430\u0440\u0442\u043e\u0441\u0442\u0456 \u043a\u043e\u043c\u043f\u043b\u0435\u043a\u0442\u0443\u044e\u0447\u0438\u0445`;
+  }
+  if (base > 0) {
+    return `${formatPrice(base, locale, STOREFRONT_CURRENCY_CODE)} \u2014 \u0444\u0456\u043a\u0441\u043e\u0432\u0430\u043d\u0430 \u0447\u0430\u0441\u0442\u0438\u043d\u0430`;
+  }
+  return "";
+}
 
 function trackAnalytics(payload: Record<string, unknown>) {
   void fetch("/api/analytics", {
@@ -237,16 +254,31 @@ export function ConfiguratorBuilder({
       item: build?.itemsBySlot[slot.key] ?? null,
     }))
     .filter((entry) => entry.item);
+  const componentsSubtotal = build?.totalPrice ?? 0;
+  const showAssemblyControl = summaryItems.length > 0;
+  const assemblyFeeSettings = useMemo(
+    () => resolveAssemblyFeeSettings({ assemblyBaseFeeUah, assemblyPercent }),
+    [assemblyBaseFeeUah, assemblyPercent],
+  );
   const assemblyFeeUah = useMemo(
     () =>
       computePcAssemblyServiceFeeUah({
-        componentsSubtotal: build?.totalPrice ?? 0,
-        hasPcBuild: summaryItems.length > 0 && wantsAssembly,
-        ...resolveAssemblyFeeSettings({ assemblyBaseFeeUah, assemblyPercent }),
+        componentsSubtotal,
+        hasPcBuild: showAssemblyControl && wantsAssembly,
+        ...assemblyFeeSettings,
       }),
-    [assemblyBaseFeeUah, assemblyPercent, build?.totalPrice, summaryItems.length, wantsAssembly],
+    [assemblyFeeSettings, componentsSubtotal, showAssemblyControl, wantsAssembly],
   );
-  const hasAssemblySettings = assemblyBaseFeeUah > 0 || assemblyPercent > 0;
+  const hasAssemblySettings =
+    assemblyFeeSettings.assemblyBaseFeeUah > 0 || assemblyFeeSettings.assemblyPercent > 0;
+  const summaryCurrency = summaryItems[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE;
+  const grandTotal = componentsSubtotal + assemblyFeeUah;
+  const assemblyTariffHint = formatAssemblyTariffHintUa(
+    locale,
+    assemblyFeeSettings.assemblyBaseFeeUah,
+    assemblyFeeSettings.assemblyPercent,
+  );
+  const showAssemblySummaryRow = wantsAssembly && (assemblyFeeUah > 0 || hasAssemblySettings);
   const deliveryMethods: BuildRequestDeliveryMethod[] = [
     "NOVA_POSHTA_BRANCH",
     "NOVA_POSHTA_COURIER",
@@ -419,6 +451,7 @@ export function ConfiguratorBuilder({
             deliveryBranch: requestForm.deliveryBranch,
             telegramUsername: requestForm.telegramUsername,
             promoCode: requestForm.promoCode,
+            wantsAssembly,
           }),
         });
 
@@ -614,68 +647,89 @@ export function ConfiguratorBuilder({
             </label>
           </div>
 
-            {summaryItems.length > 0 && hasAssemblySettings ? (
-            <div className="mt-4 rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-3">
-              <label className="flex cursor-pointer items-start gap-3">
-                <input
-                  type="checkbox"
-                  checked={wantsAssembly}
-                  onChange={(event) => setWantsAssembly(event.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[color:var(--color-accent-strong)]"
-                />
+          <div className="mt-4 rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-4">
+            <div className="space-y-3 text-sm">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-sm font-medium text-[color:var(--color-text)]">{"\u0417\u0430\u0433\u0430\u043b\u043e\u043c"}</span>
+                <span className="font-heading text-3xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)] tabular-nums">
+                  {formatPrice(grandTotal, locale, summaryCurrency)}
+                </span>
+              </div>
+            </div>
+            {summaryItems.length === 0 ? (
+              <p className="mt-3 border-t border-[color:var(--color-line)] pt-3 text-sm leading-6 text-[color:var(--color-text-soft)]">
+                {t("configuratorSummaryEmpty")}
+              </p>
+            ) : null}
+          </div>
+
+          {showAssemblyControl ? (
+            <div className="mt-4 rounded-[1.55rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-soft)]">
+              <div>
+                <div>
+                  <p className="text-sm font-semibold text-[color:var(--color-text)]">{"\u0417\u0456\u0431\u0440\u0430\u0442\u0438 \u041f\u041a"}</p>
+                  <p className="mt-1 text-xs leading-5 text-[color:var(--color-text-soft)]">
+                    {wantsAssembly
+                      ? "\u0417\u0431\u0456\u0440\u043a\u0443 \u0434\u043e\u0434\u0430\u043d\u043e"
+                      : "\u0411\u0435\u0437 \u043f\u043e\u0441\u043b\u0443\u0433\u0438 \u0437\u0431\u0456\u0440\u043a\u0438"}
+                  </p>
+                  {assemblyTariffHint ? (
+                    <p className="mt-2 text-xs leading-5 text-[color:var(--color-text-soft)]">
+                      {assemblyTariffHint}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                role="switch"
+                aria-checked={wantsAssembly}
+                onClick={() => setWantsAssembly((current) => !current)}
+                className={[
+                  "mt-4 flex min-h-[4.5rem] w-full items-center justify-between gap-4 rounded-[1.2rem] border px-4 py-3 text-left transition active:scale-[0.99]",
+                  wantsAssembly
+                    ? "border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] text-[color:var(--color-text)] shadow-[var(--shadow-soft)] ring-2 ring-[color:var(--color-accent-line)]/45"
+                    : "border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] text-[color:var(--color-text-soft)] hover:border-[color:var(--color-line-strong)] hover:bg-[color:var(--color-overlay-soft)]",
+                ].join(" ")}
+              >
                 <div className="min-w-0">
-                  <span className="text-sm font-medium text-[color:var(--color-text)]">Збірка ПК</span>
-                  <p className="mt-0.5 text-xs leading-5 text-[color:var(--color-text-soft)]">
-                    {assemblyPercent > 0 && assemblyBaseFeeUah > 0
-                      ? `База + ${assemblyPercent}% від суми комплектуючих`
-                      : assemblyPercent > 0
-                        ? `${assemblyPercent}% від суми комплектуючих`
-                        : "Фіксована вартість монтажу"}
+                  <p className="text-sm font-semibold leading-tight">
+                    {wantsAssembly
+                      ? "\u0417\u0431\u0456\u0440\u043a\u0443 \u0434\u043e\u0434\u0430\u043d\u043e"
+                      : "\u0411\u0435\u0437 \u0437\u0431\u0456\u0440\u043a\u0438"}
+                  </p>
+                  <p
+                    className={[
+                      "mt-1 text-xs font-semibold tabular-nums",
+                      wantsAssembly
+                        ? "text-[color:var(--color-accent-strong)]"
+                        : "text-[color:var(--color-text-soft)]",
+                    ].join(" ")}
+                  >
+                    {assemblyTariffHint ||
+                      "\u0422\u0430\u0440\u0438\u0444 \u0437\u0431\u0456\u0440\u043a\u0438 \u0449\u0435 \u043d\u0435 \u043d\u0430\u043b\u0430\u0448\u0442\u043e\u0432\u0430\u043d\u043e"}
                   </p>
                 </div>
-              </label>
+                <span
+                  aria-hidden="true"
+                  className={[
+                    "relative inline-flex h-8 w-14 shrink-0 rounded-full border transition",
+                    wantsAssembly
+                      ? "border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-strong)]"
+                      : "border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-strong)]",
+                  ].join(" ")}
+                >
+                  <span
+                    className={[
+                      "absolute top-1 h-[1.375rem] w-[1.375rem] rounded-full bg-white shadow-sm transition",
+                      wantsAssembly ? "left-8" : "left-1",
+                    ].join(" ")}
+                  />
+                </span>
+              </button>
             </div>
           ) : null}
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-2">
-            <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-4">
-              <p className="text-sm text-[color:var(--color-text-soft)]">{t("configuratorCurrentTotal")}</p>
-              <p className="mt-2 font-heading text-3xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
-                {formatPrice(build?.totalPrice ?? 0, locale, summaryItems[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE)}
-              </p>
-              {assemblyFeeUah > 0 ? (
-                <div className="mt-3 space-y-1 border-t border-[color:var(--color-line)] pt-3 text-sm text-[color:var(--color-text-soft)]">
-                  <div className="flex items-center justify-between gap-2">
-                    <span>Збірка ПК</span>
-                    <span className="font-medium text-[color:var(--color-text)]">
-                      {formatPrice(
-                        assemblyFeeUah,
-                        locale,
-                        summaryItems[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE,
-                      )}
-                    </span>
-                  </div>
-                  <p className="text-xs leading-5">
-                    Орієнтовно зі збіркою:{" "}
-                    <span className="font-medium text-[color:var(--color-text)]">
-                      {formatPrice(
-                        (build?.totalPrice ?? 0) + assemblyFeeUah,
-                        locale,
-                        summaryItems[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE,
-                      )}
-                    </span>
-                    . Промокод вказується в заявці нижче.
-                  </p>
-                </div>
-              ) : null}
-            </div>
-            <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-4">
-              <p className="text-sm text-[color:var(--color-text-soft)]">{t("configuratorItemCount")}</p>
-              <p className="mt-2 font-heading text-3xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
-                {build?.itemCount ?? 0}
-              </p>
-            </div>
-            </div>
 
             <div
               className={[
@@ -734,69 +788,6 @@ export function ConfiguratorBuilder({
               </div>
             </div>
           ) : null}
-
-          <div className="mt-4 rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] p-4">
-            {summaryItems.length > 0 ? (
-              <div className="grid gap-3">
-                {summaryItems.map(({ slot, item }) => {
-                  if (!item) {
-                    return null;
-                  }
-
-                  const thumbSrc = resolveHeroImageSrc(item.product.heroImage);
-
-                  return (
-                    <div
-                      key={slot.key}
-                      className="flex flex-col gap-2 rounded-[1.15rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)]/90 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
-                    >
-                      <div className="flex min-w-0 flex-1 gap-3 sm:items-center">
-                        <Link
-                          href={`/product/${item.product.slug}`}
-                          className="relative h-[3.75rem] w-[4.75rem] shrink-0 overflow-hidden rounded-[0.85rem] border border-[color:var(--color-line)] bg-[color:var(--color-gradient-surface)]"
-                        >
-                          <Image
-                            src={thumbSrc}
-                            alt=""
-                            fill
-                            sizes="76px"
-                            className="object-contain p-1.5"
-                            unoptimized={thumbSrc.toLowerCase().endsWith(".svg")}
-                          />
-                        </Link>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-soft)]">
-                            {slot.label}
-                          </p>
-                          <p className="mt-1 line-clamp-2 text-sm font-medium leading-6 text-[color:var(--color-text)]">
-                            {item.product.name}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-                        <p className="whitespace-nowrap text-sm font-medium text-[color:var(--color-text)]">
-                          {formatPrice(item.product.price, locale, item.product.currency)}
-                        </p>
-                        {build?.slug ? (
-                          <ConfiguratorAddSlotToCartButton
-                            locale={locale}
-                            buildSlug={build.slug}
-                            slot={slot.key}
-                            productId={item.product.id}
-                            label={t("configuratorAddSlotToCart")}
-                            disabled={blockingCompatibility}
-                            compact
-                          />
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm leading-6 text-[color:var(--color-text-soft)]">{t("configuratorSummaryEmpty")}</p>
-            )}
-          </div>
 
           {requestSuccessNumber ? (
             <div className="mt-4 rounded-[1.4rem] border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] p-4">
@@ -1037,10 +1028,16 @@ export function ConfiguratorBuilder({
             {t("configuratorCurrentTotal")}
           </p>
           <p className="mt-0.5 truncate font-heading text-xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
-            {formatPrice(build?.totalPrice ?? 0, locale, summaryItems[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE)}
+            {formatPrice(grandTotal, locale, summaryCurrency)}
           </p>
           <p className="mt-0.5 text-xs text-[color:var(--color-text-soft)]">
             {t("configuratorItemCount")}: <span className="font-medium text-[color:var(--color-text)]">{build?.itemCount ?? 0}</span>
+            {hasAssemblySettings && summaryItems.length > 0 && assemblyFeeUah > 0 ? (
+              <>
+                {" "}
+                · <span className="text-[color:var(--color-text-soft)]">зі збіркою</span>
+              </>
+            ) : null}
           </p>
         </div>
         <ChevronUp className="h-5 w-5 shrink-0 text-[color:var(--color-text-soft)]" aria-hidden />

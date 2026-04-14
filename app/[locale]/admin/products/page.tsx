@@ -2,7 +2,7 @@ import { AdminProductCatalogTable } from "@/components/admin/admin-product-catal
 import {
   canViewAdminFinancials,
   getAdminProductOptions,
-  getAdminProducts,
+  getAdminProductsTableData,
   pickAdminTranslation,
   requireAdminAccess,
 } from "@/lib/admin";
@@ -19,7 +19,7 @@ export default async function AdminProductsPage({
   const viewer = await requireAdminAccess(locale);
   const canViewFinancials = canViewAdminFinancials(viewer.role);
   const [products, options] = await Promise.all([
-    getAdminProducts(viewer.role),
+    getAdminProductsTableData(viewer.role),
     getAdminProductOptions(),
   ]);
 

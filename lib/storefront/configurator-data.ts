@@ -24,7 +24,7 @@ import {
   type ConfiguratorSlotKey,
 } from "@/lib/storefront/configurator";
 import { addProductToOwnedCart, resolveStorefrontOwner } from "@/lib/storefront/persistence";
-import { mapProduct } from "@/lib/storefront/queries";
+import { mapProduct, pickByLocale } from "@/lib/storefront/queries";
 import type { ProductRecord } from "@/lib/storefront/types";
 
 export const configuratorSelectionSortOptions = [
@@ -96,6 +96,92 @@ const configuratorSlotSelectionInclude = {
     },
   },
 } as const;
+
+const configuratorBuildProductSelect = {
+  id: true,
+  slug: true,
+  heroImage: true,
+  price: true,
+  currency: true,
+  translations: {
+    select: {
+      locale: true,
+      name: true,
+      shortDescription: true,
+    },
+  },
+  category: {
+    select: {
+      slug: true,
+      translations: {
+        select: {
+          locale: true,
+          name: true,
+        },
+      },
+    },
+  },
+  attributes: {
+    include: {
+      attribute: {
+        select: {
+          code: true,
+        },
+      },
+    },
+  },
+} as const;
+
+type ConfiguratorBuildProductRecord = {
+  id: string;
+  slug: string;
+  heroImage: string | null;
+  price: number;
+  currency: string;
+  translations: Array<{
+    locale: string;
+    name: string;
+    shortDescription: string;
+  }>;
+  category: {
+    slug: string;
+    translations: Array<{
+      locale: string;
+      name: string;
+    }>;
+  };
+  attributes: Array<{
+    value: string;
+    attribute: {
+      code: string;
+    };
+  }>;
+};
+
+function mapConfiguratorBuildProduct(
+  product: ConfiguratorBuildProductRecord,
+  locale: AppLocale,
+) {
+  const translation = pickByLocale(product.translations, locale);
+  const categoryTranslation = pickByLocale(product.category.translations, locale);
+
+  return {
+    id: product.id,
+    slug: product.slug,
+    name: translation.name,
+    heroImage: product.heroImage ?? "",
+    shortDescription: translation.shortDescription,
+    price: product.price,
+    currency: product.currency,
+    category: {
+      slug: product.category.slug,
+      name: categoryTranslation.name,
+    },
+    technicalAttributes: getNormalizedTechnicalAttributeMap(product as ProductRecord),
+  };
+}
+
+type ConfiguratorBuildProductView = ReturnType<typeof mapConfiguratorBuildProduct>;
 
 async function getConfiguratorOwner() {
   const [viewer, sessionId] = await Promise.all([getAuthenticatedUser(), getSessionId()]);
@@ -215,7 +301,7 @@ async function mapBuildRecord(
         id: string;
         slot: ConfiguratorSlotKey;
         quantity: number;
-        product: ReturnType<typeof mapProduct>;
+        product: ConfiguratorBuildProductView;
       }
   >;
 
@@ -228,7 +314,7 @@ async function mapBuildRecord(
       id: item.id,
       slot: item.slot,
       quantity: item.quantity,
-      product: mapProduct(item.product, locale),
+      product: mapConfiguratorBuildProduct(item.product, locale),
     };
   }
 
@@ -267,7 +353,7 @@ async function getConfiguratorBuildRecord(slug: string) {
       items: {
         include: {
           product: {
-            include: configuratorProductInclude,
+            select: configuratorBuildProductSelect,
           },
         },
         orderBy: {
@@ -290,7 +376,7 @@ export async function getSharedConfiguratorBuild(shareToken: string, locale: App
       items: {
         include: {
           product: {
-            include: configuratorProductInclude,
+            select: configuratorBuildProductSelect,
           },
         },
         orderBy: {
@@ -330,7 +416,7 @@ export async function createConfiguratorBuild({
       items: {
         include: {
           product: {
-            include: configuratorProductInclude,
+            select: configuratorBuildProductSelect,
           },
         },
       },
@@ -371,7 +457,7 @@ export async function updateConfiguratorBuildName({
       items: {
         include: {
           product: {
-            include: configuratorProductInclude,
+            select: configuratorBuildProductSelect,
           },
         },
       },

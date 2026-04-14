@@ -4,9 +4,9 @@ import { isPrismaRecoverableBuildTimeError } from "@/lib/prisma-build";
 import { defaultLocale } from "@/lib/constants";
 import { getAbsoluteUrl, getLocalizedPath } from "@/lib/storefront/seo";
 
-const publicRoutes = ["", "/catalog", "/configurator"] as const;
-
 export const dynamic = "force-dynamic";
+
+const publicRoutes = ["", "/catalog", "/configurator"] as const;
 
 function buildStaticEntries(now: Date): MetadataRoute.Sitemap {
   return publicRoutes.map((route) => ({

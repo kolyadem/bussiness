@@ -16,7 +16,7 @@ import {
   getAbsoluteLocalizedUrl,
 } from "@/lib/storefront/seo";
 
-/** Avoid build-time Prisma calls when DATABASE_URL points at an empty/unmigrated DB (e.g. Vercel). */
+/** Layout reads session cookies (cart, wishlist) — inherently dynamic at runtime. */
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({

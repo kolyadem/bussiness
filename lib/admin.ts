@@ -216,10 +216,63 @@ export async function getAdminProducts(viewerRole?: string | null) {
   return products.map((product) => stripProductFinancials(product, viewerRole));
 }
 
+export async function getAdminProductsTableData(viewerRole?: string | null) {
+  const products = await db.product.findMany({
+    select: {
+      id: true,
+      heroImage: true,
+      sku: true,
+      slug: true,
+      status: true,
+      inventoryStatus: true,
+      price: true,
+      purchasePrice: true,
+      currency: true,
+      stock: true,
+      updatedAt: true,
+      metadata: true,
+      categoryId: true,
+      translations: {
+        select: {
+          locale: true,
+          name: true,
+        },
+      },
+      category: {
+        select: {
+          translations: {
+            select: {
+              locale: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+
+  return products.map((product) => stripProductFinancials(product, viewerRole));
+}
+
 export async function getAdminProductOptions() {
   const categories = await db.category.findMany({
-    include: {
-      translations: true,
+    select: {
+      id: true,
+      slug: true,
+      image: true,
+      sortOrder: true,
+      parentId: true,
+      createdAt: true,
+      updatedAt: true,
+      translations: {
+        select: {
+          locale: true,
+          name: true,
+        },
+      },
     },
     orderBy: {
       sortOrder: "asc",

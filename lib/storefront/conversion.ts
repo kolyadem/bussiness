@@ -1,10 +1,12 @@
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import type { AppLocale } from "@/lib/constants";
 import { isPrismaRecoverableBuildTimeError } from "@/lib/prisma-build";
 import { calculateUnitFinancials } from "@/lib/commerce/finance";
 import { mapProduct } from "@/lib/storefront/queries";
-import { productInclude } from "@/lib/storefront/product-includes";
+import { productListInclude } from "@/lib/storefront/product-includes";
 import type { ProductRecord } from "@/lib/storefront/types";
+import type { Review } from "@prisma/client";
 
 export type SmartBadge = "POPULAR" | "VALUE" | "BEST_CHOICE";
 
@@ -105,9 +107,23 @@ function resolveExplicitBadge(input: {
   return null;
 }
 
+async function addAvgRatings<T extends { id: string }>(
+  rows: T[],
+): Promise<Array<T & { reviews: Review[]; _avgRating?: number }>> {
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+  const ratingsRows = await db.review.groupBy({
+    by: ["productId"],
+    where: { productId: { in: ids }, status: "APPROVED" },
+    _avg: { rating: true },
+  });
+  const avgMap = new Map(ratingsRows.map((r) => [r.productId, r._avg.rating ?? 0]));
+  return rows.map((r) => ({ ...r, reviews: [] as Review[], _avgRating: avgMap.get(r.id) }));
+}
+
 function decorateProducts(
   locale: AppLocale,
-  products: ProductRecord[],
+  products: Array<ProductRecord & { _avgRating?: number }>,
   salesMap: Map<string, number>,
 ): DecoratedProduct[] {
   return products.map((product) => {
@@ -153,7 +169,11 @@ function getBetterVariantScore(current: ProductRecord, candidate: ProductRecord,
   );
 }
 
-function getValueChoiceScore(current: ProductRecord, candidate: ProductRecord, salesCount: number) {
+function getValueChoiceScore(
+  current: ProductRecord,
+  candidate: ProductRecord & { _avgRating?: number },
+  salesCount: number,
+) {
   const priceAdvantage = (current.price - candidate.price) / Math.max(current.price, 1);
   const financials = calculateUnitFinancials({
     price: candidate.price,
@@ -165,47 +185,50 @@ function getValueChoiceScore(current: ProductRecord, candidate: ProductRecord, s
     clamp(priceAdvantage, -0.15, 0.35) * 4 +
     (financials.marginPercent ?? 0) / 12 +
     salesCount * 0.2 +
-    candidate.reviews.length * 0.05
+    (candidate._avgRating ?? 0) * 0.05
   );
 }
 
-export async function getProductRecommendationCollections(
-  product: ProductRecord,
+async function fetchProductRecommendationCollections(
+  productId: string,
+  categoryId: string,
+  brandId: string,
+  price: number,
   locale: AppLocale,
+  currentProductRef: ProductRecord,
 ): Promise<RecommendationCollections> {
   try {
-  const candidates = await db.product.findMany({
+  const rawCandidates = await db.product.findMany({
     where: {
       status: "PUBLISHED",
-      id: {
-        not: product.id,
-      },
-      OR: [{ categoryId: product.categoryId }, { brandId: product.brandId }],
+      id: { not: productId },
+      OR: [{ categoryId }, { brandId }],
     },
-    include: productInclude,
+    include: productListInclude,
     take: 18,
     orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
   });
 
-  if (candidates.length === 0) {
-    return {
-      similar: [],
-      betterVariant: null,
-      valueChoice: null,
-    };
+  if (rawCandidates.length === 0) {
+    return { similar: [], betterVariant: null, valueChoice: null };
   }
 
-  const salesMap = await getSalesMapForProducts(candidates.map((candidate) => candidate.id));
+  const [candidates, salesMap] = await Promise.all([
+    addAvgRatings(rawCandidates),
+    getSalesMapForProducts(rawCandidates.map((c) => c.id)),
+  ]);
+
   const decorated = decorateProducts(locale, candidates, salesMap);
   const decoratedMap = new Map(decorated.map((item) => [item.id, item] as const));
+  const product = currentProductRef;
 
   const betterVariantRecord =
     [...candidates]
       .filter(
         (candidate) =>
-          candidate.categoryId === product.categoryId &&
-          candidate.price > product.price &&
-          candidate.price <= product.price * 1.45,
+          candidate.categoryId === categoryId &&
+          candidate.price > price &&
+          candidate.price <= price * 1.45,
       )
       .sort(
         (left, right) =>
@@ -217,9 +240,9 @@ export async function getProductRecommendationCollections(
     [...candidates]
       .filter(
         (candidate) =>
-          candidate.categoryId === product.categoryId &&
-          candidate.price <= product.price * 1.08 &&
-          candidate.price >= product.price * 0.72,
+          candidate.categoryId === categoryId &&
+          candidate.price <= price * 1.08 &&
+          candidate.price >= price * 0.72,
       )
       .sort(
         (left, right) =>
@@ -252,6 +275,24 @@ export async function getProductRecommendationCollections(
     }
     throw error;
   }
+}
+
+/**
+ * Fetch recommendation collections for a product page.
+ * Results cached per product+locale for 2 minutes; invalidated on product updates.
+ * Uses productListInclude (no heavy review content) + aggregated rating query.
+ */
+export async function getProductRecommendationCollections(
+  product: ProductRecord,
+  locale: AppLocale,
+): Promise<RecommendationCollections> {
+  const cached = unstable_cache(
+    (productId: string, categoryId: string, brandId: string, price: number, loc: AppLocale) =>
+      fetchProductRecommendationCollections(productId, categoryId, brandId, price, loc, product),
+    ["product-recs"],
+    { tags: ["products"], revalidate: 120 },
+  );
+  return cached(product.id, product.categoryId, product.brandId, product.price, locale);
 }
 
 const CATEGORY_COMPLEMENTS: Record<string, string[]> = {
@@ -324,7 +365,7 @@ export async function getCartUpsellProducts(
       : []),
   ];
 
-  const candidates = await db.product.findMany({
+  const rawCandidates = await db.product.findMany({
     where: {
       status: "PUBLISHED",
       id: {
@@ -332,16 +373,19 @@ export async function getCartUpsellProducts(
       },
       OR: candidateWhere,
     },
-    include: productInclude,
+    include: productListInclude,
     take: 24,
     orderBy: [{ stock: "desc" }, { createdAt: "desc" }],
   });
 
-  if (candidates.length === 0) {
+  if (rawCandidates.length === 0) {
     return [];
   }
 
-  const salesMap = await getSalesMapForProducts(candidates.map((candidate) => candidate.id));
+  const [candidates, salesMap] = await Promise.all([
+    addAvgRatings(rawCandidates),
+    getSalesMapForProducts(rawCandidates.map((c) => c.id)),
+  ]);
   const candidateRecordMap = new Map(candidates.map((candidate) => [candidate.id, candidate] as const));
 
   return decorateProducts(locale, candidates, salesMap)

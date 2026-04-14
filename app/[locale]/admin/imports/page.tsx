@@ -1,6 +1,6 @@
 import { AlertTriangle, Clock3, RefreshCw, Siren, TriangleAlert } from "lucide-react";
+import dynamic from "next/dynamic";
 import { ImportAlertActions } from "@/components/admin/import-alert-actions";
-import { ImportCenter } from "@/components/admin/import-center";
 import { ImportSourceActions } from "@/components/admin/import-source-actions";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -34,6 +34,22 @@ import {
 import { Link } from "@/lib/i18n/routing";
 import type { AppLocale } from "@/lib/constants";
 import { parseJson } from "@/lib/utils";
+
+const ImportCenter = dynamic(
+  () => import("@/components/admin/import-center").then((mod) => mod.ImportCenter),
+  {
+    loading: () => (
+      <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
+        <div className="h-8 w-64 rounded-full bg-[color:var(--color-surface-elevated)]" />
+        <div className="mt-4 grid gap-3">
+          <div className="h-11 rounded-[1rem] bg-[color:var(--color-surface-elevated)]" />
+          <div className="h-11 rounded-[1rem] bg-[color:var(--color-surface-elevated)]" />
+          <div className="h-11 rounded-[1rem] bg-[color:var(--color-surface-elevated)]" />
+        </div>
+      </section>
+    ),
+  },
+);
 
 type AlertFilter = "active" | "resolved" | "all";
 

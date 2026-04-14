@@ -1,4 +1,3 @@
-import { memo } from "react";
 import type { AppLocale } from "@/lib/constants";
 import { Link } from "@/lib/i18n/routing";
 import { calculateUnitFinancials } from "@/lib/commerce/finance";
@@ -58,7 +57,7 @@ function resolveFallbackBadge(product: {
   return null;
 }
 
-export const ProductCard = memo(function ProductCard({
+export function ProductCard({
   product,
   locale,
   showActions = true,
@@ -205,6 +204,4 @@ export const ProductCard = memo(function ProductCard({
       </div>
     </article>
   );
-});
-
-ProductCard.displayName = "ProductCard";
+}
