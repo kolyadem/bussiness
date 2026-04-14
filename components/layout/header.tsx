@@ -61,9 +61,9 @@ export async function Header({
   ];
 
   return (
-    <header className="sticky top-0 z-[70] px-3 pt-3 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
+    <header className="sticky top-0 z-[70] px-3 pt-2.5 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
       <div className="storefront-shell mx-auto rounded-[1.75rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-        <div className="flex items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-5 lg:px-6 xl:px-7">
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-5 lg:px-6 xl:px-7">
           <Link href="/" className="group flex min-w-0 shrink-0 items-center self-center">
             <StorefrontLogo brandName={brandName} logoPath={logoPath} logoText={logoText} />
           </Link>

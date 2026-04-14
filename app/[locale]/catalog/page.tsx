@@ -102,16 +102,16 @@ export default async function CatalogPage({
         })()
       : null;
   const emptyDescription = isPcBuild
-    ? "Спробуйте іншу категорію комплектуючих, приберіть частину фільтрів або перейдіть до configurator для поетапного підбору."
-    : "Спробуйте змінити категорію, прибрати частину фільтрів або повернутися до всього каталогу.";
+    ? "Змініть фільтри або перейдіть у конфігуратор."
+    : "Змініть фільтри або скиньте обмеження.";
   const featuredLabel =
     selectedSubcategoryName ?? selectedCategoryName ?? "Підібрані товари";
 
   return (
     <CatalogClientShell>
-      <main className="storefront-shell mx-auto w-full px-4 py-8 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
-        <section className="rounded-[2.5rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-4 py-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl sm:px-7 sm:py-8 lg:px-9 lg:py-10 xl:px-10">
-          <div className="space-y-6">
+      <main className="storefront-shell mx-auto w-full px-4 py-6 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
+        <section className="rounded-[2.5rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-4 py-5 shadow-[var(--shadow-soft)] backdrop-blur-2xl sm:px-7 sm:py-6 lg:px-9 lg:py-8 xl:px-10">
+          <div className="space-y-5">
             <div className="max-w-3xl">
               <h1 className="font-heading text-3xl font-semibold tracking-[-0.05em] text-[color:var(--color-text)] sm:text-4xl lg:text-5xl">
                 {isPcBuild ? experience?.catalogTitle ?? t("catalogTitle") : t("catalogTitle")}
@@ -139,7 +139,7 @@ export default async function CatalogPage({
           <CatalogSort sort={data.filters.sort} locale={locale} />
         </section>
 
-        <div className="mt-8">
+        <div className="mt-6">
           <CatalogGridPending>
             {data.products.length === 0 ? (
               <EmptyState
@@ -161,12 +161,13 @@ export default async function CatalogPage({
               />
             ) : (
               <div className="catalog-product-grid">
-                {data.products.map((product) => (
+                {data.products.map((product, index) => (
                   <ProductCard
                     key={product.id}
                     product={mapProduct(product, locale)}
                     locale={locale}
                     siteMode={siteMode}
+                    imagePriority={index < 3}
                   />
                 ))}
               </div>
@@ -175,7 +176,7 @@ export default async function CatalogPage({
         </div>
 
         {data.pagination.totalItems > 0 ? (
-          <div className="mt-10">
+          <div className="mt-8">
             <CatalogPagination pagination={data.pagination} filters={data.filters} />
           </div>
         ) : null}

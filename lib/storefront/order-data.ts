@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { PromoCodeType } from "@prisma/client";
 import type { AppLocale } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { getAuthenticatedUser, hasRole, USER_ROLES } from "@/lib/auth";
@@ -19,12 +20,25 @@ import {
   ORDER_DELIVERY_METHODS,
   ORDER_STATUSES,
 } from "@/lib/storefront/orders";
+import { normalizeTelegramUsernameInput } from "@/lib/storefront/telegram-username";
+import {
+  cartItemsIncludeConfiguratorBuild,
+  computePromoMonetaryEffect,
+  PROMO_ERROR_MESSAGES_UK,
+  validatePromoRecordWindow,
+  validatePromoValueShape,
+} from "@/lib/storefront/promo-codes";
+import {
+  computePcAssemblyServiceFeeUah,
+  resolveAssemblyFeeSettings,
+} from "@/lib/storefront/pc-assembly-fee";
 
 const checkoutSchema = z.object({
   locale: z.literal("uk"),
   fullName: z.string().trim().min(2).max(120),
   phone: z.string().trim().min(7).max(32),
   email: z.string().trim().email(),
+  telegramUsername: z.string().trim().max(64).optional().or(z.literal("")),
   comment: z.string().trim().max(1000).optional().or(z.literal("")),
   deliveryCity: z.string().trim().min(2).max(120),
   deliveryMethod: z.enum(ORDER_DELIVERY_METHODS),
@@ -38,7 +52,7 @@ const checkoutSchema = z.object({
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["deliveryAddress"],
-      message: "Delivery address is required",
+      message: "Потрібна адреса для кур'єрської доставки",
     });
   }
 
@@ -49,7 +63,17 @@ const checkoutSchema = z.object({
     context.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["deliveryBranch"],
-      message: "Branch number is required",
+      message: "Вкажіть номер відділення Нової пошти",
+    });
+  }
+
+  const trimmedTg = data.telegramUsername?.trim();
+
+  if (trimmedTg && !normalizeTelegramUsernameInput(trimmedTg)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["telegramUsername"],
+      message: "Некоректний нік у Telegram (наприклад, @username)",
     });
   }
 });
@@ -145,6 +169,7 @@ export function getCheckoutFormPrefill(
     fullName: profile?.name ?? "",
     phone: profile?.phone ?? "",
     email: profile?.email ?? "",
+    telegramUsername: "",
     comment: "",
     deliveryCity: "Київ",
     deliveryMethod: "NOVA_POSHTA_BRANCH" as const,
@@ -222,6 +247,7 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
       const cart = await tx.cart.findFirst({
         where: ownerWhere,
         include: {
+          promoCode: true,
           items: {
             include: {
               product: {
@@ -290,10 +316,74 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
           configuration: item.configuration ?? null,
         };
       });
-      const totalPrice = orderItemsInput.reduce(
+      const componentsSubtotal = orderItemsInput.reduce(
         (sum, item) => sum + item.unitPrice * item.quantity,
         0,
       );
+      const siteSettings = await tx.siteSettings.findFirst({
+        orderBy: {
+          updatedAt: "desc",
+        },
+      });
+      const hasConfiguratorItems = cartItemsIncludeConfiguratorBuild(cart.items);
+      const assemblyFeeBefore = computePcAssemblyServiceFeeUah({
+        componentsSubtotal,
+        hasPcBuild: hasConfiguratorItems,
+        ...resolveAssemblyFeeSettings(siteSettings),
+      });
+
+      let totalPrice = componentsSubtotal + assemblyFeeBefore;
+
+      let promoCodeId: string | null = null;
+      let promoCodeCodeSnapshot: string | null = null;
+      let promoDiscountAmount = 0;
+      let promoEffectType: PromoCodeType | null = null;
+
+      if (cart.promoCodeId && cart.promoCode) {
+        const validated = validatePromoRecordWindow(cart.promoCode, new Date());
+        if (!validated.ok) {
+          throw new OrderCreationError(PROMO_ERROR_MESSAGES_UK[validated.code]);
+        }
+
+        const valueOk = validatePromoValueShape(validated.promo);
+        if (!valueOk.ok) {
+          throw new OrderCreationError(PROMO_ERROR_MESSAGES_UK[valueOk.code]);
+        }
+
+        const effect = computePromoMonetaryEffect({
+          promo: validated.promo,
+          componentsSubtotal,
+          assemblyFeeBefore,
+          hasConfiguratorItems,
+        });
+
+        if (!effect.ok) {
+          throw new OrderCreationError(PROMO_ERROR_MESSAGES_UK[effect.code]);
+        }
+
+        const freshPromo = await tx.promoCode.findUnique({
+          where: {
+            id: validated.promo.id,
+          },
+        });
+
+        if (
+          !freshPromo ||
+          !freshPromo.isActive ||
+          (freshPromo.usageLimit !== null && freshPromo.usedCount >= freshPromo.usageLimit)
+        ) {
+          throw new OrderCreationError(PROMO_ERROR_MESSAGES_UK.LIMIT_REACHED);
+        }
+
+        totalPrice = effect.result.finalTotal;
+        promoCodeId = freshPromo.id;
+        promoCodeCodeSnapshot = freshPromo.code;
+        promoDiscountAmount = effect.result.promoDiscountAmount;
+        promoEffectType = freshPromo.type;
+      } else if (cart.promoCodeId && !cart.promoCode) {
+        throw new OrderCreationError(PROMO_ERROR_MESSAGES_UK.NOT_FOUND);
+      }
+
       const financials = resolveOrderFinancials({
         totalPrice,
         items: orderItemsInput,
@@ -306,6 +396,7 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
           customerName: parsed.data.fullName,
           phone: parsed.data.phone,
           email: parsed.data.email,
+          telegramUsername: normalizeTelegramUsernameInput(parsed.data.telegramUsername ?? ""),
           comment: normalizeComment(parsed.data.comment),
           deliveryCity: resolvedDeliveryCity,
           deliveryMethod: parsed.data.deliveryMethod,
@@ -322,6 +413,10 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
           totalCost: financials.cost,
           grossProfit: financials.grossProfit,
           currency,
+          promoCodeId,
+          promoCodeCodeSnapshot,
+          promoDiscountAmount,
+          promoEffectType,
           items: {
             create: orderItemsInput,
           },
@@ -330,6 +425,19 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
           items: true,
         },
       });
+
+      if (promoCodeId) {
+        await tx.promoCode.update({
+          where: {
+            id: promoCodeId,
+          },
+          data: {
+            usedCount: {
+              increment: 1,
+            },
+          },
+        });
+      }
 
       for (const item of cart.items) {
         if (item.product.inventoryStatus === "PREORDER") {

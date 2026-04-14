@@ -15,6 +15,7 @@ import {
   isOrderDeliveryMethod,
   type OrderDeliveryMethod,
 } from "@/lib/storefront/orders";
+import { getPromoEffectTypeLabelUa } from "@/lib/storefront/promo-codes";
 import { formatPrice } from "@/lib/utils";
 
 function formatDate(value: Date) {
@@ -139,7 +140,32 @@ export default async function AccountOrderDetailPage({
                     Відділення: {order.deliveryBranch}
                   </p>
                 ) : null}
+                {order.telegramUsername ? (
+                  <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
+                    Telegram: {order.telegramUsername}
+                  </p>
+                ) : null}
               </div>
+              {order.promoCodeCodeSnapshot ? (
+                <div className="rounded-[1.4rem] border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] px-4 py-4">
+                  <p className="text-sm text-[color:var(--color-text-soft)]">Промокод</p>
+                  <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{order.promoCodeCodeSnapshot}</p>
+                  <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
+                    Тип ефекту:{" "}
+                    <span className="font-medium text-[color:var(--color-text)]">
+                      {getPromoEffectTypeLabelUa(order.promoEffectType)}
+                    </span>
+                  </p>
+                  {order.promoDiscountAmount > 0 ? (
+                    <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
+                      Знижка:{" "}
+                      <span className="font-medium text-emerald-700 dark:text-emerald-300">
+                        −{formatPrice(order.promoDiscountAmount, locale, order.currency)}
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
                   Підсумок

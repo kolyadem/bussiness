@@ -44,6 +44,12 @@ const COPY = {
   watermarkText: "Текст watermark",
   featuredCategories: "Рекомендовані категорії",
   featuredProducts: "Рекомендовані товари",
+  assemblyBaseFee: "Фіксована частина збірки ПК (копійки)",
+  assemblyBaseFeeHint:
+    "Базова сума, що додається до орієнтовної вартості збірки разом із відсотком від комплектуючих.",
+  assemblyPercent: "Відсоток від суми комплектуючих (%)",
+  assemblyPercentHint:
+    "Ціле число від 0 до 100 (наприклад 2 означає 2%). Розрахунок: база + відсоток від суми комплектуючих. Промокод FREE_BUILD знімає повну суму збірки.",
 };
 
 export function AdminSiteSettingsForm({
@@ -80,6 +86,8 @@ export function AdminSiteSettingsForm({
     heroCtaHref: string;
     featuredCategorySlugs: string[];
     featuredProductIds: string[];
+    assemblyBaseFeeUah: number;
+    assemblyPercent: number;
   };
   categories: Array<
     Category & {
@@ -136,6 +144,31 @@ export function AdminSiteSettingsForm({
             <span className="text-xs leading-6 text-[color:var(--color-text-soft)]/80">
               {COPY.siteModeHint}
             </span>
+          </label>
+          <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)] md:col-span-1 xl:col-span-1">
+            <span>{COPY.assemblyBaseFee}</span>
+            <input
+              name="assemblyBaseFeeUah"
+              type="number"
+              min={0}
+              step={1}
+              defaultValue={initialValues.assemblyBaseFeeUah}
+              className="h-11 max-w-md rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
+            />
+            <span className="text-xs leading-6 text-[color:var(--color-text-soft)]/80">{COPY.assemblyBaseFeeHint}</span>
+          </label>
+          <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)] md:col-span-1 xl:col-span-1">
+            <span>{COPY.assemblyPercent}</span>
+            <input
+              name="assemblyPercent"
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              defaultValue={initialValues.assemblyPercent}
+              className="h-11 max-w-md rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-[color:var(--color-text)] outline-none"
+            />
+            <span className="text-xs leading-6 text-[color:var(--color-text-soft)]/80">{COPY.assemblyPercentHint}</span>
           </label>
           <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
             <span>{COPY.brandName}</span>

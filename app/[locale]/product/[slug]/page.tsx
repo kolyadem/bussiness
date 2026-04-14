@@ -190,7 +190,7 @@ export default async function ProductPage({
   ];
 
   return (
-    <main className="storefront-shell mx-auto w-full px-4 py-8 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
+    <main className="storefront-shell mx-auto w-full px-4 py-6 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
       <script
         type="application/ld+json"
         suppressHydrationWarning
@@ -210,8 +210,8 @@ export default async function ProductPage({
         {t("backToCatalog")}
       </Link>
 
-      <section className="mt-6 grid min-w-0 gap-8 xl:grid-cols-[1.02fr_0.98fr] xl:gap-10 2xl:grid-cols-[1.06fr_0.94fr]">
-        <div className="min-w-0 space-y-6">
+      <section className="mt-5 grid min-w-0 gap-6 xl:grid-cols-[1.02fr_0.98fr] xl:gap-8 2xl:grid-cols-[1.06fr_0.94fr]">
+        <div className="min-w-0 space-y-5">
           <ProductMediaGallery
             images={productImages}
             name={mapped.name}
@@ -238,8 +238,8 @@ export default async function ProductPage({
           </div>
         </div>
 
-        <div className="min-w-0 space-y-6">
-          <section className="rounded-[2.4rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] p-6 shadow-[var(--shadow-strong)] sm:p-8">
+        <div className="min-w-0 space-y-5">
+          <section className="rounded-[2.4rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] p-5 shadow-[var(--shadow-strong)] sm:p-6">
             <div className="flex flex-wrap gap-2">
               <span className="rounded-full border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] px-3 py-2 text-xs uppercase tracking-[0.2em] text-[color:var(--color-text)]">
                 {mapped.category.name}

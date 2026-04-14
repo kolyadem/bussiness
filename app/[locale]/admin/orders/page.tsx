@@ -16,6 +16,7 @@ import {
 } from "@/lib/storefront/orders";
 import type { AppLocale } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
+import { getPromoEffectTypeLabelUa } from "@/lib/storefront/promo-codes";
 
 function getLabels() {
   return {
@@ -125,6 +126,11 @@ export default async function AdminOrdersPage({
                           {labels.account}
                         </span>
                       ) : null}
+                      {order.promoCodeCodeSnapshot ? (
+                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/8 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                          {order.promoCodeCodeSnapshot}
+                        </span>
+                      ) : null}
                     </div>
 
                     <div>
@@ -172,6 +178,11 @@ export default async function AdminOrdersPage({
                       <p className="mt-1 text-2xl font-semibold text-[color:var(--color-text)]">
                         {formatPrice(order.totalPrice, locale, order.currency)}
                       </p>
+                      {order.promoDiscountAmount > 0 ? (
+                        <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
+                          {getPromoEffectTypeLabelUa(order.promoEffectType)}: −{formatPrice(order.promoDiscountAmount, locale, order.currency)}
+                        </p>
+                      ) : null}
                       {canViewFinancials ? (
                         <p className="mt-2 text-xs text-[color:var(--color-text-soft)]">
                           Прибуток:{" "}

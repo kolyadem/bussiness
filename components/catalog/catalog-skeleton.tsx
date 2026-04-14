@@ -34,14 +34,14 @@ function ProductCardSkeleton() {
 
 export function CatalogSkeleton() {
   return (
-    <main className="storefront-shell mx-auto px-4 py-8 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
+    <main className="storefront-shell mx-auto px-4 py-6 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
       <section className="rounded-[2.5rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)]">
         <div className="space-y-6">
           <div className="h-12 w-72 animate-pulse rounded-full bg-[color:var(--color-surface-elevated)]" />
           <div className="h-56 animate-pulse rounded-[2rem] bg-[color:var(--color-surface-elevated)]" />
         </div>
       </section>
-      <section className="catalog-product-grid mt-8">
+      <section className="catalog-product-grid mt-6">
         {Array.from({ length: 6 }).map((_, index) => (
           <ProductCardSkeleton key={index} />
         ))}

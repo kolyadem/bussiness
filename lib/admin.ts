@@ -1,3 +1,4 @@
+import type { PromoCodeType } from "@prisma/client";
 import { db } from "@/lib/db";
 import {
   USER_ROLES,
@@ -500,4 +501,72 @@ export function getAdminTechnicalAttributeFields(product: {
   storageInterface: string | null;
 }) {
   return getTechnicalAttributeInputMap(product);
+}
+
+export async function getAdminPromoCodes(filters?: {
+  active?: "all" | "active" | "inactive";
+  type?: PromoCodeType | "ALL";
+}) {
+  const active = filters?.active ?? "all";
+  const typeFilter = filters?.type ?? "ALL";
+
+  return db.promoCode.findMany({
+    where: {
+      ...(active === "active" ? { isActive: true } : {}),
+      ...(active === "inactive" ? { isActive: false } : {}),
+      ...(typeFilter !== "ALL" ? { type: typeFilter } : {}),
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+}
+
+export async function getAdminPromoCodeById(id: string) {
+  return db.promoCode.findUnique({
+    where: {
+      id,
+    },
+  });
+}
+
+export async function getPromoCodeUsage(promoId: string, limit = 20) {
+  const [orders, buildRequests] = await Promise.all([
+    db.order.findMany({
+      where: { promoCodeId: promoId },
+      select: {
+        id: true,
+        customerName: true,
+        phone: true,
+        totalPrice: true,
+        currency: true,
+        promoDiscountAmount: true,
+        promoEffectType: true,
+        promoCodeCodeSnapshot: true,
+        createdAt: true,
+        status: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    }),
+    db.pcBuildRequest.findMany({
+      where: { promoCodeId: promoId },
+      select: {
+        id: true,
+        customerName: true,
+        contact: true,
+        totalPrice: true,
+        currency: true,
+        promoDiscountAmount: true,
+        promoEffectType: true,
+        promoCodeCodeSnapshot: true,
+        createdAt: true,
+        status: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    }),
+  ]);
+
+  return { orders, buildRequests };
 }

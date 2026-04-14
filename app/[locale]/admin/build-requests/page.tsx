@@ -14,6 +14,7 @@ import {
 } from "@/lib/storefront/build-requests";
 import type { AppLocale } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
+import { getPromoEffectTypeLabelUa } from "@/lib/storefront/promo-codes";
 
 const SORT_OPTIONS = [
   "created_desc",
@@ -208,6 +209,11 @@ export default async function AdminBuildRequestsPage({
                           {copy.withNote}
                         </span>
                       ) : null}
+                      {request.promoCodeCodeSnapshot ? (
+                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/8 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">
+                          {request.promoCodeCodeSnapshot}
+                        </span>
+                      ) : null}
                     </div>
 
                     <div>
@@ -251,6 +257,11 @@ export default async function AdminBuildRequestsPage({
                           request.currency,
                         )}
                       </p>
+                      {request.promoDiscountAmount > 0 ? (
+                        <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
+                          {getPromoEffectTypeLabelUa(request.promoEffectType)}: −{formatPrice(request.promoDiscountAmount, locale, request.currency)}
+                        </p>
+                      ) : null}
                     </div>
 
                     <div className="w-full rounded-[1.3rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-sm text-[color:var(--color-text-soft)] xl:max-w-[280px]">

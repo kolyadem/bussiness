@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   /** Product images on Vercel Blob are absolute HTTPS URLs on *.public.blob.vercel-storage.com */
   images: {
+    /** Local SVG placeholders under /public/products — serve without optimizer pipeline issues. */
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: "https",

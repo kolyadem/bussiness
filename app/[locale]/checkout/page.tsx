@@ -2,11 +2,21 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
+import { CheckoutPromoField } from "@/components/checkout/checkout-promo-field";
 import { Button } from "@/components/ui/button";
 import { ProductImageFrame } from "@/components/ui/product-image-frame";
 import type { AppLocale } from "@/lib/constants";
 import { Link } from "@/lib/i18n/routing";
+import { getSiteSettingsRecord } from "@/lib/site-config";
 import { getCheckoutPageData } from "@/lib/storefront/order-data";
+import {
+  buildCheckoutTotalsPreview,
+  cartItemsIncludeConfiguratorBuild,
+} from "@/lib/storefront/promo-codes";
+import {
+  computePcAssemblyServiceFeeUah,
+  resolveAssemblyFeeSettings,
+} from "@/lib/storefront/pc-assembly-fee";
 import { getOrderItemConfigurationLabel } from "@/lib/storefront/orders";
 import { mapProduct } from "@/lib/storefront/queries";
 import { pageMetadata } from "@/lib/storefront/seo";
@@ -38,19 +48,39 @@ export default async function CheckoutPage({
 }) {
   const { locale } = await params;
   const t = await getTranslations({ locale });
-  const { cart, prefill } = await getCheckoutPageData(locale);
+  const [{ cart, prefill }, settings] = await Promise.all([
+    getCheckoutPageData(locale),
+    getSiteSettingsRecord(),
+  ]);
 
   if (!cart || cart.items.length === 0) {
     redirect(`/cart`);
   }
 
   const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cart.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+  const componentsSubtotal = cart.items.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0,
+  );
   const currency = cart.items[0]?.product.currency ?? STOREFRONT_CURRENCY_CODE;
+  const hasConfiguratorItems = cartItemsIncludeConfiguratorBuild(cart.items);
+  const assemblyFeeBefore = computePcAssemblyServiceFeeUah({
+    componentsSubtotal,
+    hasPcBuild: hasConfiguratorItems,
+    ...resolveAssemblyFeeSettings(settings),
+  });
+  const totalsPreview = buildCheckoutTotalsPreview({
+    componentsSubtotal,
+    assemblyFeeBefore,
+    hasConfiguratorItems,
+    promo: cart.promoCode,
+    locale,
+    currency,
+  });
 
   return (
-    <main className="storefront-shell mx-auto w-full max-w-[1560px] px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
-      <section className="rounded-[2.3rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-6 shadow-[var(--shadow-soft)] sm:p-8">
+    <main className="storefront-shell mx-auto w-full max-w-[1560px] px-4 py-6 sm:px-6 lg:px-8 xl:px-10">
+      <section className="rounded-[2.3rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
         <div className="max-w-3xl">
           <h1 className="font-heading text-4xl font-semibold tracking-[-0.05em] text-[color:var(--color-text)] sm:text-5xl">
             Оформлення замовлення
@@ -61,15 +91,23 @@ export default async function CheckoutPage({
         </div>
       </section>
 
-      <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
         <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
           <h2 className="mb-5 font-heading text-3xl font-semibold text-[color:var(--color-text)]">
             Контактні дані
           </h2>
           <CheckoutForm locale={locale} prefill={prefill} />
+          <div className="mt-6 border-t border-[color:var(--color-line)] pt-6">
+            <p className="mb-3 text-sm font-medium text-[color:var(--color-text-soft)]">Є промокод?</p>
+            <CheckoutPromoField
+              locale={locale}
+              initialCode={totalsPreview.promo?.code ?? null}
+              effectDescription={totalsPreview.effectDescription}
+            />
+          </div>
         </section>
 
-        <aside className="space-y-6 xl:sticky xl:top-[calc(var(--header-offset)+0.75rem)] xl:self-start">
+        <aside className="space-y-5 xl:sticky xl:top-[calc(var(--header-offset)+0.75rem)] xl:self-start">
           <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-heading text-2xl font-semibold text-[color:var(--color-text)]">
@@ -130,18 +168,46 @@ export default async function CheckoutPage({
                 <span className="font-medium text-[color:var(--color-text)]">{itemCount}</span>
               </div>
               <div className="flex items-center justify-between gap-4 text-sm text-[color:var(--color-text-soft)]">
-                <span>{t("subtotal")}</span>
+                <span>Комплектуючі</span>
                 <span className="font-medium text-[color:var(--color-text)]">
-                  {formatPrice(subtotal, locale, currency)}
+                  {formatPrice(componentsSubtotal, locale, currency)}
                 </span>
               </div>
+              {totalsPreview.assemblyFeeOriginal > 0 ? (
+                <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-[color:var(--color-text-soft)]">
+                  <span>Збірка ПК</span>
+                  <span className="text-right font-medium text-[color:var(--color-text)]">
+                    {totalsPreview.assemblyWaiverAmount > 0 ? (
+                      <>
+                        <span className="mr-2 text-[color:var(--color-text-soft)] line-through">
+                          {formatPrice(totalsPreview.assemblyFeeOriginal, locale, currency)}
+                        </span>
+                        <span>{formatPrice(totalsPreview.assemblyFeeAfter, locale, currency)}</span>
+                      </>
+                    ) : (
+                      formatPrice(totalsPreview.assemblyFeeAfter, locale, currency)
+                    )}
+                  </span>
+                </div>
+              ) : null}
+              {totalsPreview.promoDiscountAmount > 0 ? (
+                <div className="flex items-center justify-between gap-4 text-sm text-emerald-700 dark:text-emerald-300">
+                  <span>{totalsPreview.promo?.type === "FREE_BUILD" ? "Знижка (збірка)" : "Знижка"}</span>
+                  <span className="font-medium">
+                    −{formatPrice(totalsPreview.promoDiscountAmount, locale, currency)}
+                  </span>
+                </div>
+              ) : null}
+              {totalsPreview.effectDescription ? (
+                <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">
+                  {totalsPreview.effectDescription}
+                </p>
+              ) : null}
               <div className="border-t border-[color:var(--color-line)] pt-4">
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm text-[color:var(--color-text-soft)]">
-                    До сплати
-                  </span>
+                  <span className="text-sm text-[color:var(--color-text-soft)]">До сплати</span>
                   <span className="font-heading text-3xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
-                    {formatPrice(subtotal, locale, currency)}
+                    {formatPrice(totalsPreview.finalTotal, locale, currency)}
                   </span>
                 </div>
               </div>

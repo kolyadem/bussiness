@@ -36,6 +36,8 @@ export default async function AdminSettingsPage({
         products={products}
         initialValues={{
           siteMode: normalizeSiteMode(settings?.siteMode),
+          assemblyBaseFeeUah: settings?.assemblyBaseFeeUah ?? 0,
+          assemblyPercent: settings?.assemblyPercent ?? 0,
           brandName: settings?.brandName ?? "Lumina Tech",
           shortBrandName: settings?.shortBrandName ?? "",
           logoText: settings?.logoText ?? "",

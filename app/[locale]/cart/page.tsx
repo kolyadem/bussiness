@@ -124,8 +124,8 @@ export default async function CartPage({
   const currency = cart?.items[0]?.product.currency ?? STOREFRONT_CURRENCY_CODE;
 
   return (
-    <main className="storefront-shell mx-auto w-full px-4 py-8 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
-      <section className="rounded-[2.3rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] p-6 shadow-[var(--shadow-strong)] sm:p-8">
+    <main className="storefront-shell mx-auto w-full px-4 py-6 sm:px-5 lg:px-7 xl:px-8 2xl:px-10">
+      <section className="rounded-[2.3rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] p-5 shadow-[var(--shadow-strong)] sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="max-w-3xl">
             <h1 className="font-heading text-4xl font-semibold tracking-[-0.05em] text-[color:var(--color-text)] sm:text-5xl">
@@ -141,7 +141,7 @@ export default async function CartPage({
         </div>
       </section>
 
-      <div className="mt-8">
+      <div className="mt-6">
         {!cart || cart.items.length === 0 ? (
           <EmptyState
             title={t("emptyCart")}
@@ -153,7 +153,7 @@ export default async function CartPage({
             }
           />
         ) : (
-          <div className="grid items-start gap-6 2xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="grid items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_380px]">
             <div className="grid self-start gap-4">
               {cart.items.map((item) => {
                 const product = mapProduct(item.product, locale);

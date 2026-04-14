@@ -16,6 +16,7 @@ import {
   type OrderDeliveryMethod,
 } from "@/lib/storefront/orders";
 import type { AppLocale } from "@/lib/constants";
+import { getPromoEffectTypeLabelUa } from "@/lib/storefront/promo-codes";
 import { formatPrice } from "@/lib/utils";
 
 export default async function AdminOrderDetailPage({
@@ -60,6 +61,8 @@ export default async function AdminOrderDetailPage({
     margin: "Маржа",
     itemsCount: "Позицій",
     missingCost: "Для частини позицій ще не задано закупівлю.",
+    promo: "Промокод",
+    promoDiscount: "Знижка за промокодом",
   };
 
   return (
@@ -100,6 +103,10 @@ export default async function AdminOrderDetailPage({
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">Email</p>
                 <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{order.email ?? "—"}</p>
+              </div>
+              <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
+                <p className="text-sm text-[color:var(--color-text-soft)]">Telegram</p>
+                <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{order.telegramUsername ?? "—"}</p>
               </div>
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">{copy.account}</p>
@@ -242,6 +249,26 @@ export default async function AdminOrderDetailPage({
 
           <section className="rounded-[1.8rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
             <div className="grid gap-3">
+              {order.promoCodeCodeSnapshot ? (
+                <div className="rounded-[1.4rem] border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] px-4 py-4">
+                  <p className="text-sm text-[color:var(--color-text-soft)]">{copy.promo}</p>
+                  <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{order.promoCodeCodeSnapshot}</p>
+                  <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
+                    Тип ефекту:{" "}
+                    <span className="font-medium text-[color:var(--color-text)]">
+                      {getPromoEffectTypeLabelUa(order.promoEffectType)}
+                    </span>
+                  </p>
+                  {order.promoDiscountAmount > 0 ? (
+                    <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
+                      {copy.promoDiscount}:{" "}
+                      <span className="font-medium text-emerald-700 dark:text-emerald-300">
+                        −{formatPrice(order.promoDiscountAmount, locale, order.currency)}
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">{copy.revenue}</p>
                 <p className="mt-2 text-2xl font-semibold text-[color:var(--color-text)]">

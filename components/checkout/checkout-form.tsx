@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
 import type { AppLocale } from "@/lib/constants";
@@ -8,11 +9,13 @@ import {
   ORDER_CITY_OPTIONS,
   type OrderDeliveryMethod,
 } from "@/lib/storefront/orders";
+import { normalizeTelegramUsernameInput } from "@/lib/storefront/telegram-username";
 
 type CheckoutPrefill = {
   fullName: string;
   phone: string;
   email: string;
+  telegramUsername: string;
   comment: string;
   deliveryCity: string;
   deliveryMethod: OrderDeliveryMethod;
@@ -32,40 +35,13 @@ export function CheckoutForm({
   prefill: CheckoutPrefill;
 }) {
   const router = useRouter();
+  const t = useTranslations();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [cityOpen, setCityOpen] = useState(false);
   const [form, setForm] = useState(prefill);
   const hasAutofill = Boolean(prefill.fullName || prefill.phone || prefill.email);
   const isCourier = form.deliveryMethod === "NOVA_POSHTA_COURIER";
-
-  const labels = {
-    autofill:
-      "Дані з акаунта вже підставлені. За потреби їх можна змінити перед підтвердженням замовлення.",
-    fullName: "ПІБ",
-    phone: "Телефон",
-    email: "Email",
-    city: "Місто",
-    cityHint: "Почніть вводити місто України",
-    delivery: "Спосіб доставки",
-    comment: "Коментар до замовлення",
-    commentHint: "Наприклад, зручний час дзвінка або уточнення по доставці",
-    submit: "Підтвердити замовлення",
-    branch: "Нова пошта — відділення",
-    courier: "Нова пошта — кур'єр",
-    branchField: "Номер відділення",
-    branchPlaceholder: "Наприклад, 17",
-    addressField: "Адреса доставки",
-    addressPlaceholder: "Вулиця, будинок, квартира",
-    submitHint: "Після оформлення менеджер зв'яжеться з вами для підтвердження деталей.",
-    fullNameError: "Вкажіть ім'я та прізвище.",
-    phoneError: "Вкажіть коректний номер телефону.",
-    emailError: "Вкажіть коректний email.",
-    cityError: "Оберіть або введіть місто доставки.",
-    branchError: "Вкажіть номер відділення Нової пошти.",
-    addressError: "Вкажіть адресу для кур'єрської доставки.",
-    genericError: "Не вдалося оформити замовлення.",
-  };
 
   const citySuggestions = useMemo(() => {
     const query = normalizeCityValue(form.deliveryCity);
@@ -83,27 +59,31 @@ export function CheckoutForm({
 
   const validate = () => {
     if (form.fullName.trim().length < 2) {
-      return labels.fullNameError;
+      return t("checkoutErrorFullName");
     }
 
     if (form.phone.trim().length < 7) {
-      return labels.phoneError;
+      return t("checkoutErrorPhone");
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      return labels.emailError;
+      return t("checkoutErrorEmail");
     }
 
     if (form.deliveryCity.trim().length < 2) {
-      return labels.cityError;
+      return t("checkoutErrorCity");
     }
 
     if (isCourier && form.deliveryAddress.trim().length < 5) {
-      return labels.addressError;
+      return t("checkoutErrorAddress");
     }
 
     if (!isCourier && form.deliveryBranch.trim().length < 1) {
-      return labels.branchError;
+      return t("checkoutErrorBranch");
+    }
+
+    if (form.telegramUsername.trim() && !normalizeTelegramUsernameInput(form.telegramUsername)) {
+      return t("checkoutErrorTelegram");
     }
 
     return null;
@@ -139,25 +119,25 @@ export function CheckoutForm({
               | null;
 
             if (!response.ok || !payload?.orderId) {
-              throw new Error(payload?.error || labels.genericError);
+              throw new Error(payload?.error || t("checkoutErrorGeneric"));
             }
 
             router.push(`/checkout/success?order=${payload.orderId}`);
             router.refresh();
           } catch (caughtError) {
-            setError(caughtError instanceof Error ? caughtError.message : labels.genericError);
+            setError(caughtError instanceof Error ? caughtError.message : t("checkoutErrorGeneric"));
           }
         });
       }}
     >
       {hasAutofill ? (
         <div className="rounded-[1.2rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-sm leading-6 text-[color:var(--color-text-soft)]">
-          {labels.autofill}
+          {t("checkoutAutofill")}
         </div>
       ) : null}
 
       <label className="grid gap-2">
-        <span className="text-sm text-[color:var(--color-text-soft)]">{labels.fullName}</span>
+        <span className="text-sm text-[color:var(--color-text-soft)]">{t("checkoutFullName")}</span>
         <input
           required
           value={form.fullName}
@@ -168,7 +148,7 @@ export function CheckoutForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-2">
-          <span className="text-sm text-[color:var(--color-text-soft)]">{labels.phone}</span>
+          <span className="text-sm text-[color:var(--color-text-soft)]">{t("checkoutPhone")}</span>
           <input
             required
             value={form.phone}
@@ -177,7 +157,7 @@ export function CheckoutForm({
           />
         </label>
         <label className="grid gap-2">
-          <span className="text-sm text-[color:var(--color-text-soft)]">{labels.email}</span>
+          <span className="text-sm text-[color:var(--color-text-soft)]">{t("checkoutEmail")}</span>
           <input
             required
             type="email"
@@ -188,13 +168,25 @@ export function CheckoutForm({
         </label>
       </div>
 
+      <label className="grid gap-2">
+        <span className="text-sm text-[color:var(--color-text-soft)]">{t("checkoutTelegramLabel")}</span>
+        <input
+          value={form.telegramUsername}
+          placeholder={t("checkoutTelegramPlaceholder")}
+          onChange={(event) => updateForm("telegramUsername", event.target.value)}
+          autoComplete="off"
+          className="h-12 rounded-[1.1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
+        />
+        <span className="text-xs leading-5 text-[color:var(--color-text-soft)]">{t("checkoutTelegramHint")}</span>
+      </label>
+
       <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-4">
-        <p className="text-sm font-medium text-[color:var(--color-text)]">{labels.delivery}</p>
+        <p className="text-sm font-medium text-[color:var(--color-text)]">{t("checkoutDelivery")}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {(
             [
-              ["NOVA_POSHTA_BRANCH", labels.branch],
-              ["NOVA_POSHTA_COURIER", labels.courier],
+              ["NOVA_POSHTA_BRANCH", t("checkoutBranchNp")],
+              ["NOVA_POSHTA_COURIER", t("checkoutCourierNp")],
             ] as const
           ).map(([method, label]) => {
             const active = form.deliveryMethod === method;
@@ -203,7 +195,13 @@ export function CheckoutForm({
               <button
                 key={method}
                 type="button"
-                onClick={() => updateForm("deliveryMethod", method)}
+                onClick={() => {
+                  setForm((current) => ({
+                    ...current,
+                    deliveryMethod: method,
+                    deliveryBranch: method === "NOVA_POSHTA_BRANCH" ? current.deliveryBranch : "",
+                  }));
+                }}
                 className={[
                   "rounded-[1.1rem] border px-4 py-3 text-left transition",
                   active
@@ -220,12 +218,12 @@ export function CheckoutForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-2">
-          <span className="text-sm text-[color:var(--color-text-soft)]">{labels.city}</span>
+          <span className="text-sm text-[color:var(--color-text-soft)]">{t("checkoutCity")}</span>
           <div className="relative">
             <input
               required
               value={form.deliveryCity}
-              placeholder={labels.cityHint}
+              placeholder={t("checkoutCityHint")}
               onFocus={() => setCityOpen(true)}
               onBlur={() => {
                 window.setTimeout(() => setCityOpen(false), 120);
@@ -259,22 +257,22 @@ export function CheckoutForm({
 
         {isCourier ? (
           <label className="grid gap-2">
-            <span className="text-sm text-[color:var(--color-text-soft)]">{labels.addressField}</span>
+            <span className="text-sm text-[color:var(--color-text-soft)]">{t("checkoutAddressField")}</span>
             <input
               required
               value={form.deliveryAddress}
-              placeholder={labels.addressPlaceholder}
+              placeholder={t("checkoutAddressPlaceholder")}
               onChange={(event) => updateForm("deliveryAddress", event.target.value)}
               className="h-12 rounded-[1.1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
             />
           </label>
         ) : (
           <label className="grid gap-2">
-            <span className="text-sm text-[color:var(--color-text-soft)]">{labels.branchField}</span>
+            <span className="text-sm text-[color:var(--color-text-soft)]">{t("checkoutBranchField")}</span>
             <input
               required
               value={form.deliveryBranch}
-              placeholder={labels.branchPlaceholder}
+              placeholder={t("checkoutBranchPlaceholder")}
               onChange={(event) => updateForm("deliveryBranch", event.target.value)}
               className="h-12 rounded-[1.1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
             />
@@ -283,10 +281,10 @@ export function CheckoutForm({
       </div>
 
       <label className="grid gap-2">
-        <span className="text-sm text-[color:var(--color-text-soft)]">{labels.comment}</span>
+        <span className="text-sm text-[color:var(--color-text-soft)]">{t("checkoutComment")}</span>
         <textarea
           value={form.comment}
-          placeholder={labels.commentHint}
+          placeholder={t("checkoutCommentHint")}
           onChange={(event) => updateForm("comment", event.target.value)}
           className="min-h-28 rounded-[1.1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
         />
@@ -300,9 +298,9 @@ export function CheckoutForm({
 
       <div className="grid gap-3">
         <Button type="submit" className="h-12" disabled={pending}>
-          {labels.submit}
+          {t("checkoutSubmit")}
         </Button>
-        <p className="text-sm leading-6 text-[color:var(--color-text-soft)]">{labels.submitHint}</p>
+        <p className="text-sm leading-6 text-[color:var(--color-text-soft)]">{t("checkoutSubmitHint")}</p>
       </div>
     </form>
   );

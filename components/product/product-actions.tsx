@@ -7,6 +7,8 @@ import { Check, Heart, LoaderCircle, Scale, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getActionErrorMessage, readApiPayload } from "@/components/product/client-feedback";
+import { Link } from "@/lib/i18n/routing";
+import { cn } from "@/lib/utils";
 import { getConfiguratorSlotForCategorySlug } from "@/lib/configurator/technical-attributes";
 import { SITE_MODES, type SiteMode } from "@/lib/site-mode";
 
@@ -68,9 +70,10 @@ export function ProductActions({
   const configuratorSlot = getConfiguratorSlotForCategorySlug(productCategorySlug);
   const requestSource =
     context === "catalog" ? "catalog-product-card" : "product-page";
-  const primaryHref = configuratorSlot
+  const configuratorSelectHref = configuratorSlot
     ? `/configurator/select?slot=${encodeURIComponent(configuratorSlot)}`
-    : `/build-request?source=${encodeURIComponent(requestSource)}`;
+    : null;
+  const discussBuildHref = `/build-request?source=${encodeURIComponent(requestSource)}`;
 
   const wishlistAddedMessage = "Товар збережено в обраному";
   const compareAddedMessage = "Товар додано до порівняння";
@@ -118,34 +121,25 @@ export function ProductActions({
   };
 
   const addedLabel = "Додано";
-  const pcBuildPrimaryLabel = configuratorSlot
-    ? "Додати у збірку"
-    : context === "catalog"
-      ? "Обговорити збірку"
-      : "Обговорити конфігурацію";
 
   return (
-    <div className={`flex ${compact ? "gap-2" : "flex-col gap-3 sm:flex-row"}`}>
+    <div className="flex flex-col gap-2">
+      <div className={`flex ${compact ? "gap-2" : "flex-col gap-3 sm:flex-row"}`}>
       <Button
         onClick={() => {
           if (!purchasable) return;
-          if (isPcBuild) {
-            router.push(primaryHref);
-            return;
-          }
-
           run("cart");
         }}
-        disabled={!purchasable || (!isPcBuild && pendingAction !== null)}
+        disabled={!purchasable || pendingAction !== null}
         className={
           compact
             ? "h-11 flex-1 px-4 text-[13px]"
             : "h-13 rounded-[1.2rem] px-6 text-sm font-semibold sm:flex-1"
         }
       >
-        {!isPcBuild && pendingAction === "cart" ? (
+        {pendingAction === "cart" ? (
           <LoaderCircle className="h-4 w-4 animate-spin" />
-        ) : !isPcBuild && addedAction === "cart" ? (
+        ) : addedAction === "cart" ? (
           <Check className="h-4 w-4" />
         ) : (
           <ShoppingCart className="h-4 w-4" />
@@ -153,11 +147,9 @@ export function ProductActions({
         <span className="ml-2">
           {!purchasable
             ? "Скоро в продажу"
-            : isPcBuild
-              ? pcBuildPrimaryLabel
-              : addedAction === "cart"
-                ? addedLabel
-                : t("addToCart")}
+            : addedAction === "cart"
+              ? addedLabel
+              : t("addToCart")}
         </span>
       </Button>
       <Button
@@ -204,6 +196,18 @@ export function ProductActions({
           <span className="ml-2">{addedAction === "compare" ? addedLabel : t("compare")}</span>
         )}
       </Button>
+      </div>
+      {isPcBuild && purchasable ? (
+        <Link
+          href={configuratorSelectHref ?? discussBuildHref}
+          className={cn(
+            "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] px-5 text-sm font-medium text-[color:var(--color-text)] shadow-[var(--shadow-soft)] outline-none transition duration-200 ease-out hover:-translate-y-0.5 hover:border-[color:var(--color-accent-line)] hover:bg-[color:var(--color-surface-strong)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent-line)]",
+            compact ? "h-10 w-full text-[13px]" : "h-11 w-full sm:w-auto",
+          )}
+        >
+          {configuratorSelectHref ? t("chooseComponent") : t("productDiscussBuild")}
+        </Link>
+      ) : null}
     </div>
   );
 }

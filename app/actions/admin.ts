@@ -1,7 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { Prisma } from "@prisma/client";
+import { Prisma, PromoCodeType } from "@prisma/client";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { redirect } from "next/navigation";
@@ -35,6 +35,7 @@ import {
 import { defaultLocale, locales, type AppLocale } from "@/lib/constants";
 import { getDefaultBrandId } from "@/lib/commerce/default-brand";
 import { db } from "@/lib/db";
+import { normalizePromoCodeKey } from "@/lib/storefront/promo-codes";
 import { parseJson, slugify, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
 
 type ProductFormState = {
@@ -180,6 +181,8 @@ const optionalSocialUrl = z
 
 const siteSettingsSchema = z.object({
   siteMode: z.enum([SITE_MODES.store, SITE_MODES.pcBuild]),
+  assemblyBaseFeeUah: z.coerce.number().int().min(0).max(50_000_000),
+  assemblyPercent: z.coerce.number().int().min(0).max(100),
   brandName: z.string().trim().min(2).max(120),
   shortBrandName: z.string().trim().max(40).nullable(),
   logoText: z.string().trim().max(40).nullable(),
@@ -970,6 +973,8 @@ export async function updateSiteSettingsAction(
 
   const parsed = siteSettingsSchema.safeParse({
     siteMode: String(formData.get("siteMode") ?? SITE_MODES.pcBuild),
+    assemblyBaseFeeUah: String(formData.get("assemblyBaseFeeUah") ?? "0"),
+    assemblyPercent: String(formData.get("assemblyPercent") ?? "0"),
     brandName: String(formData.get("brandName") ?? "").trim(),
     shortBrandName: normalizeOptionalText(formData.get("shortBrandName")),
     logoText: normalizeOptionalText(formData.get("logoText")),
@@ -1449,4 +1454,243 @@ export async function deleteCategoryAction(formData: FormData) {
   });
 
   redirect(`/admin/categories?deleted=1`);
+}
+
+function parseOptionalDateTimeInput(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = new Date(trimmed);
+
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
+}
+
+function parseOptionalUsageLimit(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const numeric = Number.parseInt(trimmed, 10);
+
+  if (!Number.isFinite(numeric) || numeric < 1) {
+    return null;
+  }
+
+  return numeric;
+}
+
+const promoCodeFormSchema = z
+  .object({
+    code: z.string().trim().min(2).max(40),
+    title: z.string().trim().min(2).max(120),
+    description: z.string().trim().max(2000).optional().default(""),
+    type: z.nativeEnum(PromoCodeType),
+    value: z.coerce.number().int().min(0),
+    isActive: z.boolean(),
+    usageLimit: z.string().optional(),
+    validFrom: z.string().optional(),
+    validUntil: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "PERCENT_DISCOUNT" && (data.value < 1 || data.value > 100)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Для відсоткової знижки вкажіть значення від 1 до 100.",
+        path: ["value"],
+      });
+    }
+
+    if (data.type === "FIXED_DISCOUNT" && data.value <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Для фіксованої знижки вкажіть суму більшу за 0 (у копійках).",
+        path: ["value"],
+      });
+    }
+  });
+
+export async function createPromoCodeAction(
+  _prevState: EntityFormState,
+  formData: FormData,
+): Promise<EntityFormState> {
+  const locale = (String(formData.get("locale") ?? "uk") as AppLocale) || "uk";
+  await requireAdminOnlyAccess(locale);
+
+  const parsed = promoCodeFormSchema.safeParse({
+    code: String(formData.get("code") ?? ""),
+    title: String(formData.get("title") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    type: String(formData.get("type") ?? "") as PromoCodeType,
+    value: String(formData.get("value") ?? "0"),
+    isActive: String(formData.get("isActive") ?? "") === "on",
+    usageLimit: String(formData.get("usageLimit") ?? ""),
+    validFrom: String(formData.get("validFrom") ?? ""),
+    validUntil: String(formData.get("validUntil") ?? ""),
+  });
+
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: adminText(locale, {
+        uk: "Перевірте поля промокоду.",
+      }),
+    };
+  }
+
+  const codeKey = normalizePromoCodeKey(parsed.data.code);
+  const existing = await db.promoCode.findUnique({
+    where: {
+      codeKey,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (existing) {
+    return {
+      status: "error",
+      message: adminText(locale, {
+        uk: "Промокод з таким кодом уже існує.",
+      }),
+    };
+  }
+
+  try {
+    await db.promoCode.create({
+      data: {
+        codeKey,
+        code: parsed.data.code.trim(),
+        title: parsed.data.title,
+        description: parsed.data.description ?? "",
+        type: parsed.data.type,
+        value: parsed.data.type === "FREE_BUILD" ? 0 : parsed.data.value,
+        isActive: parsed.data.isActive,
+        usageLimit: parseOptionalUsageLimit(parsed.data.usageLimit),
+        validFrom: parseOptionalDateTimeInput(parsed.data.validFrom),
+        validUntil: parseOptionalDateTimeInput(parsed.data.validUntil),
+      },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return {
+        status: "error",
+        message: adminText(locale, {
+          uk: "Промокод з таким кодом уже існує.",
+        }),
+      };
+    }
+
+    return {
+      status: "error",
+      message: adminText(locale, {
+        uk: "Не вдалося створити промокод.",
+      }),
+    };
+  }
+
+  redirect(`/admin/promo-codes?created=1`);
+}
+
+export async function updatePromoCodeAction(
+  _prevState: EntityFormState,
+  formData: FormData,
+): Promise<EntityFormState> {
+  const locale = (String(formData.get("locale") ?? "uk") as AppLocale) || "uk";
+  await requireAdminOnlyAccess(locale);
+
+  const id = String(formData.get("id") ?? "").trim();
+
+  if (!id) {
+    return {
+      status: "error",
+      message: adminText(locale, {
+        uk: "Не знайдено промокод.",
+      }),
+    };
+  }
+
+  const parsed = promoCodeFormSchema.safeParse({
+    code: String(formData.get("code") ?? ""),
+    title: String(formData.get("title") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    type: String(formData.get("type") ?? "") as PromoCodeType,
+    value: String(formData.get("value") ?? "0"),
+    isActive: String(formData.get("isActive") ?? "") === "on",
+    usageLimit: String(formData.get("usageLimit") ?? ""),
+    validFrom: String(formData.get("validFrom") ?? ""),
+    validUntil: String(formData.get("validUntil") ?? ""),
+  });
+
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: adminText(locale, {
+        uk: "Перевірте поля промокоду.",
+      }),
+    };
+  }
+
+  const codeKey = normalizePromoCodeKey(parsed.data.code);
+  const duplicate = await db.promoCode.findFirst({
+    where: {
+      codeKey,
+      NOT: {
+        id,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (duplicate) {
+    return {
+      status: "error",
+      message: adminText(locale, {
+        uk: "Промокод з таким кодом уже існує.",
+      }),
+    };
+  }
+
+  try {
+    await db.promoCode.update({
+      where: {
+        id,
+      },
+      data: {
+        codeKey,
+        code: parsed.data.code.trim(),
+        title: parsed.data.title,
+        description: parsed.data.description ?? "",
+        type: parsed.data.type,
+        value: parsed.data.type === "FREE_BUILD" ? 0 : parsed.data.value,
+        isActive: parsed.data.isActive,
+        usageLimit: parseOptionalUsageLimit(parsed.data.usageLimit),
+        validFrom: parseOptionalDateTimeInput(parsed.data.validFrom),
+        validUntil: parseOptionalDateTimeInput(parsed.data.validUntil),
+      },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return {
+        status: "error",
+        message: adminText(locale, {
+          uk: "Промокод з таким кодом уже існує.",
+        }),
+      };
+    }
+
+    return {
+      status: "error",
+      message: adminText(locale, {
+        uk: "Не вдалося оновити промокод.",
+      }),
+    };
+  }
+
+  redirect(`/admin/promo-codes?saved=1`);
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -13,18 +14,24 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { ConfiguratorOpenTracker } from "@/components/observability/configurator-open-tracker";
 import { ComponentsAvailabilityNotice } from "@/components/storefront/components-availability-notice";
 import { Button } from "@/components/ui/button";
-import { ProductImageFrame } from "@/components/ui/product-image-frame";
+import { ConfiguratorSlotProductPreview } from "@/components/configurator/configurator-slot-product-preview";
 import { getActionErrorMessage, readApiPayload } from "@/components/product/client-feedback";
 import {
   getCompatibilityAdditionalMessagesLabel,
   getCompatibilityStatusTitle,
   getCompatibilityStatusTone,
 } from "@/lib/compatibility/presentation";
+import { ConfiguratorAddSlotToCartButton } from "@/components/configurator/configurator-add-slot-to-cart";
 import { Link } from "@/lib/i18n/routing";
 import type { AppLocale } from "@/lib/constants";
+import {
+  computePcAssemblyServiceFeeUah,
+  resolveAssemblyFeeSettings,
+} from "@/lib/storefront/pc-assembly-fee";
 import type { ConfiguratorSlotKey } from "@/lib/storefront/configurator";
 import {
   UKRAINE_CITY_OPTIONS,
@@ -32,6 +39,7 @@ import {
   type BuildRequestDeliveryMethod,
 } from "@/lib/storefront/build-requests";
 import { formatPrice, STOREFRONT_CURRENCY_CODE } from "@/lib/utils";
+import { resolveHeroImageSrc } from "@/lib/storefront/product-image";
 
 function trackAnalytics(payload: Record<string, unknown>) {
   void fetch("/api/analytics", {
@@ -101,6 +109,9 @@ type BuildRequestPrefill = {
   comment: string;
   deliveryCity: string;
   deliveryMethod: BuildRequestDeliveryMethod;
+  deliveryBranch: string;
+  telegramUsername: string;
+  promoCode: string;
 };
 
 type ConfiguratorSuggestion = {
@@ -108,53 +119,6 @@ type ConfiguratorSuggestion = {
   title: string;
   body: string;
 };
-
-function getCopy(_locale: AppLocale) {
-  return {
-    title: "Конфігуратор ПК",
-    intro: "Збирайте систему поетапно, а фінальні дії залишайте у правому блоці, коли конфігурація буде готова.",
-    coreTitle: "Основне",
-    extrasTitle: "Додатково",
-    choose: "Обрати",
-    replace: "Замінити",
-    remove: "Прибрати",
-    buildName: "Назва збірки",
-    buildNamePlaceholder: "Моя збірка ПК",
-    save: "Зберегти збірку",
-    share: "Поділитися",
-    addToCart: "Додати збірку в кошик",
-    orderBuild: "Замовити збірку",
-    closeRequest: "Сховати форму",
-    currentTotal: "Поточна сума",
-    openSummary: "Підсумок збірки",
-    itemCount: "Позицій",
-    summaryTitle: "Ваша збірка",
-    summaryEmpty: "Коли додасте перші компоненти, тут з'явиться короткий підсумок.",
-    requestTitle: "Заявка на збірку",
-    requestHint: "Ми збережемо вашу конфігурацію, контакти й доставку та відправимо заявку менеджеру.",
-    fullName: "ПІБ",
-    phone: "Номер телефону",
-    email: "Email",
-    comment: "Коментар",
-    city: "Місто доставки",
-    deliveryMethod: "Спосіб доставки",
-    submitRequest: "Надіслати заявку",
-    requestSuccessTitle: "Заявку на збірку відправлено",
-    requestSuccessText: "Менеджер уже отримав конфігурацію та контакти. Ви можете зберегти або продовжити доповнювати збірку.",
-    requestNumber: "Номер заявки",
-    requestAutofill: "Дані з акаунта вже підставлені, за потреби їх можна змінити перед відправкою.",
-    emptySlot: "Слот порожній. Оберіть компонент, щоб продовжити збірку.",
-    unavailableSlot: "Для цього слота товари ще не додані, але він вже готовий до наступного етапу.",
-    shareCopied: "Посилання скопійовано",
-    buildSaved: "Збірку оновлено",
-    componentRemoved: "Компонент прибрано",
-    buildAdded: "Збірку додано в кошик",
-    requestCreated: "Заявку створено",
-    noImage: "Без фото",
-    suggestionTitle: "М’які підказки",
-    suggestionAction: "Покращити",
-  };
-}
 
 function getNumericAttribute(product: ProductPreview | null | undefined, key: string) {
   const raw = product?.technicalAttributes?.[key];
@@ -244,19 +208,27 @@ export function ConfiguratorBuilder({
   build,
   slots,
   requestPrefill,
+  cartItemCount = 0,
+  assemblyBaseFeeUah = 0,
+  assemblyPercent = 0,
 }: {
   locale: AppLocale;
   build: BuildData | null;
   slots: SlotView[];
   requestPrefill: BuildRequestPrefill;
+  cartItemCount?: number;
+  /** Параметри формули збірки з SiteSettings — для орієнтовного підсумку */
+  assemblyBaseFeeUah?: number;
+  assemblyPercent?: number;
 }) {
   const router = useRouter();
-  const copy = getCopy(locale);
+  const t = useTranslations();
   const [buildName, setBuildName] = useState(build?.name ?? "");
   const [pendingAction, setPendingAction] = useState<"save" | "cart" | "request" | null>(null);
   const [requestOpen, setRequestOpen] = useState(false);
   const [requestSuccessNumber, setRequestSuccessNumber] = useState<string | null>(null);
   const [requestForm, setRequestForm] = useState<BuildRequestPrefill>(requestPrefill);
+  const [wantsAssembly, setWantsAssembly] = useState(true);
   const coreSlots = slots.filter((slot) => slot.group === "core");
   const extraSlots = slots.filter((slot) => slot.group === "extras");
   const summaryItems = slots
@@ -265,6 +237,16 @@ export function ConfiguratorBuilder({
       item: build?.itemsBySlot[slot.key] ?? null,
     }))
     .filter((entry) => entry.item);
+  const assemblyFeeUah = useMemo(
+    () =>
+      computePcAssemblyServiceFeeUah({
+        componentsSubtotal: build?.totalPrice ?? 0,
+        hasPcBuild: summaryItems.length > 0 && wantsAssembly,
+        ...resolveAssemblyFeeSettings({ assemblyBaseFeeUah, assemblyPercent }),
+      }),
+    [assemblyBaseFeeUah, assemblyPercent, build?.totalPrice, summaryItems.length, wantsAssembly],
+  );
+  const hasAssemblySettings = assemblyBaseFeeUah > 0 || assemblyPercent > 0;
   const deliveryMethods: BuildRequestDeliveryMethod[] = [
     "NOVA_POSHTA_BRANCH",
     "NOVA_POSHTA_COURIER",
@@ -275,9 +257,10 @@ export function ConfiguratorBuilder({
     (build?.compatibility.errors.length ?? 0) + (build?.compatibility.warnings.length ?? 0);
   const firstCompatibilityMessage =
     build?.compatibility.errors[0]?.message ?? build?.compatibility.warnings[0]?.message ?? null;
-  const conversionSuggestions = build
-    ? buildConfiguratorSuggestions(locale, build.itemsBySlot)
-    : [];
+  const conversionSuggestions = useMemo(
+    () => (build ? buildConfiguratorSuggestions(locale, build.itemsBySlot) : []),
+    [build, locale],
+  );
 
   useEffect(() => {
     setBuildName(build?.name ?? "");
@@ -319,7 +302,7 @@ export function ConfiguratorBuilder({
 
         const payload = (await response.json()) as { build?: { slug: string } };
         const nextSlug = payload.build?.slug ?? build.slug;
-        toast.success(copy.buildSaved);
+        toast.success(t("configuratorBuildSaved"));
         refreshToBuild(nextSlug);
       } catch {
         toast.error(getActionErrorMessage(locale));
@@ -349,10 +332,10 @@ export function ConfiguratorBuilder({
 
         if (!response.ok) {
           const payload = await readApiPayload(response);
-          throw new Error(payload.error || "Could not remove component");
+          throw new Error(payload.error || "Не вдалося прибрати компонент");
         }
 
-        toast.success(copy.componentRemoved);
+        toast.success(t("configuratorComponentRemoved"));
         router.refresh();
       } catch {
         toast.error(getActionErrorMessage(locale));
@@ -367,7 +350,7 @@ export function ConfiguratorBuilder({
 
     try {
       await navigator.clipboard.writeText(`${window.location.origin}${build.shareHref}`);
-      toast.success(copy.shareCopied);
+      toast.success(t("configuratorShareCopied"));
     } catch {
       toast.error(getActionErrorMessage(locale));
     }
@@ -401,7 +384,7 @@ export function ConfiguratorBuilder({
             itemCount: build.itemCount,
           },
         });
-        toast.success(copy.buildAdded);
+        toast.success(t("configuratorBuildAdded"));
         router.refresh();
       } catch {
         toast.error(getActionErrorMessage(locale));
@@ -433,6 +416,9 @@ export function ConfiguratorBuilder({
             comment: requestForm.comment,
             deliveryCity: requestForm.deliveryCity,
             deliveryMethod: requestForm.deliveryMethod,
+            deliveryBranch: requestForm.deliveryBranch,
+            telegramUsername: requestForm.telegramUsername,
+            promoCode: requestForm.promoCode,
           }),
         });
 
@@ -448,16 +434,16 @@ export function ConfiguratorBuilder({
         };
         setRequestSuccessNumber(payload.request?.number ?? null);
         setRequestOpen(false);
-        toast.success(copy.requestCreated);
+        toast.success(t("configuratorRequestCreated"));
         router.refresh();
       } catch (error) {
         const safeMessage =
           error instanceof Error &&
           [
-            "Build not found",
-            "Build is empty",
-            "Too many duplicate requests",
-            "Too many build requests. Please try again a bit later.",
+            "Збірку не знайдено",
+            "Збірка порожня",
+            "Забагато схожих заявок за короткий час",
+            "Забагато заявок за короткий час. Спробуйте пізніше.",
           ].includes(error.message)
             ? error.message
             : getActionErrorMessage(locale);
@@ -471,13 +457,18 @@ export function ConfiguratorBuilder({
   const renderSlot = (slot: SlotView) => {
     const selected = build?.itemsBySlot[slot.key] ?? null;
     const pickerHref = build?.slug
-      ? `/configurator/select?slot=${slot.key}&build=${build.slug}`
+      ? `/configurator?build=${build.slug}&pick=${slot.key}`
       : `/configurator/select?slot=${slot.key}`;
 
     return (
       <article
         key={slot.key}
-        className="rounded-[1.65rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] px-4 py-4 shadow-[var(--shadow-soft)]"
+        className={[
+          "rounded-[1.65rem] border bg-[color:var(--color-surface)] px-4 py-4 shadow-[var(--shadow-soft)] transition",
+          selected
+            ? "border-[color:var(--color-accent-line)] ring-1 ring-[color:var(--color-accent-line)]/35"
+            : "border-[color:var(--color-line-strong)]",
+        ].join(" ")}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -493,13 +484,11 @@ export function ConfiguratorBuilder({
         </div>
 
         {selected ? (
-          <div className="mt-4 grid gap-4 rounded-[1.35rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-3.5 sm:grid-cols-[84px_minmax(0,1fr)]">
-            <Link href={`/product/${selected.product.slug}`} className="block">
-              <ProductImageFrame
-                src={selected.product.heroImage}
-                alt={selected.product.name}
-                className="rounded-[1rem]"
-                fillClassName="p-2.5"
+          <div className="mt-4 grid gap-4 rounded-[1.35rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-3.5 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:items-start">
+            <Link href={`/product/${selected.product.slug}`} className="block w-full min-w-0">
+              <ConfiguratorSlotProductPreview
+                heroImage={selected.product.heroImage}
+                name={selected.product.name}
               />
             </Link>
             <div className="flex min-w-0 flex-col gap-3">
@@ -518,14 +507,24 @@ export function ConfiguratorBuilder({
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                {build?.slug ? (
+                  <ConfiguratorAddSlotToCartButton
+                    locale={locale}
+                    buildSlug={build.slug}
+                    slot={slot.key}
+                    productId={selected.product.id}
+                    label={t("configuratorAddSlotToCart")}
+                    disabled={blockingCompatibility}
+                  />
+                ) : null}
                 <Link href={pickerHref}>
                   <Button variant="secondary" className="h-9 px-4 text-sm">
-                    {copy.replace}
+                    {t("configuratorReplace")}
                   </Button>
                 </Link>
                 <Button variant="ghost" onClick={() => removeSlot(slot.key)} className="h-9 px-3.5 text-sm">
                   <Trash2 className="h-4 w-4" />
-                  <span>{copy.remove}</span>
+                  <span>{t("configuratorRemove")}</span>
                 </Button>
               </div>
             </div>
@@ -533,11 +532,11 @@ export function ConfiguratorBuilder({
         ) : (
           <div className="mt-4 rounded-[1.35rem] border border-dashed border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-4">
             <p className="text-sm leading-6 text-[color:var(--color-text-soft)]">
-              {slot.hasChoices ? copy.emptySlot : copy.unavailableSlot}
+              {slot.hasChoices ? t("configuratorEmptySlot") : t("configuratorUnavailableSlot")}
             </p>
             {slot.hasChoices ? (
               <Link href={pickerHref} className="mt-3 inline-flex">
-                <Button className="h-9 px-4 text-sm">{copy.choose}</Button>
+                <Button className="h-9 px-4 text-sm">{t("configuratorChoose")}</Button>
               </Link>
             ) : null}
           </div>
@@ -555,17 +554,17 @@ export function ConfiguratorBuilder({
 
   return (
     <>
-    <div className="grid gap-6 pb-[calc(5.75rem+env(safe-area-inset-bottom))] 2xl:pb-0 2xl:grid-cols-[minmax(0,1fr)_390px]">
+    <div className="grid gap-5 pb-[calc(5.75rem+env(safe-area-inset-bottom))] 2xl:pb-0 2xl:grid-cols-[minmax(0,1fr)_380px]">
       <ConfiguratorOpenTracker locale={locale} buildSlug={build?.slug ?? null} />
-      <div className="space-y-6">
-        <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] px-6 py-6 shadow-[var(--shadow-strong)] sm:px-7 lg:px-8">
+      <div className="space-y-5">
+        <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] px-5 py-5 shadow-[var(--shadow-strong)] sm:px-6 sm:py-6 lg:px-7">
           <div className="max-w-4xl">
-            <h1 className="font-heading text-4xl font-semibold tracking-[-0.05em] text-[color:var(--color-text)] sm:text-[3.1rem]">
-              {copy.title}
+            <h1 className="font-heading text-4xl font-semibold tracking-[-0.05em] text-[color:var(--color-text)] sm:text-[2.95rem]">
+              {t("configuratorTitle")}
             </h1>
-            {copy.intro ? (
+            {t("configuratorIntro") ? (
               <p className="mt-3 text-sm leading-7 text-[color:var(--color-text-soft)] sm:text-base">
-                {copy.intro}
+                {t("configuratorIntro")}
               </p>
             ) : null}
           </div>
@@ -573,22 +572,22 @@ export function ConfiguratorBuilder({
 
         <ComponentsAvailabilityNotice />
 
-        <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[linear-gradient(180deg,var(--color-surface)_0%,var(--color-gradient-surface)_100%)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
-          <div className="mb-5 flex items-center justify-between gap-3">
+        <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[linear-gradient(180deg,var(--color-surface)_0%,var(--color-gradient-surface)_100%)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="font-heading text-2xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
-              {copy.coreTitle}
+              {t("configuratorCoreTitle")}
             </h2>
           </div>
-          <div className="grid gap-4 xl:grid-cols-2">{coreSlots.map(renderSlot)}</div>
+          <div className="grid gap-3 sm:gap-4 xl:grid-cols-2">{coreSlots.map(renderSlot)}</div>
         </section>
 
-        <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
-          <div className="mb-5 flex items-center justify-between gap-3">
+        <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="font-heading text-2xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
-              {copy.extrasTitle}
+              {t("configuratorExtrasTitle")}
             </h2>
           </div>
-          <div className="grid gap-4 xl:grid-cols-2">{extraSlots.map(renderSlot)}</div>
+          <div className="grid gap-3 sm:gap-4 xl:grid-cols-2">{extraSlots.map(renderSlot)}</div>
         </section>
       </div>
 
@@ -596,34 +595,82 @@ export function ConfiguratorBuilder({
         id="configurator-build-summary"
         className="scroll-mt-[calc(var(--header-offset)+0.75rem)] self-start 2xl:sticky 2xl:top-[calc(var(--header-offset)+0.75rem)] 2xl:h-fit"
       >
-        <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] p-5 shadow-[var(--shadow-strong)]">
+        <section className="rounded-[2rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-gradient-surface)] p-4 shadow-[var(--shadow-strong)] sm:p-5">
           <div className="space-y-2">
             <h2 className="font-heading text-2xl font-semibold tracking-[-0.03em] text-[color:var(--color-text)]">
-              {copy.summaryTitle}
+              {t("configuratorSummaryTitle")}
             </h2>
           </div>
 
           <div className="mt-5 rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] p-4">
             <label className="grid gap-2 text-sm text-[color:var(--color-text-soft)]">
-              <span>{copy.buildName}</span>
+              <span>{t("configuratorBuildName")}</span>
               <input
                 value={buildName}
                 onChange={(event) => setBuildName(event.target.value)}
-                placeholder={copy.buildNamePlaceholder}
+                placeholder={t("configuratorBuildNamePlaceholder")}
                 className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
               />
             </label>
           </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-2">
+            {summaryItems.length > 0 && hasAssemblySettings ? (
+            <div className="mt-4 rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-3">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={wantsAssembly}
+                  onChange={(event) => setWantsAssembly(event.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[color:var(--color-accent-strong)]"
+                />
+                <div className="min-w-0">
+                  <span className="text-sm font-medium text-[color:var(--color-text)]">Збірка ПК</span>
+                  <p className="mt-0.5 text-xs leading-5 text-[color:var(--color-text-soft)]">
+                    {assemblyPercent > 0 && assemblyBaseFeeUah > 0
+                      ? `База + ${assemblyPercent}% від суми комплектуючих`
+                      : assemblyPercent > 0
+                        ? `${assemblyPercent}% від суми комплектуючих`
+                        : "Фіксована вартість монтажу"}
+                  </p>
+                </div>
+              </label>
+            </div>
+          ) : null}
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-2">
             <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-4">
-              <p className="text-sm text-[color:var(--color-text-soft)]">{copy.currentTotal}</p>
+              <p className="text-sm text-[color:var(--color-text-soft)]">{t("configuratorCurrentTotal")}</p>
               <p className="mt-2 font-heading text-3xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
                 {formatPrice(build?.totalPrice ?? 0, locale, summaryItems[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE)}
               </p>
+              {assemblyFeeUah > 0 ? (
+                <div className="mt-3 space-y-1 border-t border-[color:var(--color-line)] pt-3 text-sm text-[color:var(--color-text-soft)]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Збірка ПК</span>
+                    <span className="font-medium text-[color:var(--color-text)]">
+                      {formatPrice(
+                        assemblyFeeUah,
+                        locale,
+                        summaryItems[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE,
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-xs leading-5">
+                    Орієнтовно зі збіркою:{" "}
+                    <span className="font-medium text-[color:var(--color-text)]">
+                      {formatPrice(
+                        (build?.totalPrice ?? 0) + assemblyFeeUah,
+                        locale,
+                        summaryItems[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE,
+                      )}
+                    </span>
+                    . Промокод вказується в заявці нижче.
+                  </p>
+                </div>
+              ) : null}
             </div>
             <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-4">
-              <p className="text-sm text-[color:var(--color-text-soft)]">{copy.itemCount}</p>
+              <p className="text-sm text-[color:var(--color-text-soft)]">{t("configuratorItemCount")}</p>
               <p className="mt-2 font-heading text-3xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
                 {build?.itemCount ?? 0}
               </p>
@@ -646,13 +693,6 @@ export function ConfiguratorBuilder({
                 )}
                 <div>
                   <p className="font-medium">{getCompatibilityStatusTitle(compatibilityStatus, locale)}</p>
-                  <p className="hidden font-medium">
-                    {compatibilityStatus === "pass"
-                      ? "Збірка сумісна"
-                      : compatibilityStatus === "warning"
-                        ? "Є попередження щодо сумісності"
-                        : "Збірка несумісна"}
-                  </p>
                   {firstCompatibilityMessage ? (
                     <p className="mt-2 text-sm leading-6">{firstCompatibilityMessage}</p>
                   ) : null}
@@ -670,7 +710,7 @@ export function ConfiguratorBuilder({
 
           {conversionSuggestions.length > 0 ? (
             <div className="mt-4 rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] p-4">
-              <p className="text-sm font-medium text-[color:var(--color-text)]">{copy.suggestionTitle}</p>
+              <p className="text-sm font-medium text-[color:var(--color-text)]">{t("configuratorSuggestionTitle")}</p>
               <div className="mt-3 grid gap-3">
                 {conversionSuggestions.map((suggestion) => (
                   <div
@@ -680,10 +720,14 @@ export function ConfiguratorBuilder({
                     <p className="text-sm font-medium text-[color:var(--color-text)]">{suggestion.title}</p>
                     <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-soft)]">{suggestion.body}</p>
                     <Link
-                      href={`/configurator/select?slot=${suggestion.slot}${build?.slug ? `&build=${build.slug}` : ""}`}
+                      href={
+                        build?.slug
+                          ? `/configurator?build=${build.slug}&pick=${suggestion.slot}`
+                          : `/configurator/select?slot=${suggestion.slot}`
+                      }
                       className="mt-3 inline-flex text-xs font-medium uppercase tracking-[0.14em] text-[color:var(--color-accent-strong)]"
                     >
-                      {copy.suggestionAction}
+                      {t("configuratorSuggestionAction")}
                     </Link>
                   </div>
                 ))}
@@ -694,26 +738,63 @@ export function ConfiguratorBuilder({
           <div className="mt-4 rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] p-4">
             {summaryItems.length > 0 ? (
               <div className="grid gap-3">
-                {summaryItems.map(({ slot, item }) =>
-                  item ? (
-                    <div key={slot.key} className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-soft)]">
-                          {slot.label}
-                        </p>
-                        <p className="mt-1 line-clamp-2 text-sm font-medium leading-6 text-[color:var(--color-text)]">
-                          {item.product.name}
-                        </p>
+                {summaryItems.map(({ slot, item }) => {
+                  if (!item) {
+                    return null;
+                  }
+
+                  const thumbSrc = resolveHeroImageSrc(item.product.heroImage);
+
+                  return (
+                    <div
+                      key={slot.key}
+                      className="flex flex-col gap-2 rounded-[1.15rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)]/90 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+                    >
+                      <div className="flex min-w-0 flex-1 gap-3 sm:items-center">
+                        <Link
+                          href={`/product/${item.product.slug}`}
+                          className="relative h-[3.75rem] w-[4.75rem] shrink-0 overflow-hidden rounded-[0.85rem] border border-[color:var(--color-line)] bg-[color:var(--color-gradient-surface)]"
+                        >
+                          <Image
+                            src={thumbSrc}
+                            alt=""
+                            fill
+                            sizes="76px"
+                            className="object-contain p-1.5"
+                            unoptimized={thumbSrc.toLowerCase().endsWith(".svg")}
+                          />
+                        </Link>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--color-text-soft)]">
+                            {slot.label}
+                          </p>
+                          <p className="mt-1 line-clamp-2 text-sm font-medium leading-6 text-[color:var(--color-text)]">
+                            {item.product.name}
+                          </p>
+                        </div>
                       </div>
-                      <p className="whitespace-nowrap text-sm text-[color:var(--color-text-soft)]">
-                        {formatPrice(item.product.price, locale, item.product.currency)}
-                      </p>
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                        <p className="whitespace-nowrap text-sm font-medium text-[color:var(--color-text)]">
+                          {formatPrice(item.product.price, locale, item.product.currency)}
+                        </p>
+                        {build?.slug ? (
+                          <ConfiguratorAddSlotToCartButton
+                            locale={locale}
+                            buildSlug={build.slug}
+                            slot={slot.key}
+                            productId={item.product.id}
+                            label={t("configuratorAddSlotToCart")}
+                            disabled={blockingCompatibility}
+                            compact
+                          />
+                        ) : null}
+                      </div>
                     </div>
-                  ) : null,
-                )}
+                  );
+                })}
               </div>
             ) : (
-              <p className="text-sm leading-6 text-[color:var(--color-text-soft)]">{copy.summaryEmpty}</p>
+              <p className="text-sm leading-6 text-[color:var(--color-text-soft)]">{t("configuratorSummaryEmpty")}</p>
             )}
           </div>
 
@@ -722,12 +803,12 @@ export function ConfiguratorBuilder({
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 text-[color:var(--color-accent-strong)]" />
                 <div>
-                  <p className="font-medium text-[color:var(--color-text)]">{copy.requestSuccessTitle}</p>
+                  <p className="font-medium text-[color:var(--color-text)]">{t("configuratorRequestSuccessTitle")}</p>
                   <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">
-                    {copy.requestSuccessText}
+                    {t("configuratorRequestSuccessText")}
                   </p>
                   <p className="mt-3 text-sm font-medium text-[color:var(--color-text)]">
-                    {copy.requestNumber}: {requestSuccessNumber}
+                    {t("configuratorRequestNumber")}: {requestSuccessNumber}
                   </p>
                 </div>
               </div>
@@ -737,11 +818,11 @@ export function ConfiguratorBuilder({
           <div className="mt-5 grid gap-3">
             <Button onClick={save} disabled={!build?.slug || pendingAction !== null || summaryItems.length === 0} variant="secondary">
               {pendingAction === "save" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-              <span>{copy.save}</span>
+              <span>{t("configuratorSave")}</span>
             </Button>
             <Button variant="secondary" onClick={copyShareLink} disabled={!build?.shareToken}>
               <Copy className="h-4 w-4" />
-              <span>{copy.share}</span>
+              <span>{t("configuratorShare")}</span>
             </Button>
             <Button
               variant="secondary"
@@ -749,13 +830,28 @@ export function ConfiguratorBuilder({
               disabled={!build?.slug || summaryItems.length === 0 || pendingAction !== null || blockingCompatibility}
             >
               {pendingAction === "cart" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ShoppingCart className="h-4 w-4" />}
-              <span>{copy.addToCart}</span>
+              <span>{t("configuratorAddAllToCart")}</span>
             </Button>
+            {cartItemCount > 0 ? (
+              <Link
+                href="/checkout"
+                className="inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface-elevated)] px-5 text-sm font-medium text-[color:var(--color-text)] shadow-[var(--shadow-soft)] outline-none transition duration-200 ease-out hover:-translate-y-0.5 hover:border-[color:var(--color-accent-line)] hover:bg-[color:var(--color-surface-strong)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent-line)]"
+              >
+                {t("configuratorGoCheckout")}
+              </Link>
+            ) : (
+              <>
+                <Button variant="secondary" type="button" disabled>
+                  {t("configuratorGoCheckout")}
+                </Button>
+                <p className="text-xs leading-5 text-[color:var(--color-text-soft)]">{t("configuratorCheckoutHint")}</p>
+              </>
+            )}
             <Button
               onClick={() => setRequestOpen((current) => !current)}
               disabled={!build?.slug || summaryItems.length === 0 || pendingAction !== null || blockingCompatibility}
             >
-              {copy.orderBuild}
+              {t("configuratorLeaveRequest")}
             </Button>
           </div>
 
@@ -763,17 +859,17 @@ export function ConfiguratorBuilder({
             <div className="mt-5 rounded-[1.5rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-4 shadow-[var(--shadow-soft)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-semibold text-[color:var(--color-text)]">{copy.requestTitle}</h3>
-                  <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">{copy.requestHint}</p>
+                  <h3 className="text-lg font-semibold text-[color:var(--color-text)]">{t("configuratorRequestTitle")}</h3>
+                  <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">{t("configuratorRequestHint")}</p>
                 </div>
                 <Button variant="ghost" className="h-8 px-3 text-xs" onClick={() => setRequestOpen(false)}>
-                  {copy.closeRequest}
+                  {t("configuratorCloseRequest")}
                 </Button>
               </div>
 
               {(requestPrefill.fullName || requestPrefill.phone || requestPrefill.email) && (
                 <div className="mt-4 rounded-[1.2rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-sm leading-6 text-[color:var(--color-text-soft)]">
-                  {copy.requestAutofill}
+                  {t("configuratorRequestAutofill")}
                 </div>
               )}
 
@@ -781,27 +877,57 @@ export function ConfiguratorBuilder({
                 <input
                   value={requestForm.fullName}
                   onChange={(event) => setRequestForm((current) => ({ ...current, fullName: event.target.value }))}
-                  placeholder={copy.fullName}
+                  placeholder={t("configuratorFullName")}
                   className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
                 />
                 <div className="grid gap-3 sm:grid-cols-2">
                   <input
                     value={requestForm.phone}
                     onChange={(event) => setRequestForm((current) => ({ ...current, phone: event.target.value }))}
-                    placeholder={copy.phone}
+                    placeholder={t("configuratorPhone")}
                     className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
                   />
                   <input
                     value={requestForm.email}
                     onChange={(event) => setRequestForm((current) => ({ ...current, email: event.target.value }))}
-                    placeholder={copy.email}
+                    placeholder={t("configuratorEmail")}
                     className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
                   />
                 </div>
 
+                <label className="grid gap-2">
+                  <span className="text-sm text-[color:var(--color-text-soft)]">{t("configuratorTelegram")}</span>
+                  <input
+                    value={requestForm.telegramUsername}
+                    onChange={(event) =>
+                      setRequestForm((current) => ({ ...current, telegramUsername: event.target.value }))
+                    }
+                    placeholder="@username"
+                    autoComplete="off"
+                    className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
+                  />
+                  <span className="text-xs leading-5 text-[color:var(--color-text-soft)]">{t("configuratorTelegramHint")}</span>
+                </label>
+
+                <label className="grid gap-2">
+                  <span className="text-sm text-[color:var(--color-text-soft)]">Промокод</span>
+                  <input
+                    value={requestForm.promoCode}
+                    onChange={(event) =>
+                      setRequestForm((current) => ({ ...current, promoCode: event.target.value }))
+                    }
+                    placeholder="Необов'язково"
+                    autoComplete="off"
+                    className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
+                  />
+                  <span className="text-xs leading-5 text-[color:var(--color-text-soft)]">
+                    Якщо є діючий промокод, вкажіть його тут — знижка застосується після перевірки на сервері.
+                  </span>
+                </label>
+
                 <div className="rounded-[1.25rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] p-3.5">
                   <div className="mb-3">
-                    <p className="text-sm font-medium text-[color:var(--color-text)]">{copy.deliveryMethod}</p>
+                    <p className="text-sm font-medium text-[color:var(--color-text)]">{t("configuratorDeliveryMethod")}</p>
                   </div>
 
                   <div className="grid gap-3">
@@ -811,7 +937,7 @@ export function ConfiguratorBuilder({
                       onChange={(event) =>
                         setRequestForm((current) => ({ ...current, deliveryCity: event.target.value }))
                       }
-                      placeholder={copy.city}
+                      placeholder={t("configuratorCity")}
                       className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
                     />
                     <datalist id="ukraine-cities">
@@ -829,7 +955,12 @@ export function ConfiguratorBuilder({
                             key={method}
                             type="button"
                             onClick={() =>
-                              setRequestForm((current) => ({ ...current, deliveryMethod: method }))
+                              setRequestForm((current) => ({
+                                ...current,
+                                deliveryMethod: method,
+                                deliveryBranch:
+                                  method === "NOVA_POSHTA_BRANCH" ? current.deliveryBranch : "",
+                              }))
                             }
                             className={[
                               "flex items-center justify-between rounded-[1rem] border px-4 py-3 text-left transition",
@@ -851,13 +982,28 @@ export function ConfiguratorBuilder({
                         );
                       })}
                     </div>
+
+                    {requestForm.deliveryMethod === "NOVA_POSHTA_BRANCH" ? (
+                      <label className="grid gap-2">
+                        <span className="text-sm font-medium text-[color:var(--color-text)]">{t("configuratorBranch")}</span>
+                        <input
+                          value={requestForm.deliveryBranch}
+                          onChange={(event) =>
+                            setRequestForm((current) => ({ ...current, deliveryBranch: event.target.value }))
+                          }
+                          placeholder={t("configuratorBranchPlaceholder")}
+                          inputMode="numeric"
+                          className="h-11 rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface)] px-4 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
+                        />
+                      </label>
+                    ) : null}
                   </div>
                 </div>
 
                 <textarea
                   value={requestForm.comment}
                   onChange={(event) => setRequestForm((current) => ({ ...current, comment: event.target.value }))}
-                  placeholder={copy.comment}
+                  placeholder={t("configuratorComment")}
                   rows={4}
                   className="rounded-[1rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-3 text-sm text-[color:var(--color-text)] outline-none transition focus:border-[color:var(--color-accent-line)]"
                 />
@@ -867,7 +1013,7 @@ export function ConfiguratorBuilder({
                   disabled={!build?.slug || summaryItems.length === 0 || pendingAction !== null}
                 >
                   {pendingAction === "request" ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
-                  <span>{copy.submitRequest}</span>
+                  <span>{t("configuratorSubmitRequest")}</span>
                 </Button>
               </div>
             </div>
@@ -883,18 +1029,18 @@ export function ConfiguratorBuilder({
       <button
         type="button"
         onClick={scrollToBuildSummary}
-        aria-label={copy.openSummary}
+        aria-label={t("configuratorOpenSummary")}
         className="flex w-full items-center justify-between gap-3 rounded-[1.25rem] border border-[color:var(--color-line)] bg-[color:var(--color-overlay-soft)] px-4 py-2.5 text-left transition active:scale-[0.99]"
       >
         <div className="min-w-0 flex-1">
           <p className="text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[color:var(--color-text-soft)]">
-            {copy.currentTotal}
+            {t("configuratorCurrentTotal")}
           </p>
           <p className="mt-0.5 truncate font-heading text-xl font-semibold tracking-[-0.04em] text-[color:var(--color-text)]">
             {formatPrice(build?.totalPrice ?? 0, locale, summaryItems[0]?.item?.product.currency ?? STOREFRONT_CURRENCY_CODE)}
           </p>
           <p className="mt-0.5 text-xs text-[color:var(--color-text-soft)]">
-            {copy.itemCount}: <span className="font-medium text-[color:var(--color-text)]">{build?.itemCount ?? 0}</span>
+            {t("configuratorItemCount")}: <span className="font-medium text-[color:var(--color-text)]">{build?.itemCount ?? 0}</span>
           </p>
         </div>
         <ChevronUp className="h-5 w-5 shrink-0 text-[color:var(--color-text-soft)]" aria-hidden />

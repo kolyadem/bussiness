@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, PromoCodeType } from "@prisma/client";
 import { z } from "zod";
 import type { AppLocale } from "@/lib/constants";
 import { db } from "@/lib/db";
@@ -22,6 +22,18 @@ import {
   type BuildRequestSnapshotItem,
   type BuildRequestStatus,
 } from "@/lib/storefront/build-requests";
+import { normalizeTelegramUsernameInput } from "@/lib/storefront/telegram-username";
+import {
+  computePromoMonetaryEffect,
+  normalizePromoCodeKey,
+  PROMO_ERROR_MESSAGES_UK,
+  validatePromoRecordWindow,
+  validatePromoValueShape,
+} from "@/lib/storefront/promo-codes";
+import {
+  computePcAssemblyServiceFeeUah,
+  resolveAssemblyFeeSettings,
+} from "@/lib/storefront/pc-assembly-fee";
 
 const MIN_BUILD_REQUEST_BUDGET = 100;
 const MAX_BUILD_REQUEST_BUDGET = 500_000;
@@ -34,29 +46,76 @@ const ADMIN_BUILD_REQUEST_SORTS = [
 
 export type AdminBuildRequestSort = (typeof ADMIN_BUILD_REQUEST_SORTS)[number];
 
-const buildRequestSchema = z.object({
-  locale: z.literal("uk"),
-  fullName: z.string().trim().min(2).max(120),
-  phone: z.string().trim().min(7).max(32),
-  email: z.string().trim().email(),
-  comment: z.string().trim().max(1000).optional().or(z.literal("")),
-  deliveryCity: z.string().trim().min(2).max(120),
-  deliveryMethod: z.enum(BUILD_REQUEST_DELIVERY_METHODS),
-});
+const buildRequestSchema = z
+  .object({
+    locale: z.literal("uk"),
+    fullName: z.string().trim().min(2).max(120),
+    phone: z.string().trim().min(7).max(32),
+    email: z.string().trim().email(),
+    comment: z.string().trim().max(1000).optional().or(z.literal("")),
+    deliveryCity: z.string().trim().min(2).max(120),
+    deliveryMethod: z.enum(BUILD_REQUEST_DELIVERY_METHODS),
+    deliveryBranch: z.string().trim().max(32).optional().or(z.literal("")),
+    telegramUsername: z.string().trim().max(64).optional().or(z.literal("")),
+    promoCode: z.string().trim().max(64).optional().or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    if (data.deliveryMethod === "NOVA_POSHTA_BRANCH") {
+      const branch = (data.deliveryBranch ?? "").trim();
 
-const quickBuildRequestSchema = z.object({
-  locale: z.literal("uk"),
-  fullName: z.string().trim().min(2).max(120),
-  contact: z.string().trim().min(3).max(160),
-  budget: z.string().trim().min(1).max(40),
-  useCase: z.string().trim().min(5).max(500),
-  preferences: z.string().trim().max(1000).optional().or(z.literal("")),
-  needsMonitor: z.boolean().default(false),
-  needsPeripherals: z.boolean().default(false),
-  needsUpgrade: z.boolean().default(false),
-  source: z.string().trim().max(180).optional().or(z.literal("")),
-  website: z.string().trim().max(0).optional().or(z.literal("")),
-});
+      if (branch.length < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["deliveryBranch"],
+          message: "Вкажіть номер відділення Нової пошти",
+        });
+      } else if (!/^[\dA-Za-z#\-/]{1,32}$/.test(branch)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["deliveryBranch"],
+          message: "Некоректний номер відділення",
+        });
+      }
+    }
+
+    const tg = data.telegramUsername?.trim();
+
+    if (tg && !normalizeTelegramUsernameInput(tg)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["telegramUsername"],
+        message: "Некоректний нік у Telegram (наприклад, @username)",
+      });
+    }
+  });
+
+const quickBuildRequestSchema = z
+  .object({
+    locale: z.literal("uk"),
+    fullName: z.string().trim().min(2).max(120),
+    contact: z.string().trim().min(3).max(160),
+    budget: z.string().trim().min(1).max(40),
+    useCase: z.string().trim().min(5).max(500),
+    preferences: z.string().trim().max(1000).optional().or(z.literal("")),
+    needsMonitor: z.boolean().default(false),
+    needsPeripherals: z.boolean().default(false),
+    needsUpgrade: z.boolean().default(false),
+    source: z.string().trim().max(180).optional().or(z.literal("")),
+    website: z.string().trim().max(0).optional().or(z.literal("")),
+    telegramUsername: z.string().trim().max(64).optional().or(z.literal("")),
+    promoCode: z.string().trim().max(64).optional().or(z.literal("")),
+  })
+  .superRefine((data, ctx) => {
+    const tg = data.telegramUsername?.trim();
+
+    if (tg && !normalizeTelegramUsernameInput(tg)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["telegramUsername"],
+        message: "Некоректний нік у Telegram (наприклад, @username)",
+      });
+    }
+  });
 
 function normalizeWhitespace(value: string) {
   return value.replace(/\s+/g, " ").trim();
@@ -271,6 +330,9 @@ export function getBuildRequestFormPrefill(
     comment: "",
     deliveryCity: "Київ",
     deliveryMethod: "NOVA_POSHTA_BRANCH" as BuildRequestDeliveryMethod,
+    deliveryBranch: "",
+    telegramUsername: "",
+    promoCode: "",
   };
 }
 
@@ -324,7 +386,7 @@ export async function createBuildRequestForBuild({
   if (build.items.length === 0) {
     return {
       ok: false as const,
-      error: "Build is empty",
+      error: "Збірка порожня",
     };
   }
 
@@ -372,10 +434,92 @@ export async function createBuildRequestForBuild({
   }
 
   const itemsSnapshot = serializeBuildItems(parsed.data.locale, build.items);
-  const totalPrice =
+  const componentsFromBuild =
     build.totalPrice > 0
       ? build.totalPrice
       : itemsSnapshot.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  const siteSettings = await db.siteSettings.findFirst({
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+  const assemblyFeeBefore = computePcAssemblyServiceFeeUah({
+    componentsSubtotal: componentsFromBuild,
+    hasPcBuild: true,
+    ...resolveAssemblyFeeSettings(siteSettings),
+  });
+
+  let totalPrice = componentsFromBuild + assemblyFeeBefore;
+  let promoCodeId: string | null = null;
+  let promoCodeCodeSnapshot: string | null = null;
+  let promoDiscountAmount = 0;
+  let promoEffectType: PromoCodeType | null = null;
+
+  const rawPromo = (parsed.data.promoCode ?? "").trim();
+  if (rawPromo.length > 0) {
+    const key = normalizePromoCodeKey(rawPromo);
+    const promo = await db.promoCode.findUnique({
+      where: {
+        codeKey: key,
+      },
+    });
+    const validated = validatePromoRecordWindow(promo, new Date());
+
+    if (!validated.ok) {
+      return {
+        ok: false as const,
+        error: PROMO_ERROR_MESSAGES_UK[validated.code],
+      };
+    }
+
+    const valueOk = validatePromoValueShape(validated.promo);
+
+    if (!valueOk.ok) {
+      return {
+        ok: false as const,
+        error: PROMO_ERROR_MESSAGES_UK[valueOk.code],
+      };
+    }
+
+    const effect = computePromoMonetaryEffect({
+      promo: validated.promo,
+      componentsSubtotal: componentsFromBuild,
+      assemblyFeeBefore,
+      hasConfiguratorItems: true,
+    });
+
+    if (!effect.ok) {
+      return {
+        ok: false as const,
+        error: PROMO_ERROR_MESSAGES_UK[effect.code],
+      };
+    }
+
+    const freshPromo = await db.promoCode.findUnique({
+      where: {
+        id: validated.promo.id,
+      },
+    });
+
+    if (
+      !freshPromo ||
+      !freshPromo.isActive ||
+      (freshPromo.usageLimit !== null && freshPromo.usedCount >= freshPromo.usageLimit)
+    ) {
+      return {
+        ok: false as const,
+        error: PROMO_ERROR_MESSAGES_UK.LIMIT_REACHED,
+      };
+    }
+
+    totalPrice = effect.result.finalTotal;
+    promoCodeId = freshPromo.id;
+    promoCodeCodeSnapshot = freshPromo.code;
+    promoDiscountAmount = effect.result.promoDiscountAmount;
+    promoEffectType = freshPromo.type;
+  }
+
   const duplicateThreshold = new Date(Date.now() - 2 * 60 * 1000);
   const duplicateRequest = await db.pcBuildRequest.findFirst({
     where: {
@@ -401,41 +545,67 @@ export async function createBuildRequestForBuild({
     };
   }
 
-  const request = await db.pcBuildRequest.create({
-    data: {
-      buildId: build.id,
-      userId: viewer?.id ?? build.user?.id ?? null,
-      locale: parsed.data.locale,
-      customerName: parsed.data.fullName,
-      contact: parsed.data.phone,
-      phone: parsed.data.phone,
-      email: parsed.data.email,
-      comment: parsed.data.comment?.trim() ? parsed.data.comment.trim() : null,
-      status: "NEW",
-      deliveryCity: resolvedDeliveryCity,
-      deliveryMethod: parsed.data.deliveryMethod,
-      totalPrice,
-      currency: itemsSnapshot[0]?.currency ?? STOREFRONT_CURRENCY_CODE,
-      itemsSnapshot: JSON.stringify(itemsSnapshot),
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
+  const request = await db.$transaction(async (tx) => {
+    const created = await tx.pcBuildRequest.create({
+      data: {
+        buildId: build.id,
+        userId: viewer?.id ?? build.user?.id ?? null,
+        locale: parsed.data.locale,
+        customerName: parsed.data.fullName,
+        contact: parsed.data.phone,
+        phone: parsed.data.phone,
+        email: parsed.data.email,
+        comment: parsed.data.comment?.trim() ? parsed.data.comment.trim() : null,
+        status: "NEW",
+        deliveryCity: resolvedDeliveryCity,
+        deliveryMethod: parsed.data.deliveryMethod,
+        deliveryBranch:
+          parsed.data.deliveryMethod === "NOVA_POSHTA_BRANCH"
+            ? (parsed.data.deliveryBranch ?? "").trim() || null
+            : null,
+        telegramUsername: normalizeTelegramUsernameInput(parsed.data.telegramUsername ?? ""),
+        totalPrice,
+        currency: itemsSnapshot[0]?.currency ?? STOREFRONT_CURRENCY_CODE,
+        itemsSnapshot: JSON.stringify(itemsSnapshot),
+        promoCodeId,
+        promoCodeCodeSnapshot,
+        promoDiscountAmount,
+        promoEffectType,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        build: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            shareToken: true,
+          },
         },
       },
-      build: {
-        select: {
-          id: true,
-          slug: true,
-          name: true,
-          shareToken: true,
+    });
+
+    if (promoCodeId) {
+      await tx.promoCode.update({
+        where: {
+          id: promoCodeId,
         },
-      },
-    },
+        data: {
+          usedCount: {
+            increment: 1,
+          },
+        },
+      });
+    }
+
+    return created;
   });
 
   await notifyBuildRequestCreated({
@@ -448,6 +618,12 @@ export async function createBuildRequestForBuild({
     useCase: request.comment,
     source: "configurator",
     kind: "configurator",
+    telegramUsername: request.telegramUsername,
+    deliveryBranch: request.deliveryBranch,
+    deliveryMethod: request.deliveryMethod,
+    promoCodeCodeSnapshot: request.promoCodeCodeSnapshot,
+    promoEffectType: request.promoEffectType,
+    promoDiscountAmount: request.promoDiscountAmount,
   });
 
   return {
@@ -509,6 +685,38 @@ export async function createQuickBuildRequest(payload: z.infer<typeof quickBuild
       ok: false as const,
       error: "Некоректний бюджет",
     };
+  }
+
+  // Server-side promo validation (structural, not stored in comment)
+  let promoCodeId: string | null = null;
+  let promoCodeCodeSnapshot: string | null = null;
+  let promoEffectType: PromoCodeType | null = null;
+
+  const rawPromoInput = (parsed.data.promoCode ?? "").trim();
+  if (rawPromoInput.length >= 2) {
+    const key = normalizePromoCodeKey(rawPromoInput);
+    const promoRecord = await db.promoCode.findUnique({ where: { codeKey: key } });
+    const validated = validatePromoRecordWindow(promoRecord, new Date());
+
+    if (!validated.ok) {
+      return { ok: false as const, error: PROMO_ERROR_MESSAGES_UK[validated.code] };
+    }
+
+    const valueOk = validatePromoValueShape(validated.promo);
+    if (!valueOk.ok) {
+      return { ok: false as const, error: PROMO_ERROR_MESSAGES_UK[valueOk.code] };
+    }
+
+    // FREE_BUILD requires a full configurator build with assembly fee — not applicable here
+    if (validated.promo.type === "FREE_BUILD") {
+      return { ok: false as const, error: PROMO_ERROR_MESSAGES_UK.INAPPLICABLE_FREE_BUILD };
+    }
+
+    promoCodeId = validated.promo.id;
+    promoCodeCodeSnapshot = validated.promo.code;
+    promoEffectType = validated.promo.type;
+    // usedCount is intentionally NOT incremented for quick inquiries:
+    // no actual monetary discount is applied at this stage — the manager applies it manually
   }
 
   const viewer = await getAuthenticatedUser();
@@ -588,10 +796,15 @@ export async function createQuickBuildRequest(payload: z.infer<typeof quickBuild
         needsPeripherals: parsed.data.needsPeripherals,
         needsUpgrade: parsed.data.needsUpgrade,
         comment: normalizedSource || null,
+        telegramUsername: normalizeTelegramUsernameInput(parsed.data.telegramUsername ?? ""),
         status: "NEW",
         totalPrice: budgetMinorUnits,
         currency: siteSettings?.defaultCurrency ?? STOREFRONT_CURRENCY_CODE,
         itemsSnapshot: "[]",
+        promoCodeId,
+        promoCodeCodeSnapshot,
+        promoDiscountAmount: 0,
+        promoEffectType,
       },
     });
 
@@ -608,6 +821,10 @@ export async function createQuickBuildRequest(payload: z.infer<typeof quickBuild
     useCase: result.request.useCase,
     source: normalizedSource || "quick-inquiry",
     kind: "quick_inquiry",
+    telegramUsername: result.request.telegramUsername,
+    promoCodeCodeSnapshot: result.request.promoCodeCodeSnapshot,
+    promoEffectType: result.request.promoEffectType,
+    promoDiscountAmount: null,
   });
 
   return {

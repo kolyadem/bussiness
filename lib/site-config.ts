@@ -20,7 +20,7 @@ export const getSiteSettingsRecord = cache(async () => {
   }
 });
 
-export async function getSiteMode() {
+export const getSiteMode = cache(async function getSiteMode() {
   const settings = await getSiteSettingsRecord();
   return normalizeSiteMode(settings?.siteMode);
-}
+});

@@ -19,6 +19,8 @@ const createRequestSchema = z.object({
   needsUpgrade: z.boolean().optional(),
   source: z.string().optional(),
   website: z.string().optional(),
+  telegramUsername: z.string().optional(),
+  promoCode: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -62,6 +64,8 @@ export async function POST(request: Request) {
       needsUpgrade: parsed.data.needsUpgrade ?? false,
       source: parsed.data.source ?? "",
       website: parsed.data.website ?? "",
+      telegramUsername: parsed.data.telegramUsername ?? "",
+      promoCode: parsed.data.promoCode ?? "",
     });
 
     if (!result.ok) {

@@ -22,6 +22,10 @@ export function canManageAdminBanners(role: string | null | undefined) {
   return role === ADMIN_ROLE;
 }
 
+export function canManagePromoCodes(role: string | null | undefined) {
+  return role === ADMIN_ROLE;
+}
+
 export function canManageAdminCatalogTaxonomy(role: string | null | undefined) {
   return role === ADMIN_ROLE || role === MANAGER_ROLE;
 }
@@ -50,6 +54,7 @@ export function getAdminCapabilities(
     canManageSettings: canManageAdminSettings(role),
     canManageImports: canManageAdminImports(role),
     canManageBanners: canManageAdminBanners(role),
+    canManagePromoCodes: canManagePromoCodes(role),
     canManageCatalogTaxonomy: canManageAdminCatalogTaxonomy(role),
     canManagePriceUpdates: canManageAdminPriceUpdates({
       role,

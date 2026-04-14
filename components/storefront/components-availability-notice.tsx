@@ -1,8 +1,7 @@
 import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const MESSAGE =
-  "На сайті представлені не всі комплектуючі — ми підберемо для вас будь-які компоненти під ваш запит.";
+const MESSAGE = "Не весь асортимент онлайн — за запитом підберемо будь-які компоненти.";
 
 export function ComponentsAvailabilityNotice({ className }: { className?: string }) {
   return (

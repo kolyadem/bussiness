@@ -38,21 +38,82 @@ type ProductTechnicalSource = {
 };
 
 export const CONFIGURATOR_CATEGORY_SLOT_MAP: Partial<Record<string, ConfiguratorSlotKey>> = {
+  // CPU
   processors: "cpu",
+  cpus: "cpu",
+  "central-processing-units": "cpu",
+  // Motherboard
   motherboards: "motherboard",
+  "main-boards": "motherboard",
+  // RAM
   memory: "ram",
+  ram: "ram",
+  "ddr-memory": "ram",
+  "ddr4-memory": "ram",
+  "ddr5-memory": "ram",
+  // GPU
   "graphics-cards": "gpu",
+  "video-cards": "gpu",
+  gpus: "gpu",
+  // Storage — all common slugs for SSD, HDD, NVMe
   storage: "storage",
+  ssd: "storage",
+  hdd: "storage",
+  ssds: "storage",
+  hdds: "storage",
+  "ssd-drives": "storage",
+  "hdd-drives": "storage",
+  "solid-state-drives": "storage",
+  "hard-drives": "storage",
+  "hard-disk-drives": "storage",
+  drives: "storage",
+  накопичувачі: "storage",
+  // PSU
   "power-supplies": "psu",
   "power-supply-units": "psu",
   psu: "psu",
+  "power-supply": "psu",
+  // Cooling
   cooling: "cooling",
   coolers: "cooling",
   "cpu-coolers": "cooling",
+  "cpu-cooling": "cooling",
+  "water-cooling": "cooling",
+  "liquid-cooling": "cooling",
+  fans: "cooling",
+  // Case
   cases: "case",
   "pc-cases": "case",
   "computer-cases": "case",
+  "system-cases": "case",
+  "pc-towers": "case",
+  корпуси: "case",
+  // Monitor
   monitors: "monitor",
+  displays: "monitor",
+  "gaming-monitors": "monitor",
+  монітори: "monitor",
+  // Keyboard — specific category slugs
+  keyboards: "keyboard",
+  "mechanical-keyboards": "keyboard",
+  "gaming-keyboards": "keyboard",
+  клавіатури: "keyboard",
+  // Mouse — specific category slugs
+  mice: "mouse",
+  "computer-mice": "mouse",
+  "gaming-mice": "mouse",
+  мишки: "mouse",
+  миші: "mouse",
+  // Headset — specific category slugs
+  headsets: "headset",
+  headphones: "headset",
+  "gaming-headsets": "headset",
+  гарнітури: "headset",
+  навушники: "headset",
+  // Accessories
+  accessories: "accessories",
+  "pc-accessories": "accessories",
+  аксесуари: "accessories",
 };
 
 const TECHNICAL_ATTRIBUTE_DEFINITIONS: readonly TechnicalAttributeDefinition[] = [

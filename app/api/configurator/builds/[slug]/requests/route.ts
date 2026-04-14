@@ -16,6 +16,9 @@ const createRequestSchema = z.object({
   comment: z.string().optional(),
   deliveryCity: z.string(),
   deliveryMethod: z.string(),
+  deliveryBranch: z.string().optional(),
+  telegramUsername: z.string().optional(),
+  promoCode: z.string().optional(),
 });
 
 export async function POST(
@@ -65,6 +68,9 @@ export async function POST(
         comment: parsed.data.comment,
         deliveryCity: parsed.data.deliveryCity,
         deliveryMethod: parsed.data.deliveryMethod as "NOVA_POSHTA_BRANCH" | "NOVA_POSHTA_COURIER",
+        deliveryBranch: parsed.data.deliveryBranch ?? "",
+        telegramUsername: parsed.data.telegramUsername ?? "",
+        promoCode: parsed.data.promoCode ?? "",
       },
     });
 

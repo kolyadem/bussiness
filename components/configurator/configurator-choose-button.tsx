@@ -2,7 +2,7 @@
 
 import { startTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Check, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,10 +24,8 @@ export function ConfiguratorChooseButton({
 }) {
   const router = useRouter();
   const locale = useLocale() as AppLocale;
+  const t = useTranslations();
   const [pending, setPending] = useState(false);
-
-  const chooseLabel = "Обрати";
-  const successLabel = "Компонент додано до збірки";
 
   return (
     <Button
@@ -62,7 +60,7 @@ export function ConfiguratorChooseButton({
             }
 
             if (!resolvedBuildSlug) {
-              throw new Error("Missing build slug");
+              throw new Error(t("chooseComponentErrorNoBuild"));
             }
 
             const response = await fetch(`/api/configurator/builds/${resolvedBuildSlug}/items`, {
@@ -82,7 +80,7 @@ export function ConfiguratorChooseButton({
               throw new Error(payload.error || "Не вдалося обрати компонент");
             }
 
-            toast.success(successLabel);
+            toast.success(t("chooseComponentSuccess"));
             router.push(`/configurator?build=${resolvedBuildSlug}`);
             router.refresh();
           } catch (error) {
@@ -100,7 +98,7 @@ export function ConfiguratorChooseButton({
       className="w-full"
     >
       {pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-      <span>{chooseLabel}</span>
+      <span>{t("chooseComponent")}</span>
     </Button>
   );
 }

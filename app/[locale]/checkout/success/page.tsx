@@ -44,7 +44,7 @@ export default async function CheckoutSuccessPage({
   ];
 
   return (
-    <main className="storefront-shell mx-auto flex min-h-[calc(100vh-16rem)] w-full max-w-[980px] items-center px-4 py-10 sm:px-6 lg:px-8 xl:px-10">
+    <main className="storefront-shell mx-auto flex min-h-[calc(100vh-16rem)] w-full max-w-[980px] items-center px-4 py-8 sm:px-6 lg:px-8 xl:px-10">
       <section className="w-full rounded-[2.5rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-8 shadow-[var(--shadow-soft)] sm:p-10">
         <div className="max-w-2xl">
           <p className="text-sm uppercase tracking-[0.24em] text-[color:var(--color-accent-strong)]">

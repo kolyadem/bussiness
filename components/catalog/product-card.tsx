@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { AppLocale } from "@/lib/constants";
 import { Link } from "@/lib/i18n/routing";
 import { calculateUnitFinancials } from "@/lib/commerce/finance";
@@ -57,12 +58,13 @@ function resolveFallbackBadge(product: {
   return null;
 }
 
-export function ProductCard({
+export const ProductCard = memo(function ProductCard({
   product,
   locale,
   showActions = true,
   footer,
   siteMode = SITE_MODES.store,
+  imagePriority = false,
 }: {
   product: {
     id: string;
@@ -84,6 +86,8 @@ export function ProductCard({
   showActions?: boolean;
   footer?: React.ReactNode;
   siteMode?: SiteMode;
+  /** LCP: prioritize first row images on the catalog grid. */
+  imagePriority?: boolean;
 }) {
   const labels = {
     price: "Ціна",
@@ -131,7 +135,13 @@ export function ProductCard({
       </div>
 
       <Link href={`/product/${product.slug}`} className="relative block overflow-hidden rounded-[1.7rem]">
-        <ProductImageFrame src={product.heroImage} alt={product.name} className="rounded-[1.7rem] border-[color:var(--color-line)]" />
+        <ProductImageFrame
+          src={product.heroImage}
+          alt={product.name}
+          className="rounded-[1.7rem] border-[color:var(--color-line)]"
+          priority={imagePriority}
+          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+        />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between bg-[linear-gradient(180deg,transparent_0%,var(--color-overlay-strong)_100%)] px-4 py-4 opacity-95">
           <span className={`rounded-full px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] ${inventoryTone}`}>
             {product.inventoryLabel}
@@ -195,4 +205,6 @@ export function ProductCard({
       </div>
     </article>
   );
-}
+});
+
+ProductCard.displayName = "ProductCard";

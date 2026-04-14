@@ -577,6 +577,64 @@ export async function addConfiguratorBuildToCart(slug: string) {
   };
 }
 
+export async function addConfiguratorSlotProductToCart({
+  slug,
+  slot,
+  productId,
+}: {
+  slug: string;
+  slot: ConfiguratorSlotKey;
+  productId: string;
+}) {
+  const build = await getConfiguratorBuildRecord(slug);
+
+  if (!build) {
+    return null;
+  }
+
+  const row = build.items.find((item) => item.slot === slot);
+
+  if (!row || row.productId !== productId) {
+    throw new Error("Некоректна позиція для цієї збірки");
+  }
+
+  const owner = await resolveStorefrontOwner({ ensureSession: true });
+
+  await addProductToOwnedCart({
+    owner,
+    productId,
+    quantity: 1,
+    configuration: JSON.stringify({
+      type: "pc-build",
+      buildSlug: build.slug,
+      buildName: build.name,
+      slot: row.slot,
+    }),
+  });
+
+  const ownedCart = await db.cart.findFirst({
+    where: owner.userId ? { userId: owner.userId } : { sessionId: owner.sessionId! },
+    include: {
+      items: {
+        include: {
+          product: {
+            select: {
+              price: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return {
+    count: ownedCart?.items.length ?? 0,
+    itemCount: ownedCart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0,
+    subtotal:
+      ownedCart?.items.reduce((sum, item) => sum + item.product.price * item.quantity, 0) ?? 0,
+  };
+}
+
 type ConfiguratorSelectionProduct = ReturnType<typeof mapProduct> & {
   compatibility?: Awaited<ReturnType<typeof evaluateCandidateCompatibility>>;
 };

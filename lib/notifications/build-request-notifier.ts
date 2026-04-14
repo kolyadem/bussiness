@@ -13,6 +13,12 @@ type BuildRequestNotificationPayload = {
   budget?: number | null;
   currency?: string | null;
   useCase?: string | null;
+  telegramUsername?: string | null;
+  deliveryBranch?: string | null;
+  deliveryMethod?: string | null;
+  promoCodeCodeSnapshot?: string | null;
+  promoEffectType?: string | null;
+  promoDiscountAmount?: number | null;
 };
 
 function formatMoney(amount: number | null | undefined, currency: string | null | undefined) {
@@ -30,6 +36,19 @@ function formatMoney(amount: number | null | undefined, currency: string | null 
     }).format(normalizedAmount);
   } catch {
     return `${normalizedAmount.toFixed(2)} ${currency}`;
+  }
+}
+
+function formatPromoEffectType(type: string | null | undefined): string {
+  switch (type) {
+    case "FREE_BUILD":
+      return "Безкоштовна збірка";
+    case "PERCENT_DISCOUNT":
+      return "Знижка у відсотках";
+    case "FIXED_DISCOUNT":
+      return "Фіксована знижка";
+    default:
+      return type ?? "—";
   }
 }
 
@@ -57,18 +76,39 @@ function getTelegramConfig() {
 function buildTelegramMessage(payload: BuildRequestNotificationPayload) {
   const number = getBuildRequestNumber(payload.requestId);
   const adminUrl = getAbsoluteLocalizedUrl(payload.locale, `/admin/build-requests/${payload.requestId}`);
+  const flow =
+    payload.kind === "quick_inquiry" ? "Швидкий запит" : "Конфігуратор";
+  const deliveryLine =
+    payload.deliveryMethod && payload.kind === "configurator"
+      ? `Доставка: ${payload.deliveryMethod}${payload.deliveryBranch ? `, відд. ${truncateText(payload.deliveryBranch, 32)}` : ""}`
+      : null;
+
+  const promoLines =
+    payload.promoCodeCodeSnapshot
+      ? [
+          `Промокод: ${payload.promoCodeCodeSnapshot}`,
+          `Ефект: ${formatPromoEffectType(payload.promoEffectType)}`,
+          payload.promoDiscountAmount && payload.promoDiscountAmount > 0
+            ? `Знижка: −${formatMoney(payload.promoDiscountAmount, payload.currency)}`
+            : null,
+        ].filter(Boolean)
+      : [];
 
   return [
-    "New build request",
-    `# ${number}`,
-    `Name: ${truncateText(payload.customerName, 120)}`,
-    `Contact: ${truncateText(payload.contact, 160)}`,
-    `Budget: ${formatMoney(payload.budget, payload.currency)}`,
-    `Use case: ${truncateText(payload.useCase, 220)}`,
-    `Flow: ${payload.kind === "quick_inquiry" ? "Quick inquiry" : "Configurator"}`,
-    `Source: ${truncateText(payload.source, 120)}`,
-    `Admin: ${adminUrl}`,
-  ].join("\n");
+    `Нова заявка на збірку · ${number}`,
+    `Клієнт: ${truncateText(payload.customerName, 120)}`,
+    `Контакт: ${truncateText(payload.contact, 160)}`,
+    payload.telegramUsername ? `Telegram: ${truncateText(payload.telegramUsername, 64)}` : null,
+    `Бюджет / сума: ${formatMoney(payload.budget, payload.currency)}`,
+    `Задача: ${truncateText(payload.useCase, 220)}`,
+    promoLines.length > 0 ? promoLines.join("\n") : null,
+    `Канал: ${flow}`,
+    deliveryLine,
+    payload.source ? `Джерело: ${truncateText(payload.source, 120)}` : null,
+    `Адмінка: ${adminUrl}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 async function sendTelegramBuildRequestNotification(payload: BuildRequestNotificationPayload) {

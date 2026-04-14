@@ -60,6 +60,7 @@ export default async function BuildRequestPage({
         initialValues={{
           fullName: prefill.fullName,
           contact: prefill.phone || prefill.email || "",
+          telegramUsername: "",
           budget: "",
           useCase: "",
           preferences: "",
@@ -68,6 +69,7 @@ export default async function BuildRequestPage({
           needsUpgrade: false,
           source,
           website: "",
+          promoCode: "",
         }}
         supportEmail={siteSettings?.supportEmail ?? null}
         supportPhone={siteSettings?.supportPhone ?? null}

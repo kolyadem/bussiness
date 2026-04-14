@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Workflow,
+  Ticket,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { getAdminCapabilities } from "@/lib/admin/permissions";
@@ -27,6 +28,7 @@ const icons = {
   imports: Workflow,
   priceUpdates: Banknote,
   requests: ReceiptText,
+  promoCodes: Ticket,
   settings: SlidersHorizontal,
   account: Settings,
   users: ShieldCheck,
@@ -72,6 +74,13 @@ export function AdminSidebar({
       key: "orders",
       label: "Замовлення",
     },
+    capabilities.canManagePromoCodes
+      ? {
+          href: "/admin/promo-codes",
+          key: "promoCodes",
+          label: "Промокоди",
+        }
+      : null,
     capabilities.canManageImports
       ? {
           href: "/admin/imports",

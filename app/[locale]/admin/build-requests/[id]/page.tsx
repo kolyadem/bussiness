@@ -18,6 +18,7 @@ import {
 import { getConfiguratorSlotLabel, isConfiguratorSlotKey } from "@/lib/storefront/configurator";
 import { mapProduct } from "@/lib/storefront/queries";
 import type { AppLocale } from "@/lib/constants";
+import { getPromoEffectTypeLabelUa } from "@/lib/storefront/promo-codes";
 import { formatPrice } from "@/lib/utils";
 
 export default async function AdminBuildRequestDetailPage({
@@ -104,6 +105,12 @@ export default async function AdminBuildRequestDetailPage({
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">Email</p>
                 <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{request.email ?? "—"}</p>
+              </div>
+              <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4 sm:col-span-2">
+                <p className="text-sm text-[color:var(--color-text-soft)]">Telegram</p>
+                <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">
+                  {request.telegramUsername ?? "—"}
+                </p>
               </div>
             </div>
           </article>
@@ -252,6 +259,30 @@ export default async function AdminBuildRequestDetailPage({
 
           <section className="rounded-[1.8rem] border border-[color:var(--color-line-strong)] bg-[color:var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
             <div className="grid gap-3">
+              {request.promoCodeCodeSnapshot ? (
+                <div className="rounded-[1.4rem] border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] px-4 py-4">
+                  <p className="text-sm text-[color:var(--color-text-soft)]">Промокод</p>
+                  <p className="mt-2 text-lg font-medium text-[color:var(--color-text)]">{request.promoCodeCodeSnapshot}</p>
+                  <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
+                    Тип ефекту:{" "}
+                    <span className="font-medium text-[color:var(--color-text)]">
+                      {getPromoEffectTypeLabelUa(request.promoEffectType)}
+                    </span>
+                  </p>
+                  {request.promoDiscountAmount > 0 ? (
+                    <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
+                      Знижка:{" "}
+                      <span className="font-medium text-emerald-700 dark:text-emerald-300">
+                        −{formatPrice(request.promoDiscountAmount, locale, request.currency)}
+                      </span>
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-xs leading-5 text-[color:var(--color-text-soft)]">
+                      Знижку буде уточнено менеджером
+                    </p>
+                  )}
+                </div>
+              ) : null}
               <div className="rounded-[1.4rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface-elevated)] px-4 py-4">
                 <p className="text-sm text-[color:var(--color-text-soft)]">
                   Бюджет / сума
@@ -279,6 +310,11 @@ export default async function AdminBuildRequestDetailPage({
                 <p className="mt-2 text-sm font-medium text-[color:var(--color-text)]">
                   {deliveryMethod ? getBuildRequestDeliveryMethodLabel(deliveryMethod, locale) : "—"}
                 </p>
+                {deliveryMethod === "NOVA_POSHTA_BRANCH" && request.deliveryBranch ? (
+                  <p className="mt-2 text-sm text-[color:var(--color-text-soft)]">
+                    Відділення: {request.deliveryBranch}
+                  </p>
+                ) : null}
               </div>
             </div>
           </section>

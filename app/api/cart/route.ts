@@ -8,10 +8,18 @@ import {
   resolveStorefrontOwner,
   updateOwnedCartItemQuantity,
 } from "@/lib/storefront/persistence";
+import { isConfiguratorSlotKey } from "@/lib/storefront/configurator";
+import { addConfiguratorSlotProductToCart } from "@/lib/storefront/configurator-data";
 
 const createSchema = z.object({
   productId: z.string().cuid(),
   quantity: z.number().int().min(1).max(99).default(1),
+  pcBuild: z
+    .object({
+      slug: z.string().trim().min(1),
+      slot: z.string().trim().min(1),
+    })
+    .optional(),
 });
 
 const updateSchema = z.object({
@@ -47,6 +55,39 @@ export async function POST(request: Request) {
     }
 
     const owner = await resolveStorefrontOwner({ ensureSession: true });
+
+    if (parsed.data.pcBuild) {
+      if (!isConfiguratorSlotKey(parsed.data.pcBuild.slot)) {
+        return NextResponse.json({ error: "Некоректні дані запиту" }, { status: 400 });
+      }
+
+      try {
+        const summary = await addConfiguratorSlotProductToCart({
+          slug: parsed.data.pcBuild.slug,
+          slot: parsed.data.pcBuild.slot,
+          productId: parsed.data.productId,
+        });
+
+        if (!summary) {
+          return NextResponse.json({ error: "Збірку не знайдено" }, { status: 404 });
+        }
+
+        return NextResponse.json({
+          ok: true,
+          count: summary.count,
+          itemCount: summary.itemCount,
+          subtotal: summary.subtotal,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error && error.message
+            ? error.message
+            : "Не вдалося додати товар з конфігурації в кошик";
+
+        return NextResponse.json({ error: message }, { status: 409 });
+      }
+    }
+
     const result = await addProductToOwnedCart({
       owner,
       productId: parsed.data.productId,

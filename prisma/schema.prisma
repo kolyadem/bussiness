@@ -11,6 +11,12 @@ enum SiteMode {
   PC_BUILD
 }
 
+enum PromoCodeType {
+  PERCENT_DISCOUNT
+  FIXED_DISCOUNT
+  FREE_BUILD
+}
+
 model User {
   id            String         @id @default(cuid())
   login         String         @unique
@@ -335,10 +341,14 @@ model Cart {
   id        String     @id @default(cuid())
   userId    String?    @unique
   sessionId String?    @unique
+  promoCodeId String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promoCode PromoCode? @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
   items     CartItem[]
+
+  @@index([promoCodeId])
 }
 
 model CartItem {
@@ -361,6 +371,7 @@ model Order {
   customerName   String
   phone          String
   email          String?
+  telegramUsername String?
   comment        String?
   managerNote    String?
   deliveryCity   String?
@@ -372,10 +383,17 @@ model Order {
   totalCost      Int?
   grossProfit    Int?
   currency       String      @default("UAH")
+  promoCodeId    String?
+  promoCodeCodeSnapshot String?
+  promoDiscountAmount   Int  @default(0)
+  promoEffectType       PromoCodeType?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  promoCode      PromoCode?  @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
   items          OrderItem[]
+
+  @@index([promoCodeId])
 }
 
 model OrderItem {
@@ -443,17 +461,25 @@ model PcBuildRequest {
   managerNote  String?
   deliveryCity String?
   deliveryMethod String?
+  deliveryBranch String?
+  telegramUsername String?
   status       String             @default("NEW")
   totalPrice   Int                @default(0)
   currency     String             @default("UAH")
   itemsSnapshot String            @default("[]")
+  promoCodeId    String?
+  promoCodeCodeSnapshot String?
+  promoDiscountAmount   Int       @default(0)
+  promoEffectType       PromoCodeType?
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
   build        PcBuild            @relation(fields: [buildId], references: [id], onDelete: Cascade)
   user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  promoCode    PromoCode?         @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
   @@index([updatedAt])
+  @@index([promoCodeId])
 }
 
 model CompatibilityRule {
@@ -481,6 +507,10 @@ model CompatibilityRule {
 model SiteSettings {
   id              String   @id @default(cuid())
   siteMode        SiteMode @default(PC_BUILD)
+  /// Фіксована частина вартості збірки ПК (копійки).
+  assemblyBaseFeeUah Int @default(0)
+  /// Відсоток від суми комплектуючих (ціле число, наприклад 2 = 2%).
+  assemblyPercent    Int @default(0)
   brandName       String
   shortBrandName  String?
   logoText        String
@@ -636,4 +666,27 @@ model BannerTranslation {
   banner   Banner @relation(fields: [bannerId], references: [id], onDelete: Cascade)
 
   @@unique([bannerId, locale])
+}
+
+model PromoCode {
+  id          String        @id @default(cuid())
+  /// Нормалізований код для пошуку (верхній регістр, без зайвих пробілів), унікальний
+  codeKey     String        @unique
+  /// Код для відображення (наприклад LUMINA-10)
+  code        String
+  type        PromoCodeType
+  /// Для PERCENT_DISCOUNT — відсотки 1–100; для FIXED_DISCOUNT — сума в копійках; для FREE_BUILD не використовується
+  value       Int           @default(0)
+  title       String
+  description String        @default("")
+  isActive    Boolean       @default(true)
+  usageLimit  Int?
+  usedCount   Int           @default(0)
+  validFrom   DateTime?
+  validUntil  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  carts       Cart[]
+  orders      Order[]
+  buildRequests PcBuildRequest[]
 }

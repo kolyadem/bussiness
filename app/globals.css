@@ -132,7 +132,7 @@ body::after {
  */
 .catalog-product-grid {
   display: grid;
-  gap: 1.25rem;
+  gap: 1.1rem;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
 }
 
@@ -142,7 +142,7 @@ body::after {
 
 @media (min-width: 640px) {
   .catalog-product-grid {
-    gap: 1.5rem;
+    gap: 1.35rem;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
   }
 }

@@ -1,5 +1,5 @@
 import { cache } from "react";
-import type { Review } from "@prisma/client";
+import type { PromoCode, Review } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -34,6 +34,7 @@ import type {
   WishlistItemRecord,
 } from "@/lib/storefront/types";
 import { productInclude, productListInclude } from "@/lib/storefront/product-includes";
+import { resolveHeroImageSrc } from "@/lib/storefront/product-image";
 
 export { productInclude, productListInclude };
 
@@ -757,7 +758,7 @@ export async function getRecentlyViewedProducts(currentProductId: string) {
   }, []);
 }
 
-export async function getWishlistItems() {
+async function loadWishlistItems() {
   return withPrismaFallback(async () => {
     const owner = await resolveStorefrontOwner();
 
@@ -786,7 +787,10 @@ export async function getWishlistItems() {
   }, []);
 }
 
-export async function getCompareItems() {
+/** Dedupes with StorefrontShell + account/compare flows in one RSC request. */
+export const getWishlistItems = cache(loadWishlistItems);
+
+async function loadCompareItems() {
   return withPrismaFallback(async () => {
     const owner = await resolveStorefrontOwner();
 
@@ -815,12 +819,15 @@ export async function getCompareItems() {
   }, []);
 }
 
-export async function getCart() {
+export const getCompareItems = cache(loadCompareItems);
+
+async function loadCart() {
   return withPrismaFallback(async () => {
     const owner = await resolveStorefrontOwner();
 
     const cart = (await getOwnedCart(owner, {
       include: {
+        promoCode: true,
         items: {
           include: {
             product: {
@@ -834,6 +841,7 @@ export async function getCart() {
       },
     })) as {
       id: string;
+      promoCode: PromoCode | null;
       items: CartItemRecord[];
     } | null;
 
@@ -856,6 +864,9 @@ export async function getCart() {
     };
   }, null);
 }
+
+/** Dedupes cart DB work when layout + page both request the cart in one navigation. */
+export const getCart = cache(loadCart);
 
 export async function getAccountSurfaceData(locale: AppLocale) {
   try {
@@ -1059,7 +1070,7 @@ export async function getAccountSurfaceData(locale: AppLocale) {
         id: item.productId ?? item.id,
         slug: item.productSlug ?? "",
         name: item.productName,
-        heroImage: item.heroImage ?? "/products/product.svg",
+        heroImage: resolveHeroImageSrc(item.heroImage),
         price: item.unitPrice,
         currency: item.currency,
       },
@@ -1125,6 +1136,7 @@ export function mapProduct(product: ProductRecord & { _avgRating?: number }, loc
       : product.reviews.length > 0
         ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
         : 0;
+  const heroImage = resolveHeroImageSrc(product.heroImage);
 
   return {
     id: product.id,
@@ -1135,8 +1147,8 @@ export function mapProduct(product: ProductRecord & { _avgRating?: number }, loc
     description: translation.description,
     seoTitle: translation.seoTitle,
     seoDescription: translation.seoDescription,
-    heroImage: product.heroImage,
-    gallery: parseJson<string[]>(product.gallery, [product.heroImage]),
+    heroImage,
+    gallery: parseJson<string[]>(product.gallery, [heroImage]),
     price: product.price,
     purchasePrice: product.purchasePrice,
     oldPrice: product.oldPrice,
