@@ -5,7 +5,7 @@ import { LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Link } from "@/lib/i18n/routing";
+import { useRouter } from "@/lib/i18n/routing";
 import type { AppLocale } from "@/lib/constants";
 
 type QuickBuildRequestPrefill = {
@@ -22,7 +22,6 @@ type QuickBuildRequestPrefill = {
   website: string;
   promoCode: string;
 };
-
 
 function translateServerError(message: string, t: (key: Parameters<ReturnType<typeof useTranslations>>[0]) => string) {
   if (message === "Некоректний бюджет" || message === "Budget is invalid") {
@@ -55,30 +54,18 @@ function translateServerError(message: string, t: (key: Parameters<ReturnType<ty
 export function QuickBuildRequestForm({
   locale,
   initialValues,
-  supportEmail,
-  supportPhone,
-  telegramUrl,
 }: {
   locale: AppLocale;
   initialValues: QuickBuildRequestPrefill;
-  supportEmail?: string | null;
-  supportPhone?: string | null;
-  telegramUrl?: string | null;
 }) {
+  const router = useRouter();
   const t = useTranslations();
   const [form, setForm] = useState(initialValues);
   const [pending, setPending] = useState(false);
-  const [requestNumber, setRequestNumber] = useState<string | null>(null);
 
   const setField = <K extends keyof QuickBuildRequestPrefill>(key: K, value: QuickBuildRequestPrefill[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
   };
-
-  const directContacts = [
-    telegramUrl ? { href: telegramUrl, label: t("buildRequestContactTelegram") } : null,
-    supportPhone ? { href: `tel:${supportPhone.replace(/\s+/g, "")}`, label: t("buildRequestContactPhone") } : null,
-    supportEmail ? { href: `mailto:${supportEmail}`, label: t("buildRequestContactEmail") } : null,
-  ].filter(Boolean) as Array<{ href: string; label: string }>;
 
   const submit = () => {
     setPending(true);
@@ -108,15 +95,15 @@ export function QuickBuildRequestForm({
         });
 
         const payload = (await response.json().catch(() => null)) as
-          | { error?: string; request?: { number: string } }
+          | { error?: string; request?: { id?: string } }
           | null;
 
-        if (!response.ok) {
+        if (!response.ok || !payload?.request?.id) {
           throw new Error(payload?.error || t("buildRequestErrorGeneric"));
         }
 
-        setRequestNumber(payload?.request?.number ?? null);
         toast.success(t("configuratorRequestCreated"));
+        router.push(`/thanks?type=build-request&id=${encodeURIComponent(payload.request.id)}`);
       } catch (error) {
         toast.error(
           error instanceof Error ? translateServerError(error.message, t) : t("buildRequestErrorGeneric"),
@@ -135,36 +122,6 @@ export function QuickBuildRequestForm({
         </h1>
         <p className="mt-4 text-sm leading-7 text-[color:var(--color-text-soft)] sm:text-base">{t("buildRequestIntro")}</p>
       </div>
-
-      {requestNumber ? (
-        <div className="mt-6 rounded-[1.6rem] border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] p-5">
-          <p className="text-lg font-semibold text-[color:var(--color-text)]">{t("configuratorRequestCreated")}</p>
-          <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">{t("buildRequestSuccessBody")}</p>
-          <p className="mt-3 text-sm font-medium text-[color:var(--color-text)]">
-            {t("buildRequestNumberLabel")}: {requestNumber}
-          </p>
-
-          <div className="mt-5 rounded-[1.3rem] border border-[color:var(--color-line)] bg-[color:var(--color-surface)]/80 p-4">
-            <p className="text-sm font-medium text-[color:var(--color-text)]">{t("buildRequestNextStepTitle")}</p>
-            <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">{t("buildRequestNextStepBody")}</p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link href="/configurator">
-                <Button variant="secondary">{t("buildRequestContinueConfigurator")}</Button>
-              </Link>
-              {directContacts.map((channel) => (
-                <a key={channel.href} href={channel.href} className="inline-flex">
-                  <Button type="button" variant="ghost">
-                    {channel.label}
-                  </Button>
-                </a>
-              ))}
-            </div>
-            {directContacts.length > 0 ? (
-              <p className="mt-3 text-xs leading-6 text-[color:var(--color-text-soft)]">{t("buildRequestContactChannelsHint")}</p>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
 
       <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)]">
         <div className="grid gap-4">

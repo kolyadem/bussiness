@@ -243,7 +243,6 @@ export function ConfiguratorBuilder({
   const [buildName, setBuildName] = useState(build?.name ?? "");
   const [pendingAction, setPendingAction] = useState<"save" | "cart" | "request" | null>(null);
   const [requestOpen, setRequestOpen] = useState(false);
-  const [requestSuccessNumber, setRequestSuccessNumber] = useState<string | null>(null);
   const [requestForm, setRequestForm] = useState<BuildRequestPrefill>(requestPrefill);
   const [wantsAssembly, setWantsAssembly] = useState(true);
   const coreSlots = slots.filter((slot) => slot.group === "core");
@@ -278,7 +277,6 @@ export function ConfiguratorBuilder({
     assemblyFeeSettings.assemblyBaseFeeUah,
     assemblyFeeSettings.assemblyPercent,
   );
-  const showAssemblySummaryRow = wantsAssembly && (assemblyFeeUah > 0 || hasAssemblySettings);
   const deliveryMethods: BuildRequestDeliveryMethod[] = [
     "NOVA_POSHTA_BRANCH",
     "NOVA_POSHTA_COURIER",
@@ -462,13 +460,18 @@ export function ConfiguratorBuilder({
 
         const payload = (await response.json()) as {
           request?: {
+            id?: string;
             number: string;
           };
         };
-        setRequestSuccessNumber(payload.request?.number ?? null);
+
+        if (!payload.request?.id) {
+          throw new Error("Не вдалося отримати ідентифікатор заявки");
+        }
+
         setRequestOpen(false);
         toast.success(t("configuratorRequestCreated"));
-        router.refresh();
+        router.push(`/thanks?type=build-request&id=${encodeURIComponent(payload.request.id)}`);
       } catch (error) {
         const safeMessage =
           error instanceof Error &&
@@ -785,23 +788,6 @@ export function ConfiguratorBuilder({
                     </Link>
                   </div>
                 ))}
-              </div>
-            </div>
-          ) : null}
-
-          {requestSuccessNumber ? (
-            <div className="mt-4 rounded-[1.4rem] border border-[color:var(--color-accent-line)] bg-[color:var(--color-accent-soft)] p-4">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 text-[color:var(--color-accent-strong)]" />
-                <div>
-                  <p className="font-medium text-[color:var(--color-text)]">{t("configuratorRequestSuccessTitle")}</p>
-                  <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-soft)]">
-                    {t("configuratorRequestSuccessText")}
-                  </p>
-                  <p className="mt-3 text-sm font-medium text-[color:var(--color-text)]">
-                    {t("configuratorRequestNumber")}: {requestSuccessNumber}
-                  </p>
-                </div>
               </div>
             </div>
           ) : null}

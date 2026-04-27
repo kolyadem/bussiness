@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { QuickBuildRequestForm } from "@/components/build-requests/quick-build-request-form";
 import type { AppLocale } from "@/lib/constants";
-import { getSiteMode, getSiteSettingsRecord } from "@/lib/site-config";
+import { getSiteMode } from "@/lib/site-config";
 import { SITE_MODES } from "@/lib/site-mode";
 import { getConfiguratorBuildRequestPrefill } from "@/lib/storefront/build-request-data";
 import { pageMetadata } from "@/lib/storefront/seo";
@@ -34,9 +34,8 @@ export default async function BuildRequestPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale } = await params;
-  const [siteMode, siteSettings, prefill, rawSearchParams] = await Promise.all([
+  const [siteMode, prefill, rawSearchParams] = await Promise.all([
     getSiteMode(),
-    getSiteSettingsRecord(),
     getConfiguratorBuildRequestPrefill(),
     searchParams,
   ]);
@@ -71,9 +70,6 @@ export default async function BuildRequestPage({
           website: "",
           promoCode: "",
         }}
-        supportEmail={siteSettings?.supportEmail ?? null}
-        supportPhone={siteSettings?.supportPhone ?? null}
-        telegramUrl={siteSettings?.telegramUrl ?? null}
       />
     </main>
   );

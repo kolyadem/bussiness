@@ -495,12 +495,16 @@ export async function createOrderFromCart(payload: z.infer<typeof checkoutSchema
         },
       });
 
-      return order;
+      return {
+        order,
+        thanksType: hasConfiguratorItems ? ("configurator-order" as const) : ("order" as const),
+      };
     });
 
     return {
       ok: true as const,
-      orderId: created.id,
+      orderId: created.order.id,
+      thanksType: created.thanksType,
     };
   } catch (error) {
     if (error instanceof OrderCreationError) {

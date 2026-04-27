@@ -36,7 +36,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, orderId: result.orderId });
+    return NextResponse.json({
+      ok: true,
+      orderId: result.orderId,
+      thanksType: result.thanksType,
+    });
   } catch (error) {
     await reportServerError(error, {
       area: "orders.route.post",

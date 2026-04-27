@@ -115,15 +115,16 @@ export function CheckoutForm({
             });
 
             const payload = (await response.json().catch(() => null)) as
-              | { error?: string; orderId?: string }
+              | { error?: string; orderId?: string; thanksType?: "order" | "configurator-order" }
               | null;
 
             if (!response.ok || !payload?.orderId) {
               throw new Error(payload?.error || t("checkoutErrorGeneric"));
             }
 
-            router.push(`/checkout/success?order=${payload.orderId}`);
-            router.refresh();
+            router.push(
+              `/thanks?type=${payload.thanksType ?? "order"}&id=${encodeURIComponent(payload.orderId)}`,
+            );
           } catch (caughtError) {
             setError(caughtError instanceof Error ? caughtError.message : t("checkoutErrorGeneric"));
           }
